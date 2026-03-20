@@ -37,6 +37,24 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/astro`](integrations/astro) | Astro middleware and helpers for Cloudflare bindings |
 | [`@workkit/remix`](integrations/remix) | Typed Remix loaders and actions with env validation |
 
+## CLI
+
+Scaffold projects, validate bindings, run migrations, and generate code.
+
+```bash
+bunx workkit init --template hono --features env,d1
+```
+
+| Command | Description |
+|---------|-------------|
+| `workkit init` | Scaffold a new Workers project |
+| `workkit check` | Validate bindings against env schema |
+| `workkit d1 migrate` | Run D1 migrations |
+| `workkit d1 seed` | Seed D1 from fixture files |
+| `workkit gen client` | Generate typed API client from route definitions |
+| `workkit gen docs` | Generate OpenAPI docs from route definitions |
+| `workkit catalog` | Show available packages and their status |
+
 ## Quick Start
 
 **1. Install what you need**
