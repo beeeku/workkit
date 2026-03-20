@@ -2,7 +2,7 @@ import { defineConfig } from "bunup";
 
 export default defineConfig({
 	entry: ["src/index.ts"],
-	format: ["esm", "cjs"],
+	format: ["esm"],
 	dts: true,
 	sourcemap: "linked",
 	external: ["@workkit/types", "@workkit/errors", "@workkit/env", "@workkit/d1"],

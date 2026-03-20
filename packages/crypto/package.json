@@ -15,34 +15,21 @@
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
       }
     },
     "./derive": {
       "import": {
         "types": "./dist/derive.d.ts",
         "default": "./dist/derive.js"
-      },
-      "require": {
-        "types": "./dist/derive.d.cts",
-        "default": "./dist/derive.cjs"
       }
     },
     "./envelope": {
       "import": {
         "types": "./dist/envelope.d.ts",
         "default": "./dist/envelope.js"
-      },
-      "require": {
-        "types": "./dist/envelope.d.cts",
-        "default": "./dist/envelope.cjs"
       }
     }
   },
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -58,10 +45,6 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@workkit/types": "workspace:*",
-    "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250310.0",

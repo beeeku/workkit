@@ -2,7 +2,7 @@ import { defineConfig } from "bunup";
 
 export default defineConfig({
 	entry: ["src/index.ts", "src/derive.ts", "src/envelope.ts"],
-	format: ["esm", "cjs"],
+	format: ["esm"],
 	dts: true,
 	sourcemap: "linked",
 	clean: true,
