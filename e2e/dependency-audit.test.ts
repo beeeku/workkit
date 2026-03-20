@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
 import path from 'path'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 function readPkg(relPath: string) {
   const full = path.resolve(__dirname, '..', relPath, 'package.json')
@@ -21,47 +24,38 @@ describe('P0 dependency audit', () => {
   })
 
   describe('unused runtime dependencies are removed', () => {
-    it('@workkit/cache has no @workkit/types in dependencies', () => {
+    it('@workkit/cache has no @workkit/types or @workkit/errors in dependencies', () => {
       const pkg = readPkg('packages/cache')
       expect(pkg.dependencies ?? {}).not.toHaveProperty('@workkit/types')
-    })
-
-    it('@workkit/cache has no @workkit/errors in dependencies', () => {
-      const pkg = readPkg('packages/cache')
       expect(pkg.dependencies ?? {}).not.toHaveProperty('@workkit/errors')
     })
 
-    it('@workkit/crypto has no @workkit/types in dependencies', () => {
+    it('@workkit/crypto has no @workkit/types or @workkit/errors in dependencies', () => {
       const pkg = readPkg('packages/crypto')
       expect(pkg.dependencies ?? {}).not.toHaveProperty('@workkit/types')
-    })
-
-    it('@workkit/crypto has no @workkit/errors in dependencies', () => {
-      const pkg = readPkg('packages/crypto')
       expect(pkg.dependencies ?? {}).not.toHaveProperty('@workkit/errors')
     })
   })
 
-  describe('CLI template deps are in devDependencies, not dependencies', () => {
-    const templateDeps = ['@workkit/types', '@workkit/errors', '@workkit/env', '@workkit/d1']
+  describe('CLI external deps are in dependencies for runtime resolution', () => {
+    const externalDeps = ['@workkit/types', '@workkit/errors', '@workkit/env', '@workkit/d1']
 
-    for (const dep of templateDeps) {
-      it(`workkit CLI has ${dep} in devDependencies, not dependencies`, () => {
+    for (const dep of externalDeps) {
+      it(`workkit CLI has ${dep} in dependencies`, () => {
         const pkg = readPkg('packages/cli')
-        expect(pkg.dependencies ?? {}).not.toHaveProperty(dep)
-        expect(pkg.devDependencies).toHaveProperty(dep)
+        expect(pkg.dependencies).toHaveProperty(dep)
       })
     }
   })
 
-  describe('@standard-schema/spec is a peerDep in remix, not a dep', () => {
-    it('@workkit/remix has @standard-schema/spec in peerDependencies', () => {
-      const pkg = readPkg('integrations/remix')
+  describe('@standard-schema/spec in remix', () => {
+    const pkg = readPkg('integrations/remix')
+
+    it('is in peerDependencies', () => {
       expect(pkg.peerDependencies).toHaveProperty('@standard-schema/spec')
     })
 
-    it('@workkit/remix does not have @standard-schema/spec in dependencies', () => {
-      const pkg = readPkg('integrations/remix')
+    it('is not in runtime dependencies', () => {
       expect(pkg.dependencies ?? {}).not.toHaveProperty('@standard-schema/spec')
     })
   })
