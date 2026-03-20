@@ -9,9 +9,9 @@ export default defineConfig({
     starlight({
       title: 'workkit',
       description: 'Composable utilities for Cloudflare Workers. Think TanStack for Workers.',
-      social: {
-        github: 'https://github.com/beeeku/workkit',
-      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/beeeku/workkit' },
+      ],
       sidebar: [
         {
           label: 'Start Here',
