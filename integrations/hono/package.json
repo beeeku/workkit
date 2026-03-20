@@ -1,7 +1,7 @@
 {
   "name": "@workkit/hono",
   "version": "0.0.1",
-  "description": "Hono middleware that integrates workkit utilities — env validation, error handling, rate limiting, caching",
+  "description": "Hono middleware that integrates workkit utilities \u2014 env validation, error handling, rate limiting, caching",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
@@ -43,12 +43,7 @@
     "hono": ">=4.0.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "bunup": "0.16.31",
-    "expect-type": "^1.1.0",
     "hono": "^4.7.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
     "zod": "^3.24.0"
   },
   "keywords": [

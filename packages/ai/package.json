@@ -1,7 +1,7 @@
 {
   "name": "@workkit/ai",
   "version": "0.0.1",
-  "description": "Typed helpers for Cloudflare Workers AI — type-safe model calls, streaming, fallback chains",
+  "description": "Typed helpers for Cloudflare Workers AI \u2014 type-safe model calls, streaming, fallback chains",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
@@ -37,13 +37,6 @@
   "dependencies": {
     "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "bunup": "0.16.31",
-    "expect-type": "^1.1.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
   },
   "keywords": [
     "cloudflare",

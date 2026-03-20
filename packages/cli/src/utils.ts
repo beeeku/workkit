@@ -17,10 +17,10 @@ function wrap(code: number, resetCode: number): (s: string) => string {
 
 export const bold: (s: string) => string = wrap(1, 22);
 export const dim: (s: string) => string = wrap(2, 22);
-export const red: (s: string) => string = wrap(31, 39);
-export const green: (s: string) => string = wrap(32, 39);
-export const yellow: (s: string) => string = wrap(33, 39);
-export const blue: (s: string) => string = wrap(34, 39);
+const red: (s: string) => string = wrap(31, 39);
+const green: (s: string) => string = wrap(32, 39);
+const yellow: (s: string) => string = wrap(33, 39);
+const blue: (s: string) => string = wrap(34, 39);
 export const cyan: (s: string) => string = wrap(36, 39);
 
 // ── Logging ──────────────────────────────────────────────────────────────────
