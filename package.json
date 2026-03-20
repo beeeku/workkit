@@ -1,0 +1,22 @@
+{
+  "name": "workkit",
+  "private": true,
+  "workspaces": ["packages/*", "integrations/*", "tooling/*"],
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0",
+    "bunup": "0.16.31"
+  },
+  "packageManager": "bun@1.2.0"
+}
