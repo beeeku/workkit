@@ -5,7 +5,7 @@
       "ignoreDependencies": ["@cloudflare/workers-types", "bunup"]
     },
     "packages/*": {
-      "entry": ["src/index.ts", "src/*.ts"],
+      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
       "ignoreDependencies": ["bunup"]
     },
