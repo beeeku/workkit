@@ -127,7 +127,7 @@ describe("withRetry()", () => {
 
 	it("uses exponential backoff by default", async () => {
 		vi.useRealTimers();
-		const mw = withRetry(2, { baseDelay: 10 });
+		const mw = withRetry(2, { baseDelay: 50 });
 		const callTimes: number[] = [];
 		const spy = vi.fn(async () => {
 			callTimes.push(Date.now());
@@ -139,9 +139,10 @@ describe("withRetry()", () => {
 
 		expect(spy).toHaveBeenCalledTimes(3);
 		// Second delay should be longer than first (exponential)
-		const delay1 = callTimes[1] - callTimes[0];
-		const delay2 = callTimes[2] - callTimes[1];
-		expect(delay2).toBeGreaterThanOrEqual(delay1);
+		const delay1 = callTimes[1]! - callTimes[0]!;
+		const delay2 = callTimes[2]! - callTimes[1]!;
+		// Allow small tolerance for timer imprecision in CI
+		expect(delay2).toBeGreaterThanOrEqual(delay1 - 5);
 	});
 });
 
