@@ -12,7 +12,7 @@ export default defineConfig({
 		"src/request.ts",
 		"src/context.ts",
 	],
-	format: ["esm", "cjs"],
+	format: ["esm"],
 	dts: true,
 	sourcemap: "linked",
 	clean: true,

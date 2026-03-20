@@ -18,14 +18,9 @@
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
       }
     }
   },
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -38,15 +33,13 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@workkit/types": "workspace:*",
-    "@workkit/errors": "workspace:*",
-    "@workkit/env": "workspace:*",
-    "@workkit/d1": "workspace:*"
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250310.0",
     "@types/node": "^25.5.0",
+    "@workkit/d1": "workspace:*",
+    "@workkit/env": "workspace:*",
+    "@workkit/errors": "workspace:*",
+    "@workkit/types": "workspace:*",
     "bunup": "0.16.31",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
@@ -59,8 +52,8 @@
     "code-generation",
     "workkit"
   ],
-  "sideEffects": false
-,
+  "sideEffects": false,
   "publishConfig": {
     "access": "public"
-  }}
+  }
+}
