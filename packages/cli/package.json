@@ -33,13 +33,15 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "@types/node": "^25.5.0",
+  "dependencies": {
     "@workkit/d1": "workspace:*",
     "@workkit/env": "workspace:*",
     "@workkit/errors": "workspace:*",
-    "@workkit/types": "workspace:*",
+    "@workkit/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "@types/node": "^25.5.0",
     "bunup": "0.16.31",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
