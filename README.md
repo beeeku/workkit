@@ -1,5 +1,8 @@
 # workkit
 
+[![CI](https://github.com/beeeku/workkit/actions/workflows/ci.yml/badge.svg)](https://github.com/beeeku/workkit/actions/workflows/ci.yml)
+[![Release](https://github.com/beeeku/workkit/actions/workflows/release.yml/badge.svg)](https://github.com/beeeku/workkit/actions/workflows/release.yml)
+
 > Composable utilities for Cloudflare Workers. Think TanStack for Workers.
 
 Every package wraps a Cloudflare binding or API with type safety, better DX, and sensible defaults. Use one package or all of them -- they're independent, tree-shakeable, and designed to compose.
