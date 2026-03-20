@@ -48,13 +48,6 @@
     "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "bunup": "0.16.31",
-    "expect-type": "^1.1.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
-  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",

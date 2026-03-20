@@ -1,7 +1,7 @@
 {
   "name": "@workkit/api",
   "version": "0.0.1",
-  "description": "Declarative API definitions with Standard Schema validation for Cloudflare Workers — Encore-inspired typed endpoints",
+  "description": "Declarative API definitions with Standard Schema validation for Cloudflare Workers \u2014 Encore-inspired typed endpoints",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
@@ -45,11 +45,6 @@
     "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "bunup": "0.16.31",
-    "expect-type": "^1.1.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
     "zod": "^3.24.0"
   },
   "keywords": [

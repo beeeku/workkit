@@ -64,12 +64,6 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "bunup": "0.16.31",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
-  },
   "keywords": [
     "cloudflare",
     "workers",

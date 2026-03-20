@@ -23,12 +23,7 @@
         "@workkit/types": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
         "@standard-schema/spec": "^1.1.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
       "peerDependencies": {
         "astro": ">=4.0.0",
@@ -43,12 +38,7 @@
         "@workkit/types": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
         "hono": "^4.7.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
         "zod": "^3.24.0",
       },
       "peerDependencies": {
@@ -64,12 +54,7 @@
         "@workkit/types": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
         "@standard-schema/spec": "^1.1.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
       "peerDependencies": {
         "@standard-schema/spec": "^1.1.0",
@@ -82,13 +67,6 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/ai-gateway": {
       "name": "@workkit/ai-gateway",
@@ -96,13 +74,6 @@
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
-      },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
     },
     "packages/api": {
@@ -113,11 +84,6 @@
         "@workkit/types": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
         "zod": "^3.24.0",
       },
     },
@@ -128,30 +94,16 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/cache": {
       "name": "@workkit/cache",
       "version": "0.0.1",
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/cli": {
       "name": "workkit",
       "version": "0.0.1",
       "bin": {
-        "workkit": "./dist/index.js",
+        "workkit": "dist/index.js",
       },
       "dependencies": {
         "@workkit/d1": "workspace:*",
@@ -160,11 +112,7 @@
         "@workkit/types": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
         "@types/node": "^25.5.0",
-        "bunup": "0.16.31",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
     },
     "packages/cron": {
@@ -174,24 +122,10 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/crypto": {
       "name": "@workkit/crypto",
       "version": "0.0.1",
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/d1": {
       "name": "@workkit/d1",
@@ -199,13 +133,6 @@
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
-      },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
     },
     "packages/do": {
@@ -215,13 +142,6 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/env": {
       "name": "@workkit/env",
@@ -230,14 +150,9 @@
         "@workkit/errors": "workspace:*",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
         "@standard-schema/spec": "^1.0.0",
         "arktype": "^2.2.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
         "valibot": "^1.3.1",
-        "vitest": "^3.0.0",
         "zod": "^4.3.6",
       },
       "peerDependencies": {
@@ -252,9 +167,6 @@
       "version": "0.0.1",
       "devDependencies": {
         "@workkit/types": "workspace:*",
-        "bunup": "0.16.31",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
       "peerDependencies": {
         "@workkit/types": "workspace:*",
@@ -270,13 +182,6 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/queue": {
       "name": "@workkit/queue",
@@ -284,13 +189,6 @@
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
-      },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
     },
     "packages/r2": {
@@ -300,13 +198,6 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/ratelimit": {
       "name": "@workkit/ratelimit",
@@ -315,33 +206,16 @@
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
       },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "expect-type": "^1.1.0",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/testing": {
       "name": "@workkit/testing",
       "version": "0.0.1",
-      "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
-        "bunup": "0.16.31",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
-      },
     },
     "packages/types": {
       "name": "@workkit/types",
       "version": "0.0.1",
       "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250310.0",
         "@standard-schema/spec": "^1.0.0",
-        "bunup": "0.16.31",
-        "typescript": "^5.7.0",
-        "vitest": "^3.0.0",
       },
       "peerDependencies": {
         "@cloudflare/workers-types": ">=4.0.0",

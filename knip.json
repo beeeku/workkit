@@ -1,0 +1,23 @@
+{
+  "workspaces": {
+    ".": {
+      "entry": ["e2e/**/*.test.ts", "examples/*/src/index.ts"],
+      "ignoreDependencies": ["@cloudflare/workers-types", "bunup"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts", "src/*.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["bunup"]
+    },
+    "packages/env": {
+      "entry": ["src/index.ts", "src/validators/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "integrations/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignoreDependencies": ["bunup"]
+    }
+  },
+  "ignore": ["**/bunup.config.ts"]
+}

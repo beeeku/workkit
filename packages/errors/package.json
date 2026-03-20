@@ -39,10 +39,7 @@
     }
   },
   "devDependencies": {
-    "@workkit/types": "workspace:*",
-    "bunup": "0.16.31",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",

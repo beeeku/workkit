@@ -1,7 +1,7 @@
 {
   "name": "@workkit/remix",
   "version": "0.0.1",
-  "description": "Remix integration for Cloudflare Workers — typed loader/action helpers, env validation, error boundaries",
+  "description": "Remix integration for Cloudflare Workers \u2014 typed loader/action helpers, env validation, error boundaries",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
@@ -43,12 +43,7 @@
     "@standard-schema/spec": "^1.1.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "@standard-schema/spec": "^1.1.0",
-    "bunup": "0.16.31",
-    "expect-type": "^1.1.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@standard-schema/spec": "^1.1.0"
   },
   "keywords": [
     "cloudflare",

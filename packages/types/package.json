@@ -1,7 +1,7 @@
 {
   "name": "@workkit/types",
   "version": "0.0.1",
-  "description": "Shared TypeScript types for Cloudflare Workers — Result, branded IDs, typed bindings, and utility types",
+  "description": "Shared TypeScript types for Cloudflare Workers \u2014 Result, branded IDs, typed bindings, and utility types",
   "type": "module",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -35,11 +35,7 @@
     }
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250310.0",
-    "@standard-schema/spec": "^1.0.0",
-    "bunup": "0.16.31",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@standard-schema/spec": "^1.0.0"
   },
   "keywords": [
     "cloudflare",
