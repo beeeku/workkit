@@ -9,6 +9,7 @@
         "@changesets/cli": "^2.27.0",
         "@cloudflare/workers-types": "^4.20250310.0",
         "bunup": "0.16.31",
+        "expect-type": "^1.1.0",
         "turbo": "^2.3.0",
         "typescript": "^5.7.0",
         "vitest": "^3.0.0",
