@@ -1,11 +1,4 @@
-import type {
-  AiInput,
-  AiOutput,
-  Gateway,
-  LoggedGateway,
-  LoggingConfig,
-  RunOptions,
-} from './types'
+import type { AiInput, AiOutput, Gateway, LoggedGateway, LoggingConfig, RunOptions } from "./types";
 
 /**
  * Wrap a gateway with request/response logging.
@@ -23,28 +16,28 @@ import type {
  * ```
  */
 export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGateway {
-  return {
-    async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
-      config.onRequest?.(model, input)
+	return {
+		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
+			config.onRequest?.(model, input);
 
-      const start = Date.now()
-      try {
-        const result = await gateway.run(model, input, options)
-        const duration = Date.now() - start
-        config.onResponse?.(model, result, duration)
-        return result
-      } catch (err) {
-        config.onError?.(model, err)
-        throw err
-      }
-    },
+			const start = Date.now();
+			try {
+				const result = await gateway.run(model, input, options);
+				const duration = Date.now() - start;
+				config.onResponse?.(model, result, duration);
+				return result;
+			} catch (err) {
+				config.onError?.(model, err);
+				throw err;
+			}
+		},
 
-    providers(): string[] {
-      return gateway.providers()
-    },
+		providers(): string[] {
+			return gateway.providers();
+		},
 
-    defaultProvider(): string {
-      return gateway.defaultProvider()
-    },
-  }
+		defaultProvider(): string {
+			return gateway.defaultProvider();
+		},
+	};
 }

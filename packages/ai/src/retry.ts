@@ -1,9 +1,14 @@
-import { BindingNotFoundError, TimeoutError, RateLimitError, ServiceUnavailableError } from '@workkit/errors'
-import type { AiBinding, RetryOptions, RetryResult, BackoffStrategy } from './types'
+import {
+	BindingNotFoundError,
+	RateLimitError,
+	ServiceUnavailableError,
+	TimeoutError,
+} from "@workkit/errors";
+import type { AiBinding, BackoffStrategy, RetryOptions, RetryResult } from "./types";
 
-const DEFAULT_MAX_RETRIES = 3
-const DEFAULT_BASE_DELAY = 1000
-const DEFAULT_MAX_DELAY = 30000
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_BASE_DELAY = 1000;
+const DEFAULT_MAX_DELAY = 30000;
 
 /**
  * Calculate delay for a given retry attempt using the specified backoff strategy.
@@ -15,28 +20,28 @@ const DEFAULT_MAX_DELAY = 30000
  * @returns Delay in milliseconds
  */
 export function calculateDelay(
-  strategy: BackoffStrategy,
-  attempt: number,
-  baseDelay: number = DEFAULT_BASE_DELAY,
-  maxDelay: number = DEFAULT_MAX_DELAY,
+	strategy: BackoffStrategy,
+	attempt: number,
+	baseDelay: number = DEFAULT_BASE_DELAY,
+	maxDelay: number = DEFAULT_MAX_DELAY,
 ): number {
-  let delay: number
+	let delay: number;
 
-  switch (strategy) {
-    case 'fixed':
-      delay = baseDelay
-      break
-    case 'linear':
-      delay = baseDelay * (attempt + 1)
-      break
-    case 'exponential':
-      delay = baseDelay * Math.pow(2, attempt)
-      break
-    default:
-      delay = baseDelay
-  }
+	switch (strategy) {
+		case "fixed":
+			delay = baseDelay;
+			break;
+		case "linear":
+			delay = baseDelay * (attempt + 1);
+			break;
+		case "exponential":
+			delay = baseDelay * 2 ** attempt;
+			break;
+		default:
+			delay = baseDelay;
+	}
 
-  return Math.min(delay, maxDelay)
+	return Math.min(delay, maxDelay);
 }
 
 /**
@@ -44,19 +49,19 @@ export function calculateDelay(
  * Retries on timeout, rate limit, and service unavailable errors.
  */
 export function defaultIsRetryable(error: unknown): boolean {
-  if (error instanceof TimeoutError) return true
-  if (error instanceof RateLimitError) return true
-  if (error instanceof ServiceUnavailableError) return true
+	if (error instanceof TimeoutError) return true;
+	if (error instanceof RateLimitError) return true;
+	if (error instanceof ServiceUnavailableError) return true;
 
-  // Retry on generic network-like errors
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase()
-    if (msg.includes('timeout') || msg.includes('rate limit') || msg.includes('unavailable')) {
-      return true
-    }
-  }
+	// Retry on generic network-like errors
+	if (error instanceof Error) {
+		const msg = error.message.toLowerCase();
+		if (msg.includes("timeout") || msg.includes("rate limit") || msg.includes("unavailable")) {
+			return true;
+		}
+	}
 
-  return false
+	return false;
 }
 
 /**
@@ -81,63 +86,63 @@ export function defaultIsRetryable(error: unknown): boolean {
  * ```
  */
 export async function withRetry<T = unknown>(
-  binding: AiBinding,
-  model: string,
-  inputs: Record<string, unknown>,
-  options?: RetryOptions,
+	binding: AiBinding,
+	model: string,
+	inputs: Record<string, unknown>,
+	options?: RetryOptions,
 ): Promise<RetryResult<T>> {
-  if (!binding) {
-    throw new BindingNotFoundError('AI')
-  }
+	if (!binding) {
+		throw new BindingNotFoundError("AI");
+	}
 
-  const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES
-  const backoff = options?.backoff ?? 'exponential'
-  const baseDelay = options?.baseDelay ?? DEFAULT_BASE_DELAY
-  const maxDelay = options?.maxDelay ?? DEFAULT_MAX_DELAY
-  const isRetryable = options?.isRetryable ?? defaultIsRetryable
+	const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
+	const backoff = options?.backoff ?? "exponential";
+	const baseDelay = options?.baseDelay ?? DEFAULT_BASE_DELAY;
+	const maxDelay = options?.maxDelay ?? DEFAULT_MAX_DELAY;
+	const isRetryable = options?.isRetryable ?? defaultIsRetryable;
 
-  let lastError: unknown
+	let lastError: unknown;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // Check for abort before each attempt
-      if (options?.signal?.aborted) {
-        throw options.signal.reason ?? new Error('Aborted')
-      }
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		try {
+			// Check for abort before each attempt
+			if (options?.signal?.aborted) {
+				throw options.signal.reason ?? new Error("Aborted");
+			}
 
-      const runOptions: Record<string, unknown> = {}
-      if (options?.signal) runOptions.signal = options.signal
+			const runOptions: Record<string, unknown> = {};
+			if (options?.signal) runOptions.signal = options.signal;
 
-      const data = await binding.run(model, inputs, runOptions) as T
+			const data = (await binding.run(model, inputs, runOptions)) as T;
 
-      return {
-        data,
-        model,
-        retries: attempt,
-      }
-    } catch (err) {
-      lastError = err
+			return {
+				data,
+				model,
+				retries: attempt,
+			};
+		} catch (err) {
+			lastError = err;
 
-      // Don't retry if we've exhausted attempts
-      if (attempt >= maxRetries) {
-        break
-      }
+			// Don't retry if we've exhausted attempts
+			if (attempt >= maxRetries) {
+				break;
+			}
 
-      // Don't retry non-retryable errors
-      if (!isRetryable(err)) {
-        break
-      }
+			// Don't retry non-retryable errors
+			if (!isRetryable(err)) {
+				break;
+			}
 
-      // Wait before retrying
-      const delay = calculateDelay(backoff, attempt, baseDelay, maxDelay)
-      await sleep(delay)
-    }
-  }
+			// Wait before retrying
+			const delay = calculateDelay(backoff, attempt, baseDelay, maxDelay);
+			await sleep(delay);
+		}
+	}
 
-  throw lastError
+	throw lastError;
 }
 
 /** Sleep for the specified number of milliseconds */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }

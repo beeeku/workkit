@@ -1,6 +1,6 @@
-import type { TypedDurableObjectStorage } from '@workkit/types'
-import { ValidationError } from '@workkit/errors'
-import type { BaseEvent, StateMachineConfig, StateMachine } from './types'
+import { ValidationError } from "@workkit/errors";
+import type { TypedDurableObjectStorage } from "@workkit/types";
+import type { BaseEvent, StateMachine, StateMachineConfig } from "./types";
 
 /**
  * Creates a finite state machine that integrates with Durable Object storage.
@@ -19,67 +19,71 @@ import type { BaseEvent, StateMachineConfig, StateMachine } from './types'
  * })
  * ```
  */
-export function createStateMachine<
-	TState extends string,
-	TEvent extends BaseEvent,
->(config: StateMachineConfig<TState, TEvent>): StateMachine<TState, TEvent> {
-	let current: TState = config.initial
+export function createStateMachine<TState extends string, TEvent extends BaseEvent>(
+	config: StateMachineConfig<TState, TEvent>,
+): StateMachine<TState, TEvent> {
+	let current: TState = config.initial;
 
 	return {
 		getState(): TState {
-			return current
+			return current;
 		},
 
 		async send(event: TEvent, storage: TypedDurableObjectStorage): Promise<TState> {
 			const stateTransitions = config.transitions[current] as
 				| Partial<Record<string, TState>>
-				| undefined
+				| undefined;
 
 			if (!stateTransitions) {
 				throw new ValidationError(
 					`No transitions defined for state "${current}". Cannot handle event "${event.type}".`,
-					[{ path: ['state'], message: `No transitions defined for state "${current}"` }],
-				)
+					[{ path: ["state"], message: `No transitions defined for state "${current}"` }],
+				);
 			}
 
-			const nextState = stateTransitions[event.type]
+			const nextState = stateTransitions[event.type];
 			if (nextState === undefined) {
-				const validEvents = Object.keys(stateTransitions)
+				const validEvents = Object.keys(stateTransitions);
 				throw new ValidationError(
 					`Invalid transition: state "${current}" does not handle event "${event.type}". ` +
-						`Valid events: [${validEvents.join(', ')}]`,
-					[{ path: ['event', 'type'], message: `Invalid event "${event.type}" for state "${current}". Valid events: [${validEvents.join(', ')}]` }],
-				)
+						`Valid events: [${validEvents.join(", ")}]`,
+					[
+						{
+							path: ["event", "type"],
+							message: `Invalid event "${event.type}" for state "${current}". Valid events: [${validEvents.join(", ")}]`,
+						},
+					],
+				);
 			}
 
-			const from = current
-			current = nextState
+			const from = current;
+			current = nextState;
 
 			if (config.onTransition) {
-				await config.onTransition(from, nextState, event, storage)
+				await config.onTransition(from, nextState, event, storage);
 			}
 
-			return current
+			return current;
 		},
 
-		canSend(eventType: TEvent['type']): boolean {
+		canSend(eventType: TEvent["type"]): boolean {
 			const stateTransitions = config.transitions[current] as
 				| Partial<Record<string, TState>>
-				| undefined
-			if (!stateTransitions) return false
-			return eventType in stateTransitions
+				| undefined;
+			if (!stateTransitions) return false;
+			return eventType in stateTransitions;
 		},
 
 		getValidEvents(): string[] {
 			const stateTransitions = config.transitions[current] as
 				| Partial<Record<string, TState>>
-				| undefined
-			if (!stateTransitions) return []
-			return Object.keys(stateTransitions)
+				| undefined;
+			if (!stateTransitions) return [];
+			return Object.keys(stateTransitions);
 		},
 
 		reset(): void {
-			current = config.initial
+			current = config.initial;
 		},
-	}
+	};
 }

@@ -1,122 +1,122 @@
-import { describe, it, expectTypeOf } from 'vitest'
-import { Hono } from 'hono'
-import { workkit } from '../src/middleware'
-import { getEnv } from '../src/helpers'
-import { workkitErrorHandler } from '../src/error-handler'
-import { rateLimit, fixedWindow, parseDuration } from '../src/rate-limit'
-import { cacheResponse } from '../src/cache'
+import type { EnvSchema, InferEnv } from "@workkit/env";
+import { Hono } from "hono";
+import type { Context, ErrorHandler, MiddlewareHandler } from "hono";
+import { describe, expectTypeOf, it } from "vitest";
+import { cacheResponse } from "../src/cache";
+import { workkitErrorHandler } from "../src/error-handler";
+import { getEnv } from "../src/helpers";
+import { workkit } from "../src/middleware";
+import { fixedWindow, parseDuration, rateLimit } from "../src/rate-limit";
 import type {
-  WorkkitOptions,
-  ErrorHandlerOptions,
-  RateLimiter,
-  RateLimitResult,
-  RateLimitOptions,
-  FixedWindowOptions,
-  CacheOptions,
-  WorkkitEnv,
-} from '../src/types'
-import type { EnvSchema, InferEnv } from '@workkit/env'
-import type { MiddlewareHandler, ErrorHandler, Context } from 'hono'
+	CacheOptions,
+	ErrorHandlerOptions,
+	FixedWindowOptions,
+	RateLimitOptions,
+	RateLimitResult,
+	RateLimiter,
+	WorkkitEnv,
+	WorkkitOptions,
+} from "../src/types";
 
-describe('type safety', () => {
-  describe('workkit() types', () => {
-    it('returns a MiddlewareHandler', () => {
-      const schema = {} as EnvSchema
-      const mw = workkit({ env: schema })
-      expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>()
-    })
+describe("type safety", () => {
+	describe("workkit() types", () => {
+		it("returns a MiddlewareHandler", () => {
+			const schema = {} as EnvSchema;
+			const mw = workkit({ env: schema });
+			expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>();
+		});
 
-    it('WorkkitOptions requires env schema', () => {
-      expectTypeOf<WorkkitOptions<EnvSchema>>().toHaveProperty('env')
-    })
-  })
+		it("WorkkitOptions requires env schema", () => {
+			expectTypeOf<WorkkitOptions<EnvSchema>>().toHaveProperty("env");
+		});
+	});
 
-  describe('workkitErrorHandler types', () => {
-    it('returns an ErrorHandler', () => {
-      const handler = workkitErrorHandler()
-      expectTypeOf(handler).toMatchTypeOf<ErrorHandler>()
-    })
+	describe("workkitErrorHandler types", () => {
+		it("returns an ErrorHandler", () => {
+			const handler = workkitErrorHandler();
+			expectTypeOf(handler).toMatchTypeOf<ErrorHandler>();
+		});
 
-    it('accepts ErrorHandlerOptions', () => {
-      expectTypeOf<ErrorHandlerOptions>().toHaveProperty('includeStack')
-      expectTypeOf<ErrorHandlerOptions>().toHaveProperty('onError')
-    })
-  })
+		it("accepts ErrorHandlerOptions", () => {
+			expectTypeOf<ErrorHandlerOptions>().toHaveProperty("includeStack");
+			expectTypeOf<ErrorHandlerOptions>().toHaveProperty("onError");
+		});
+	});
 
-  describe('rateLimit types', () => {
-    it('returns a MiddlewareHandler', () => {
-      const mw = rateLimit({
-        limiter: { check: async () => ({ allowed: true, remaining: 1, resetAt: 0 }) },
-        keyFn: () => 'key',
-      })
-      expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>()
-    })
+	describe("rateLimit types", () => {
+		it("returns a MiddlewareHandler", () => {
+			const mw = rateLimit({
+				limiter: { check: async () => ({ allowed: true, remaining: 1, resetAt: 0 }) },
+				keyFn: () => "key",
+			});
+			expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>();
+		});
 
-    it('RateLimiter has check method', () => {
-      expectTypeOf<RateLimiter>().toHaveProperty('check')
-    })
+		it("RateLimiter has check method", () => {
+			expectTypeOf<RateLimiter>().toHaveProperty("check");
+		});
 
-    it('RateLimitResult has required fields', () => {
-      expectTypeOf<RateLimitResult>().toHaveProperty('allowed')
-      expectTypeOf<RateLimitResult>().toHaveProperty('remaining')
-      expectTypeOf<RateLimitResult>().toHaveProperty('resetAt')
-    })
+		it("RateLimitResult has required fields", () => {
+			expectTypeOf<RateLimitResult>().toHaveProperty("allowed");
+			expectTypeOf<RateLimitResult>().toHaveProperty("remaining");
+			expectTypeOf<RateLimitResult>().toHaveProperty("resetAt");
+		});
 
-    it('FixedWindowOptions requires namespace, limit, window', () => {
-      expectTypeOf<FixedWindowOptions>().toHaveProperty('namespace')
-      expectTypeOf<FixedWindowOptions>().toHaveProperty('limit')
-      expectTypeOf<FixedWindowOptions>().toHaveProperty('window')
-    })
-  })
+		it("FixedWindowOptions requires namespace, limit, window", () => {
+			expectTypeOf<FixedWindowOptions>().toHaveProperty("namespace");
+			expectTypeOf<FixedWindowOptions>().toHaveProperty("limit");
+			expectTypeOf<FixedWindowOptions>().toHaveProperty("window");
+		});
+	});
 
-  describe('cacheResponse types', () => {
-    it('returns a MiddlewareHandler', () => {
-      const mw = cacheResponse({ ttl: 300 })
-      expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>()
-    })
+	describe("cacheResponse types", () => {
+		it("returns a MiddlewareHandler", () => {
+			const mw = cacheResponse({ ttl: 300 });
+			expectTypeOf(mw).toMatchTypeOf<MiddlewareHandler>();
+		});
 
-    it('CacheOptions requires ttl', () => {
-      expectTypeOf<CacheOptions>().toHaveProperty('ttl')
-    })
+		it("CacheOptions requires ttl", () => {
+			expectTypeOf<CacheOptions>().toHaveProperty("ttl");
+		});
 
-    it('CacheOptions has optional fields', () => {
-      expectTypeOf<CacheOptions>().toHaveProperty('keyFn')
-      expectTypeOf<CacheOptions>().toHaveProperty('cache')
-      expectTypeOf<CacheOptions>().toHaveProperty('methods')
-    })
-  })
+		it("CacheOptions has optional fields", () => {
+			expectTypeOf<CacheOptions>().toHaveProperty("keyFn");
+			expectTypeOf<CacheOptions>().toHaveProperty("cache");
+			expectTypeOf<CacheOptions>().toHaveProperty("methods");
+		});
+	});
 
-  describe('parseDuration types', () => {
-    it('returns number', () => {
-      expectTypeOf(parseDuration).returns.toBeNumber()
-    })
+	describe("parseDuration types", () => {
+		it("returns number", () => {
+			expectTypeOf(parseDuration).returns.toBeNumber();
+		});
 
-    it('accepts string', () => {
-      expectTypeOf(parseDuration).parameter(0).toBeString()
-    })
-  })
+		it("accepts string", () => {
+			expectTypeOf(parseDuration).parameter(0).toBeString();
+		});
+	});
 
-  describe('WorkkitEnv type', () => {
-    it('has Variables with workkit:env', () => {
-      expectTypeOf<WorkkitEnv>().toHaveProperty('Variables')
-    })
-  })
+	describe("WorkkitEnv type", () => {
+		it("has Variables with workkit:env", () => {
+			expectTypeOf<WorkkitEnv>().toHaveProperty("Variables");
+		});
+	});
 
-  describe('getEnv types', () => {
-    it('is a function', () => {
-      expectTypeOf(getEnv).toBeFunction()
-    })
-  })
+	describe("getEnv types", () => {
+		it("is a function", () => {
+			expectTypeOf(getEnv).toBeFunction();
+		});
+	});
 
-  describe('export completeness', () => {
-    it('all middleware exports are functions', () => {
-      expectTypeOf(workkit).toBeFunction()
-      expectTypeOf(workkitErrorHandler).toBeFunction()
-      expectTypeOf(rateLimit).toBeFunction()
-      expectTypeOf(cacheResponse).toBeFunction()
-      expectTypeOf(getEnv).toBeFunction()
-      expectTypeOf(fixedWindow).toBeFunction()
-      expectTypeOf(parseDuration).toBeFunction()
-    })
-  })
-})
+	describe("export completeness", () => {
+		it("all middleware exports are functions", () => {
+			expectTypeOf(workkit).toBeFunction();
+			expectTypeOf(workkitErrorHandler).toBeFunction();
+			expectTypeOf(rateLimit).toBeFunction();
+			expectTypeOf(cacheResponse).toBeFunction();
+			expectTypeOf(getEnv).toBeFunction();
+			expectTypeOf(fixedWindow).toBeFunction();
+			expectTypeOf(parseDuration).toBeFunction();
+		});
+	});
+});

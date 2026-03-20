@@ -1,8 +1,8 @@
-import type { SWROptions, SWRResult, TypedCache } from './types'
-import { createMemoryCache } from './memory'
+import { createMemoryCache } from "./memory";
+import type { SWROptions, SWRResult, TypedCache } from "./types";
 
-const SWR_METADATA_PREFIX = '__swr_meta__'
-const DEFAULT_CACHE = createMemoryCache()
+const SWR_METADATA_PREFIX = "__swr_meta__";
+const DEFAULT_CACHE = createMemoryCache();
 
 /**
  * Stale-while-revalidate cache pattern.
@@ -26,83 +26,83 @@ const DEFAULT_CACHE = createMemoryCache()
  * ```
  */
 export async function swr<T>(options: SWROptions<T>): Promise<SWRResult<T>> {
-  const { key, ttl, staleWhileRevalidate, fetch: fetchFn, cache: cacheInstance } = options
-  const c = cacheInstance ?? DEFAULT_CACHE
+	const { key, ttl, staleWhileRevalidate, fetch: fetchFn, cache: cacheInstance } = options;
+	const c = cacheInstance ?? DEFAULT_CACHE;
 
-  // Try to get cached response
-  const cached = await c.get(key)
+	// Try to get cached response
+	const cached = await c.get(key);
 
-  if (cached) {
-    const metaResponse = await c.get(`${SWR_METADATA_PREFIX}${key}`)
-    let storedAt = 0
-    if (metaResponse) {
-      try {
-        const meta = await metaResponse.json() as { storedAt: number }
-        storedAt = meta.storedAt
-      } catch {
-        // Metadata corrupted, treat as miss
-      }
-    }
+	if (cached) {
+		const metaResponse = await c.get(`${SWR_METADATA_PREFIX}${key}`);
+		let storedAt = 0;
+		if (metaResponse) {
+			try {
+				const meta = (await metaResponse.json()) as { storedAt: number };
+				storedAt = meta.storedAt;
+			} catch {
+				// Metadata corrupted, treat as miss
+			}
+		}
 
-    const now = Date.now()
-    const ageMs = now - storedAt
-    const ageSec = Math.floor(ageMs / 1000)
-    const isFresh = ageSec < ttl
-    const isStaleButValid = ageSec < ttl + staleWhileRevalidate
+		const now = Date.now();
+		const ageMs = now - storedAt;
+		const ageSec = Math.floor(ageMs / 1000);
+		const isFresh = ageSec < ttl;
+		const isStaleButValid = ageSec < ttl + staleWhileRevalidate;
 
-    if (isFresh) {
-      // Fresh — return directly
-      const data = await cached.json() as T
-      return { data, stale: false, age: ageSec }
-    }
+		if (isFresh) {
+			// Fresh — return directly
+			const data = (await cached.json()) as T;
+			return { data, stale: false, age: ageSec };
+		}
 
-    if (isStaleButValid) {
-      // Stale but within revalidation window — serve stale and revalidate
-      const data = await cached.json() as T
+		if (isStaleButValid) {
+			// Stale but within revalidation window — serve stale and revalidate
+			const data = (await cached.json()) as T;
 
-      // Fire-and-forget revalidation
-      revalidate(key, ttl, fetchFn, c).catch(() => {
-        // Swallow revalidation errors — stale data is already served
-      })
+			// Fire-and-forget revalidation
+			revalidate(key, ttl, fetchFn, c).catch(() => {
+				// Swallow revalidation errors — stale data is already served
+			});
 
-      return { data, stale: true, age: ageSec }
-    }
+			return { data, stale: true, age: ageSec };
+		}
 
-    // Beyond stale window — treat as miss
-  }
+		// Beyond stale window — treat as miss
+	}
 
-  // Cache miss — fetch fresh
-  const data = await fetchFn()
-  await storeWithMeta(key, data, ttl, c)
-  return { data, stale: false, age: 0 }
+	// Cache miss — fetch fresh
+	const data = await fetchFn();
+	await storeWithMeta(key, data, ttl, c);
+	return { data, stale: false, age: 0 };
 }
 
 async function revalidate<T>(
-  key: string,
-  ttl: number,
-  fetchFn: () => Promise<T>,
-  cache: TypedCache,
+	key: string,
+	ttl: number,
+	fetchFn: () => Promise<T>,
+	cache: TypedCache,
 ): Promise<void> {
-  const data = await fetchFn()
-  await storeWithMeta(key, data, ttl, cache)
+	const data = await fetchFn();
+	await storeWithMeta(key, data, ttl, cache);
 }
 
 async function storeWithMeta<T>(
-  key: string,
-  data: T,
-  ttl: number,
-  cache: TypedCache,
+	key: string,
+	data: T,
+	ttl: number,
+	cache: TypedCache,
 ): Promise<void> {
-  const response = new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+	const response = new Response(JSON.stringify(data), {
+		headers: { "Content-Type": "application/json" },
+	});
 
-  // Store with a long TTL (ttl + generous buffer) to keep stale data available
-  await cache.put(key, response, { ttl: ttl * 10 })
+	// Store with a long TTL (ttl + generous buffer) to keep stale data available
+	await cache.put(key, response, { ttl: ttl * 10 });
 
-  // Store metadata with the timestamp
-  const meta = new Response(JSON.stringify({ storedAt: Date.now() }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  await cache.put(`${SWR_METADATA_PREFIX}${key}`, meta, { ttl: ttl * 10 })
+	// Store metadata with the timestamp
+	const meta = new Response(JSON.stringify({ storedAt: Date.now() }), {
+		headers: { "Content-Type": "application/json" },
+	});
+	await cache.put(`${SWR_METADATA_PREFIX}${key}`, meta, { ttl: ttl * 10 });
 }

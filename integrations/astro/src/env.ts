@@ -1,8 +1,8 @@
-import { parseEnvSync, createEnvParser } from '@workkit/env'
-import type { EnvSchema, InferEnv } from '@workkit/env'
-import { ConfigError } from '@workkit/errors'
-import type { AstroAPIContext, EnvAccessor } from './types'
-import { getCloudflareRuntime } from './context'
+import { createEnvParser, parseEnvSync } from "@workkit/env";
+import type { EnvSchema, InferEnv } from "@workkit/env";
+import { ConfigError } from "@workkit/errors";
+import { getCloudflareRuntime } from "./context";
+import type { AstroAPIContext, EnvAccessor } from "./types";
 
 /**
  * Creates a typed env accessor for Astro on Cloudflare Pages.
@@ -34,21 +34,21 @@ import { getCloudflareRuntime } from './context'
  * ```
  */
 export function defineEnv<T extends EnvSchema>(schema: T): EnvAccessor<T> {
-  const parser = createEnvParser(schema)
-  const cache = new WeakMap<AstroAPIContext, InferEnv<T>>()
+	const parser = createEnvParser(schema);
+	const cache = new WeakMap<AstroAPIContext, InferEnv<T>>();
 
-  const accessor = (context: AstroAPIContext): InferEnv<T> => {
-    const cached = cache.get(context)
-    if (cached) return cached
+	const accessor = (context: AstroAPIContext): InferEnv<T> => {
+		const cached = cache.get(context);
+		if (cached) return cached;
 
-    const runtime = getCloudflareRuntime(context)
-    const rawEnv = runtime.env
-    const parsed = parser.parseSync(rawEnv)
-    cache.set(context, parsed)
-    return parsed
-  }
+		const runtime = getCloudflareRuntime(context);
+		const rawEnv = runtime.env;
+		const parsed = parser.parseSync(rawEnv);
+		cache.set(context, parsed);
+		return parsed;
+	};
 
-  accessor.schema = schema
+	accessor.schema = schema;
 
-  return accessor as EnvAccessor<T>
+	return accessor as EnvAccessor<T>;
 }

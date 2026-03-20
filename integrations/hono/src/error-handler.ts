@@ -1,11 +1,6 @@
-import type { ErrorHandler } from 'hono'
-import {
-  WorkkitError,
-  isWorkkitError,
-  RateLimitError,
-  InternalError,
-} from '@workkit/errors'
-import type { ErrorHandlerOptions } from './types'
+import { InternalError, RateLimitError, type WorkkitError, isWorkkitError } from "@workkit/errors";
+import type { ErrorHandler } from "hono";
+import type { ErrorHandlerOptions } from "./types";
 
 /**
  * Hono error handler that converts WorkkitErrors to proper HTTP responses.
@@ -24,60 +19,60 @@ import type { ErrorHandlerOptions } from './types'
  * ```
  */
 export function workkitErrorHandler(options: ErrorHandlerOptions = {}): ErrorHandler {
-  const { includeStack = false, onError } = options
+	const { includeStack = false, onError } = options;
 
-  return async (err, c) => {
-    if (onError) {
-      try {
-        await onError(err, c)
-      } catch {
-        // Don't let error callback failures break the response
-      }
-    }
+	return async (err, c) => {
+		if (onError) {
+			try {
+				await onError(err, c);
+			} catch {
+				// Don't let error callback failures break the response
+			}
+		}
 
-    if (isWorkkitError(err)) {
-      return workkitErrorToResponse(err, includeStack)
-    }
+		if (isWorkkitError(err)) {
+			return workkitErrorToResponse(err, includeStack);
+		}
 
-    // Wrap unknown errors as InternalError
-    const wrapped = new InternalError(
-      err instanceof Error ? err.message : 'An unexpected error occurred',
-      { cause: err },
-    )
+		// Wrap unknown errors as InternalError
+		const wrapped = new InternalError(
+			err instanceof Error ? err.message : "An unexpected error occurred",
+			{ cause: err },
+		);
 
-    return workkitErrorToResponse(wrapped, includeStack)
-  }
+		return workkitErrorToResponse(wrapped, includeStack);
+	};
 }
 
 function workkitErrorToResponse(error: WorkkitError, includeStack: boolean): Response {
-  const body: Record<string, unknown> = {
-    error: {
-      code: error.code,
-      message: error.message,
-      statusCode: error.statusCode,
-    },
-  }
+	const body: Record<string, unknown> = {
+		error: {
+			code: error.code,
+			message: error.message,
+			statusCode: error.statusCode,
+		},
+	};
 
-  // Include validation issues if present
-  if ('issues' in error && Array.isArray((error as any).issues)) {
-    ;(body.error as any).issues = (error as any).issues
-  }
+	// Include validation issues if present
+	if ("issues" in error && Array.isArray((error as any).issues)) {
+		(body.error as any).issues = (error as any).issues;
+	}
 
-  if (includeStack && error.stack) {
-    ;(body.error as any).stack = error.stack
-  }
+	if (includeStack && error.stack) {
+		(body.error as any).stack = error.stack;
+	}
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+	};
 
-  // Set Retry-After header for rate limit errors
-  if (error instanceof RateLimitError && error.retryAfterMs) {
-    headers['Retry-After'] = String(Math.ceil(error.retryAfterMs / 1000))
-  }
+	// Set Retry-After header for rate limit errors
+	if (error instanceof RateLimitError && error.retryAfterMs) {
+		headers["Retry-After"] = String(Math.ceil(error.retryAfterMs / 1000));
+	}
 
-  return new Response(JSON.stringify(body), {
-    status: error.statusCode,
-    headers,
-  })
+	return new Response(JSON.stringify(body), {
+		status: error.statusCode,
+		headers,
+	});
 }

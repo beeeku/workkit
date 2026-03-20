@@ -1,6 +1,6 @@
-import type { Context } from 'hono'
-import type { EnvSchema, InferEnv } from '@workkit/env'
-import type { WorkkitEnv } from './types'
+import type { EnvSchema, InferEnv } from "@workkit/env";
+import type { Context } from "hono";
+import type { WorkkitEnv } from "./types";
 
 /**
  * Get the validated, typed environment from Hono context.
@@ -16,14 +16,12 @@ import type { WorkkitEnv } from './types'
  * })
  * ```
  */
-export function getEnv<T extends EnvSchema>(
-  c: Context<WorkkitEnv<T>>,
-): InferEnv<T> {
-  const validated = c.get('workkit:envValidated')
-  if (!validated) {
-    throw new Error(
-      'workkit:env is not available. Did you forget to add the workkit() middleware?',
-    )
-  }
-  return c.get('workkit:env')
+export function getEnv<T extends EnvSchema>(c: Context<WorkkitEnv<T>>): InferEnv<T> {
+	const validated = c.get("workkit:envValidated");
+	if (!validated) {
+		throw new Error(
+			"workkit:env is not available. Did you forget to add the workkit() middleware?",
+		);
+	}
+	return c.get("workkit:env");
 }

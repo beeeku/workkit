@@ -1,5 +1,5 @@
-import { ConfigError } from '@workkit/errors'
-import type { Route, Router, RouterConfig } from './types'
+import { ConfigError } from "@workkit/errors";
+import type { Route, Router, RouterConfig } from "./types";
 
 /**
  * Match a model name against a glob-like pattern.
@@ -7,12 +7,10 @@ import type { Route, Router, RouterConfig } from './types'
  * Matching is case-insensitive.
  */
 function matchPattern(pattern: string, model: string): boolean {
-  // Escape regex special chars except *, then convert * to .*
-  const escaped = pattern
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*/g, '.*')
-  const regex = new RegExp(`^${escaped}$`, 'i')
-  return regex.test(model)
+	// Escape regex special chars except *, then convert * to .*
+	const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+	const regex = new RegExp(`^${escaped}$`, "i");
+	return regex.test(model);
 }
 
 /**
@@ -37,51 +35,51 @@ function matchPattern(pattern: string, model: string): boolean {
  * ```
  */
 export function createRouter(config: RouterConfig): Router {
-  if (!config.routes || config.routes.length === 0) {
-    throw new ConfigError('Router requires at least one route', {
-      context: { routes: config.routes },
-    })
-  }
+	if (!config.routes || config.routes.length === 0) {
+		throw new ConfigError("Router requires at least one route", {
+			context: { routes: config.routes },
+		});
+	}
 
-  if (!config.fallback) {
-    throw new ConfigError('Router requires a fallback provider', {
-      context: { fallback: config.fallback },
-    })
-  }
+	if (!config.fallback) {
+		throw new ConfigError("Router requires a fallback provider", {
+			context: { fallback: config.fallback },
+		});
+	}
 
-  // Validate routes
-  for (const route of config.routes) {
-    if (!route.pattern) {
-      throw new ConfigError('Route pattern cannot be empty', {
-        context: { route },
-      })
-    }
-    if (!route.provider) {
-      throw new ConfigError('Route provider cannot be empty', {
-        context: { route },
-      })
-    }
-  }
+	// Validate routes
+	for (const route of config.routes) {
+		if (!route.pattern) {
+			throw new ConfigError("Route pattern cannot be empty", {
+				context: { route },
+			});
+		}
+		if (!route.provider) {
+			throw new ConfigError("Route provider cannot be empty", {
+				context: { route },
+			});
+		}
+	}
 
-  const frozenRoutes = Object.freeze([...config.routes])
+	const frozenRoutes = Object.freeze([...config.routes]);
 
-  return {
-    resolve(model: string): string {
-      if (!model) {
-        return config.fallback
-      }
+	return {
+		resolve(model: string): string {
+			if (!model) {
+				return config.fallback;
+			}
 
-      for (const route of frozenRoutes) {
-        if (matchPattern(route.pattern, model)) {
-          return route.provider
-        }
-      }
+			for (const route of frozenRoutes) {
+				if (matchPattern(route.pattern, model)) {
+					return route.provider;
+				}
+			}
 
-      return config.fallback
-    },
+			return config.fallback;
+		},
 
-    routes(): readonly Route[] {
-      return frozenRoutes
-    },
-  }
+		routes(): readonly Route[] {
+			return frozenRoutes;
+		},
+	};
 }

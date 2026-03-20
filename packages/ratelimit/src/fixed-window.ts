@@ -1,5 +1,5 @@
-import type { FixedWindowOptions, FixedWindowState, RateLimiter, RateLimitResult } from './types'
-import { parseDuration } from './duration'
+import { parseDuration } from "./duration";
+import type { FixedWindowOptions, FixedWindowState, RateLimitResult, RateLimiter } from "./types";
 
 /**
  * Create a fixed window rate limiter backed by KV.
@@ -24,34 +24,34 @@ import { parseDuration } from './duration'
  * use Durable Objects as the backing store.
  */
 export function fixedWindow(options: FixedWindowOptions): RateLimiter {
-  const windowMs = parseDuration(options.window)
-  const prefix = options.prefix ?? 'rl:fw:'
+	const windowMs = parseDuration(options.window);
+	const prefix = options.prefix ?? "rl:fw:";
 
-  return {
-    async check(key: string): Promise<RateLimitResult> {
-      const now = Date.now()
-      const windowStart = now - (now % windowMs)
-      const kvKey = `${prefix}${key}:${windowStart}`
+	return {
+		async check(key: string): Promise<RateLimitResult> {
+			const now = Date.now();
+			const windowStart = now - (now % windowMs);
+			const kvKey = `${prefix}${key}:${windowStart}`;
 
-      const existing = await options.namespace.get(kvKey, 'json') as FixedWindowState | null
+			const existing = (await options.namespace.get(kvKey, "json")) as FixedWindowState | null;
 
-      const currentCount = existing ? existing.count + 1 : 1
-      const allowed = currentCount <= options.limit
-      const remaining = Math.max(0, options.limit - currentCount)
-      const resetAt = new Date(windowStart + windowMs)
+			const currentCount = existing ? existing.count + 1 : 1;
+			const allowed = currentCount <= options.limit;
+			const remaining = Math.max(0, options.limit - currentCount);
+			const resetAt = new Date(windowStart + windowMs);
 
-      const state: FixedWindowState = {
-        count: currentCount,
-        windowStart,
-      }
+			const state: FixedWindowState = {
+				count: currentCount,
+				windowStart,
+			};
 
-      const ttlSeconds = Math.ceil((windowStart + windowMs - now) / 1000)
+			const ttlSeconds = Math.ceil((windowStart + windowMs - now) / 1000);
 
-      await options.namespace.put(kvKey, JSON.stringify(state), {
-        expirationTtl: Math.max(ttlSeconds, 1),
-      })
+			await options.namespace.put(kvKey, JSON.stringify(state), {
+				expirationTtl: Math.max(ttlSeconds, 1),
+			});
 
-      return { allowed, remaining, resetAt, limit: options.limit }
-    },
-  }
+			return { allowed, remaining, resetAt, limit: options.limit };
+		},
+	};
 }

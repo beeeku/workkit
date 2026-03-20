@@ -1,30 +1,23 @@
-import { ConfigError } from '@workkit/errors'
-import type {
-  AiInput,
-  AiOutput,
-  CachedGateway,
-  CacheConfig,
-  Gateway,
-  RunOptions,
-} from './types'
+import { ConfigError } from "@workkit/errors";
+import type { AiInput, AiOutput, CacheConfig, CachedGateway, Gateway, RunOptions } from "./types";
 
 /** Default hash function: deterministic JSON stringify */
 function defaultHashFn(model: string, input: AiInput): string {
-  return `ai-cache:${model}:${stableStringify(input)}`
+	return `ai-cache:${model}:${stableStringify(input)}`;
 }
 
 /** Stable JSON.stringify — sorts object keys for determinism */
 function stableStringify(value: unknown): string {
-  if (value === null || value === undefined) return 'null'
-  if (typeof value !== 'object') return JSON.stringify(value)
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`
-  }
-  const sorted = Object.keys(value as Record<string, unknown>).sort()
-  const entries = sorted.map(
-    (k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`,
-  )
-  return `{${entries.join(',')}}`
+	if (value === null || value === undefined) return "null";
+	if (typeof value !== "object") return JSON.stringify(value);
+	if (Array.isArray(value)) {
+		return `[${value.map(stableStringify).join(",")}]`;
+	}
+	const sorted = Object.keys(value as Record<string, unknown>).sort();
+	const entries = sorted.map(
+		(k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`,
+	);
+	return `{${entries.join(",")}}`;
 }
 
 /**
@@ -45,65 +38,65 @@ function stableStringify(value: unknown): string {
  * ```
  */
 export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway {
-  if (!config.storage) {
-    throw new ConfigError('Cache requires a storage binding', {
-      context: { storage: config.storage },
-    })
-  }
+	if (!config.storage) {
+		throw new ConfigError("Cache requires a storage binding", {
+			context: { storage: config.storage },
+		});
+	}
 
-  const ttl = config.ttl ?? 3600
-  const hashFn = config.hashFn ?? defaultHashFn
+	const ttl = config.ttl ?? 3600;
+	const hashFn = config.hashFn ?? defaultHashFn;
 
-  function getCacheKey(model: string, input: AiInput): string {
-    return hashFn(model, input)
-  }
+	function getCacheKey(model: string, input: AiInput): string {
+		return hashFn(model, input);
+	}
 
-  return {
-    async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
-      const cacheKey = getCacheKey(model, input)
+	return {
+		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
+			const cacheKey = getCacheKey(model, input);
 
-      // Try cache first
-      const cached = await config.storage.get(cacheKey, { type: 'text' })
-      if (cached !== null) {
-        try {
-          const parsed = JSON.parse(cached) as AiOutput
-          return parsed
-        } catch {
-          // Corrupted cache entry — fall through to provider
-        }
-      }
+			// Try cache first
+			const cached = await config.storage.get(cacheKey, { type: "text" });
+			if (cached !== null) {
+				try {
+					const parsed = JSON.parse(cached) as AiOutput;
+					return parsed;
+				} catch {
+					// Corrupted cache entry — fall through to provider
+				}
+			}
 
-      // Cache miss — call provider
-      const result = await gateway.run(model, input, options)
+			// Cache miss — call provider
+			const result = await gateway.run(model, input, options);
 
-      // Store in cache (fire and forget — don't block on cache write)
-      await config.storage.put(cacheKey, JSON.stringify(result), {
-        expirationTtl: ttl,
-      })
+			// Store in cache (fire and forget — don't block on cache write)
+			await config.storage.put(cacheKey, JSON.stringify(result), {
+				expirationTtl: ttl,
+			});
 
-      return result
-    },
+			return result;
+		},
 
-    async isCached(model: string, input: AiInput): Promise<boolean> {
-      const cacheKey = getCacheKey(model, input)
-      const value = await config.storage.get(cacheKey, { type: 'text' })
-      return value !== null
-    },
+		async isCached(model: string, input: AiInput): Promise<boolean> {
+			const cacheKey = getCacheKey(model, input);
+			const value = await config.storage.get(cacheKey, { type: "text" });
+			return value !== null;
+		},
 
-    async invalidate(model: string, input: AiInput): Promise<void> {
-      const cacheKey = getCacheKey(model, input)
-      // KV put with TTL of 0 effectively deletes — but standard approach is
-      // to write empty/expired. Since KV doesn't have a delete on the minimal
-      // interface, we write an expired entry.
-      await config.storage.put(cacheKey, '', { expirationTtl: 1 })
-    },
+		async invalidate(model: string, input: AiInput): Promise<void> {
+			const cacheKey = getCacheKey(model, input);
+			// KV put with TTL of 0 effectively deletes — but standard approach is
+			// to write empty/expired. Since KV doesn't have a delete on the minimal
+			// interface, we write an expired entry.
+			await config.storage.put(cacheKey, "", { expirationTtl: 1 });
+		},
 
-    providers(): string[] {
-      return gateway.providers()
-    },
+		providers(): string[] {
+			return gateway.providers();
+		},
 
-    defaultProvider(): string {
-      return gateway.defaultProvider()
-    },
-  }
+		defaultProvider(): string {
+			return gateway.defaultProvider();
+		},
+	};
 }

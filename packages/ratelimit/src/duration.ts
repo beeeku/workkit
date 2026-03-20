@@ -1,12 +1,12 @@
-import { ValidationError } from '@workkit/errors'
-import type { Duration } from './types'
+import { ValidationError } from "@workkit/errors";
+import type { Duration } from "./types";
 
 const UNIT_MS: Record<string, number> = {
-  s: 1_000,
-  m: 60_000,
-  h: 3_600_000,
-  d: 86_400_000,
-}
+	s: 1_000,
+	m: 60_000,
+	h: 3_600_000,
+	d: 86_400_000,
+};
 
 /**
  * Parse a duration string into milliseconds.
@@ -21,27 +21,27 @@ const UNIT_MS: Record<string, number> = {
  * ```
  */
 export function parseDuration(duration: Duration): number {
-  const match = duration.match(/^(\d+)(s|m|h|d)$/)
-  if (!match) {
-    throw new ValidationError('duration', [
-      {
-        path: 'duration',
-        message: `Invalid duration format: "${duration}". Expected format: <number><unit> where unit is s, m, h, or d`,
-      },
-    ])
-  }
+	const match = duration.match(/^(\d+)(s|m|h|d)$/);
+	if (!match) {
+		throw new ValidationError("duration", [
+			{
+				path: "duration",
+				message: `Invalid duration format: "${duration}". Expected format: <number><unit> where unit is s, m, h, or d`,
+			},
+		]);
+	}
 
-  const value = parseInt(match[1], 10)
-  const unit = match[2]
+	const value = Number.parseInt(match[1], 10);
+	const unit = match[2];
 
-  if (value <= 0) {
-    throw new ValidationError('duration', [
-      {
-        path: 'duration',
-        message: `Duration value must be positive, got ${value}`,
-      },
-    ])
-  }
+	if (value <= 0) {
+		throw new ValidationError("duration", [
+			{
+				path: "duration",
+				message: `Duration value must be positive, got ${value}`,
+			},
+		]);
+	}
 
-  return value * UNIT_MS[unit]
+	return value * UNIT_MS[unit];
 }

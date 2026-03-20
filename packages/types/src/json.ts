@@ -1,16 +1,16 @@
 // --- JSON primitive types ---
 
-export type JsonPrimitive = string | number | boolean | null
+export type JsonPrimitive = string | number | boolean | null;
 
 // --- Recursive JSON value ---
 
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 
 export interface JsonObject {
-	[key: string]: JsonValue
+	[key: string]: JsonValue;
 }
 
-export type JsonArray = JsonValue[]
+export type JsonArray = JsonValue[];
 
 // --- Serializable constraint (for generic parameters) ---
 
@@ -25,11 +25,11 @@ export type JsonSerializable<T> = T extends JsonPrimitive
 		? JsonSerializable<U>[]
 		: T extends Record<string, unknown>
 			? { [K in keyof T]: JsonSerializable<T[K]> }
-			: never
+			: never;
 
 // --- JSON parse result (typed alternative to JSON.parse) ---
 
-export type JsonParsed<T> = T extends string ? JsonValue : T extends JsonValue ? T : never
+export type JsonParsed<T> = T extends string ? JsonValue : T extends JsonValue ? T : never;
 
 // --- Deep partial (useful for KV patch operations) ---
 
@@ -39,7 +39,7 @@ export type DeepPartial<T> = T extends JsonPrimitive
 		? readonly DeepPartial<U>[]
 		: T extends Record<string, unknown>
 			? { [K in keyof T]?: DeepPartial<T[K]> }
-			: T
+			: T;
 
 // --- Deep readonly (useful for cached/immutable data) ---
 
@@ -49,4 +49,4 @@ export type DeepReadonly<T> = T extends JsonPrimitive
 		? readonly DeepReadonly<U>[]
 		: T extends Record<string, unknown>
 			? { readonly [K in keyof T]: DeepReadonly<T[K]> }
-			: T
+			: T;

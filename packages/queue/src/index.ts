@@ -1,15 +1,15 @@
 // Producer
-export { queue } from './producer'
+export { queue } from "./producer";
 
 // Consumer
-export { createConsumer, createBatchConsumer } from './consumer'
+export { createConsumer, createBatchConsumer } from "./consumer";
 
 // Retry
-export { RetryAction, isRetryDelayAction } from './retry'
-export type { RetryDelayAction } from './retry'
+export { RetryAction, isRetryDelayAction } from "./retry";
+export type { RetryDelayAction } from "./retry";
 
 // Dead letter queue
-export { createDLQProcessor } from './dlq'
+export { createDLQProcessor } from "./dlq";
 
 // Types
 export type {
@@ -21,4 +21,4 @@ export type {
 	DLQMetadata,
 	DLQProcessorOptions,
 	ProcessResult,
-} from './types'
+} from "./types";

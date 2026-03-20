@@ -1,6 +1,11 @@
-import type { TypedMessageBatch } from '@workkit/types'
-import type { ConsumerOptions, BatchConsumerOptions, ConsumerHandler, ConsumerMessage } from './types'
-import { RetryAction, isRetryDelayAction } from './retry'
+import type { TypedMessageBatch } from "@workkit/types";
+import { RetryAction, isRetryDelayAction } from "./retry";
+import type {
+	BatchConsumerOptions,
+	ConsumerHandler,
+	ConsumerMessage,
+	ConsumerOptions,
+} from "./types";
 
 /**
  * Create a per-message consumer handler for Cloudflare Workers Queues.
@@ -25,89 +30,89 @@ export function createConsumer<Body>(options: ConsumerOptions<Body>): ConsumerHa
 	const {
 		process,
 		filter,
-		onFiltered = 'ack',
+		onFiltered = "ack",
 		maxRetries,
 		deadLetterQueue,
 		onError,
 		concurrency = 1,
-	} = options
+	} = options;
 
 	return async (batch: TypedMessageBatch<Body>, _env: unknown): Promise<void> => {
-		const messages = batch.messages as unknown as ConsumerMessage<Body>[]
+		const messages = batch.messages as unknown as ConsumerMessage<Body>[];
 
 		const processMessage = async (message: ConsumerMessage<Body>) => {
 			// Apply filter
 			if (filter && !filter(message)) {
-				if (onFiltered === 'retry') {
-					message.retry()
+				if (onFiltered === "retry") {
+					message.retry();
 				} else {
-					message.ack()
+					message.ack();
 				}
-				return
+				return;
 			}
 
 			// Check maxRetries
 			if (maxRetries != null && message.attempts > maxRetries) {
 				// Exceeded retries — send to DLQ or ack
 				if (deadLetterQueue) {
-					await deadLetterQueue.send(message.body)
+					await deadLetterQueue.send(message.body);
 				}
-				message.ack()
-				return
+				message.ack();
+				return;
 			}
 
 			try {
-				const result = await process(message)
+				const result = await process(message);
 
 				// Handle retry action returns
 				if (result === RetryAction.RETRY) {
-					message.retry()
+					message.retry();
 				} else if (result === RetryAction.ACK) {
-					message.ack()
+					message.ack();
 				} else if (result === RetryAction.DEAD_LETTER) {
 					if (deadLetterQueue) {
-						await deadLetterQueue.send(message.body)
+						await deadLetterQueue.send(message.body);
 					}
-					message.ack()
+					message.ack();
 				} else if (isRetryDelayAction(result)) {
-					message.retry({ delaySeconds: result.delaySeconds })
+					message.retry({ delaySeconds: result.delaySeconds });
 				} else {
 					// void return = success
-					message.ack()
+					message.ack();
 				}
 			} catch (error) {
 				if (onError) {
-					onError(error, message)
+					onError(error, message);
 				}
 
 				// Check if we've exceeded maxRetries on error
 				if (maxRetries != null && message.attempts >= maxRetries) {
 					if (deadLetterQueue) {
-						await deadLetterQueue.send(message.body)
+						await deadLetterQueue.send(message.body);
 					}
-					message.ack()
+					message.ack();
 				} else {
-					message.retry()
+					message.retry();
 				}
 			}
-		}
+		};
 
 		if (concurrency <= 1) {
 			// Sequential processing
 			for (const message of messages) {
-				await processMessage(message)
+				await processMessage(message);
 			}
 		} else {
 			// Concurrent processing with limit
-			const chunks: ConsumerMessage<Body>[][] = []
+			const chunks: ConsumerMessage<Body>[][] = [];
 			for (let i = 0; i < messages.length; i += concurrency) {
-				chunks.push(messages.slice(i, i + concurrency))
+				chunks.push(messages.slice(i, i + concurrency));
 			}
 			for (const chunk of chunks) {
-				await Promise.all(chunk.map(processMessage))
+				await Promise.all(chunk.map(processMessage));
 			}
 		}
-	}
+	};
 }
 
 /**
@@ -124,38 +129,36 @@ export function createConsumer<Body>(options: ConsumerOptions<Body>): ConsumerHa
  * })
  * ```
  */
-export function createBatchConsumer<Body>(options: BatchConsumerOptions<Body>): ConsumerHandler<Body> {
-	const {
-		processBatch,
-		retryAll = true,
-		onError,
-	} = options
+export function createBatchConsumer<Body>(
+	options: BatchConsumerOptions<Body>,
+): ConsumerHandler<Body> {
+	const { processBatch, retryAll = true, onError } = options;
 
 	return async (batch: TypedMessageBatch<Body>, _env: unknown): Promise<void> => {
-		const messages = batch.messages as unknown as ConsumerMessage<Body>[]
+		const messages = batch.messages as unknown as ConsumerMessage<Body>[];
 
 		try {
-			await processBatch(messages)
+			await processBatch(messages);
 
 			// Success — ack all
 			for (const msg of messages) {
-				msg.ack()
+				msg.ack();
 			}
 		} catch (error) {
 			if (onError) {
-				onError(error)
+				onError(error);
 			}
 
 			if (retryAll) {
 				for (const msg of messages) {
-					msg.retry()
+					msg.retry();
 				}
 			} else {
 				// Don't retry — ack all (discard)
 				for (const msg of messages) {
-					msg.ack()
+					msg.ack();
 				}
 			}
 		}
-	}
+	};
 }

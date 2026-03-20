@@ -1,15 +1,15 @@
-import type { TypedDurableObjectStorage } from '@workkit/types'
-import { ValidationError } from '@workkit/errors'
-import type { AlarmSchedule, AlarmHandlerConfig, AlarmHandler } from './types'
+import { ValidationError } from "@workkit/errors";
+import type { TypedDurableObjectStorage } from "@workkit/types";
+import type { AlarmHandler, AlarmHandlerConfig, AlarmSchedule } from "./types";
 
-const DURATION_RE = /^(\d+)(s|m|h|d)$/
+const DURATION_RE = /^(\d+)(s|m|h|d)$/;
 
 const UNIT_MS: Record<string, number> = {
 	s: 1_000,
 	m: 60_000,
 	h: 3_600_000,
 	d: 86_400_000,
-}
+};
 
 /**
  * Parses a human-readable duration string into milliseconds.
@@ -19,25 +19,29 @@ const UNIT_MS: Record<string, number> = {
  * @throws {Error} If the format is invalid, zero, or negative
  */
 export function parseDuration(duration: string): number {
-	const match = duration.match(DURATION_RE)
+	const match = duration.match(DURATION_RE);
 	if (!match) {
 		throw new ValidationError(
 			`Invalid duration format: "${duration}". Expected format: <number><unit> where unit is s, m, h, or d.`,
-			[{ path: ['duration'], message: `Invalid format: "${duration}". Expected: <number><unit> (s, m, h, d)` }],
-		)
+			[
+				{
+					path: ["duration"],
+					message: `Invalid format: "${duration}". Expected: <number><unit> (s, m, h, d)`,
+				},
+			],
+		);
 	}
 
-	const value = parseInt(match[1]!, 10)
-	const unit = match[2]!
+	const value = Number.parseInt(match[1]!, 10);
+	const unit = match[2]!;
 
 	if (value <= 0) {
-		throw new ValidationError(
-			`Duration must be positive, got: "${duration}"`,
-			[{ path: ['duration'], message: `Must be positive, got: "${duration}"` }],
-		)
+		throw new ValidationError(`Duration must be positive, got: "${duration}"`, [
+			{ path: ["duration"], message: `Must be positive, got: "${duration}"` },
+		]);
 	}
 
-	return value * UNIT_MS[unit]!
+	return value * UNIT_MS[unit]!;
 }
 
 /**
@@ -52,17 +56,16 @@ export async function scheduleAlarm(
 	storage: TypedDurableObjectStorage,
 	schedule: AlarmSchedule,
 ): Promise<void> {
-	let scheduledTime: number
+	let scheduledTime: number;
 
 	if (schedule.in !== undefined) {
-		const ms = parseDuration(schedule.in)
-		scheduledTime = Date.now() + ms
+		const ms = parseDuration(schedule.in);
+		scheduledTime = Date.now() + ms;
 	} else {
-		scheduledTime =
-			schedule.at instanceof Date ? schedule.at.getTime() : schedule.at
+		scheduledTime = schedule.at instanceof Date ? schedule.at.getTime() : schedule.at;
 	}
 
-	await storage.setAlarm(scheduledTime)
+	await storage.setAlarm(scheduledTime);
 }
 
 /**
@@ -86,32 +89,35 @@ export async function scheduleAlarm(
  * ```
  */
 export function createAlarmHandler(config: AlarmHandlerConfig): AlarmHandler {
-	const actionKey = config.actionKey ?? '__alarm_action'
+	const actionKey = config.actionKey ?? "__alarm_action";
 
 	return {
 		async handle(storage: TypedDurableObjectStorage): Promise<void> {
-			const action = await storage.get<string>(actionKey)
+			const action = await storage.get<string>(actionKey);
 
 			if (!action) {
 				throw new ValidationError(
-					`No alarm action found in storage at key "${actionKey}". ` +
-						`Set the action before scheduling the alarm.`,
-					[{ path: ['actionKey'], message: `No action found at key "${actionKey}"` }],
-				)
+					`No alarm action found in storage at key "${actionKey}". Set the action before scheduling the alarm.`,
+					[{ path: ["actionKey"], message: `No action found at key "${actionKey}"` }],
+				);
 			}
 
-			const handler = config.actions[action]
+			const handler = config.actions[action];
 			if (!handler) {
-				const validActions = Object.keys(config.actions)
+				const validActions = Object.keys(config.actions);
 				throw new ValidationError(
-					`Unknown alarm action: "${action}". ` +
-						`Valid actions: [${validActions.join(', ')}]`,
-					[{ path: ['action'], message: `Unknown action "${action}". Valid actions: [${validActions.join(', ')}]` }],
-				)
+					`Unknown alarm action: "${action}". ` + `Valid actions: [${validActions.join(", ")}]`,
+					[
+						{
+							path: ["action"],
+							message: `Unknown action "${action}". Valid actions: [${validActions.join(", ")}]`,
+						},
+					],
+				);
 			}
 
-			await handler(storage)
-			await storage.delete(actionKey)
+			await handler(storage);
+			await storage.delete(actionKey);
 		},
-	}
+	};
 }

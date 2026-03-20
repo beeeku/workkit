@@ -1,32 +1,28 @@
-import type { RetryStrategy } from './types'
-import { WorkkitError } from './base'
+import { WorkkitError } from "./base";
+import type { RetryStrategy } from "./types";
 
 /** Default retry strategies — importable for custom error types */
 export const RetryStrategies = {
-  none: (): RetryStrategy => ({ kind: 'none' }),
+	none: (): RetryStrategy => ({ kind: "none" }),
 
-  immediate: (maxAttempts = 3): RetryStrategy => ({
-    kind: 'immediate',
-    maxAttempts,
-  }),
+	immediate: (maxAttempts = 3): RetryStrategy => ({
+		kind: "immediate",
+		maxAttempts,
+	}),
 
-  fixed: (delayMs = 1000, maxAttempts = 3): RetryStrategy => ({
-    kind: 'fixed',
-    delayMs,
-    maxAttempts,
-  }),
+	fixed: (delayMs = 1000, maxAttempts = 3): RetryStrategy => ({
+		kind: "fixed",
+		delayMs,
+		maxAttempts,
+	}),
 
-  exponential: (
-    baseMs = 500,
-    maxMs = 30000,
-    maxAttempts = 5,
-  ): RetryStrategy => ({
-    kind: 'exponential',
-    baseMs,
-    maxMs,
-    maxAttempts,
-  }),
-} as const
+	exponential: (baseMs = 500, maxMs = 30000, maxAttempts = 5): RetryStrategy => ({
+		kind: "exponential",
+		baseMs,
+		maxMs,
+		maxAttempts,
+	}),
+} as const;
 
 /**
  * Calculate delay for a given attempt using the error's retry strategy.
@@ -37,28 +33,25 @@ export const RetryStrategies = {
  * @returns Delay in ms before next retry, or null if no more retries
  */
 export function getRetryDelay(strategy: RetryStrategy, attempt: number): number | null {
-  switch (strategy.kind) {
-    case 'none':
-      return null
+	switch (strategy.kind) {
+		case "none":
+			return null;
 
-    case 'immediate':
-      return attempt <= strategy.maxAttempts ? 0 : null
+		case "immediate":
+			return attempt <= strategy.maxAttempts ? 0 : null;
 
-    case 'fixed':
-      return attempt <= strategy.maxAttempts ? strategy.delayMs : null
+		case "fixed":
+			return attempt <= strategy.maxAttempts ? strategy.delayMs : null;
 
-    case 'exponential': {
-      if (attempt > strategy.maxAttempts) return null
-      // 2^(attempt-1) * baseMs, capped at maxMs, with jitter
-      const delay = Math.min(
-        strategy.baseMs * Math.pow(2, attempt - 1),
-        strategy.maxMs,
-      )
-      // Add ±25% jitter to prevent thundering herd
-      const jitter = delay * 0.25 * (Math.random() * 2 - 1)
-      return Math.max(0, Math.round(delay + jitter))
-    }
-  }
+		case "exponential": {
+			if (attempt > strategy.maxAttempts) return null;
+			// 2^(attempt-1) * baseMs, capped at maxMs, with jitter
+			const delay = Math.min(strategy.baseMs * 2 ** (attempt - 1), strategy.maxMs);
+			// Add ±25% jitter to prevent thundering herd
+			const jitter = delay * 0.25 * (Math.random() * 2 - 1);
+			return Math.max(0, Math.round(delay + jitter));
+		}
+	}
 }
 
 /**
@@ -66,10 +59,10 @@ export function getRetryDelay(strategy: RetryStrategy, attempt: number): number 
  * Useful for catch blocks that handle mixed error types.
  */
 export function isRetryable(error: unknown): boolean {
-  if (error instanceof WorkkitError) {
-    return error.retryable
-  }
-  return false
+	if (error instanceof WorkkitError) {
+		return error.retryable;
+	}
+	return false;
 }
 
 /**
@@ -77,8 +70,8 @@ export function isRetryable(error: unknown): boolean {
  * Returns 'none' strategy for non-workkit errors.
  */
 export function getRetryStrategy(error: unknown): RetryStrategy {
-  if (error instanceof WorkkitError) {
-    return error.retryStrategy
-  }
-  return { kind: 'none' }
+	if (error instanceof WorkkitError) {
+		return error.retryStrategy;
+	}
+	return { kind: "none" };
 }

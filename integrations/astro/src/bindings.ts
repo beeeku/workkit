@@ -1,6 +1,6 @@
-import { BindingNotFoundError } from '@workkit/errors'
-import type { AstroAPIContext } from './types'
-import { getCloudflareRuntime } from './context'
+import { BindingNotFoundError } from "@workkit/errors";
+import { getCloudflareRuntime } from "./context";
+import type { AstroAPIContext } from "./types";
 
 /**
  * Gets a typed binding from the Cloudflare runtime env.
@@ -20,18 +20,15 @@ import { getCloudflareRuntime } from './context'
  * }
  * ```
  */
-export function getBinding<T = unknown>(
-  context: AstroAPIContext,
-  name: string,
-): T {
-  const runtime = getCloudflareRuntime(context)
-  const binding = runtime.env[name]
+export function getBinding<T = unknown>(context: AstroAPIContext, name: string): T {
+	const runtime = getCloudflareRuntime(context);
+	const binding = runtime.env[name];
 
-  if (binding === undefined) {
-    throw new BindingNotFoundError(name)
-  }
+	if (binding === undefined) {
+		throw new BindingNotFoundError(name);
+	}
 
-  return binding as T
+	return binding as T;
 }
 
 /**
@@ -51,11 +48,11 @@ export function getBinding<T = unknown>(
  * ```
  */
 export function getOptionalBinding<T = unknown>(
-  context: AstroAPIContext,
-  name: string,
+	context: AstroAPIContext,
+	name: string,
 ): T | undefined {
-  const runtime = context.locals?.runtime
-  if (!runtime) return undefined
-  const binding = runtime.env[name]
-  return binding === undefined ? undefined : (binding as T)
+	const runtime = context.locals?.runtime;
+	if (!runtime) return undefined;
+	const binding = runtime.env[name];
+	return binding === undefined ? undefined : (binding as T);
 }

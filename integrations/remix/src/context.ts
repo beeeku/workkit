@@ -1,4 +1,4 @@
-import type { CloudflareLoadContext, CFContext } from './types'
+import type { CFContext, CloudflareLoadContext } from "./types";
 
 /**
  * Extracts Cloudflare-specific context from Remix's loader/action context.
@@ -18,11 +18,11 @@ import type { CloudflareLoadContext, CFContext } from './types'
  * ```
  */
 export function getCFContext(context: CloudflareLoadContext): CFContext {
-  const { ctx, cf } = context.cloudflare
+	const { ctx, cf } = context.cloudflare;
 
-  return {
-    waitUntil: ctx.waitUntil.bind(ctx),
-    passThroughOnException: ctx.passThroughOnException.bind(ctx),
-    cf,
-  }
+	return {
+		waitUntil: ctx.waitUntil.bind(ctx),
+		passThroughOnException: ctx.passThroughOnException.bind(ctx),
+		cf,
+	};
 }

@@ -1,7 +1,7 @@
 /** A retry action with a delay */
 export interface RetryDelayAction {
-	action: 'retry'
-	delaySeconds: number
+	action: "retry";
+	delaySeconds: number;
 }
 
 /**
@@ -12,27 +12,27 @@ export interface RetryDelayAction {
  */
 export const RetryAction = {
 	/** Retry the message immediately */
-	RETRY: 'retry' as const,
+	RETRY: "retry" as const,
 
 	/** Acknowledge (discard) the message */
-	ACK: 'ack' as const,
+	ACK: "ack" as const,
 
 	/** Send to dead letter queue (or ack if no DLQ configured) */
-	DEAD_LETTER: 'dead_letter' as const,
+	DEAD_LETTER: "dead_letter" as const,
 
 	/** Retry the message after a delay */
 	RETRY_DELAY(seconds: number): RetryDelayAction {
-		return { action: 'retry', delaySeconds: seconds }
+		return { action: "retry", delaySeconds: seconds };
 	},
-}
+};
 
 /** Check if a process result is a retry delay action */
 export function isRetryDelayAction(result: unknown): result is RetryDelayAction {
 	return (
-		typeof result === 'object' &&
+		typeof result === "object" &&
 		result !== null &&
-		'action' in result &&
-		(result as any).action === 'retry' &&
-		'delaySeconds' in result
-	)
+		"action" in result &&
+		(result as any).action === "retry" &&
+		"delaySeconds" in result
+	);
 }

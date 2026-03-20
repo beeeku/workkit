@@ -1,5 +1,5 @@
-import { BindingNotFoundError } from '@workkit/errors'
-import type { AiBinding, AiResult, RunOptions } from './types'
+import { BindingNotFoundError } from "@workkit/errors";
+import type { AiBinding, AiResult, RunOptions } from "./types";
 
 /**
  * Typed AI client that wraps a Cloudflare Workers AI binding.
@@ -13,19 +13,19 @@ import type { AiBinding, AiResult, RunOptions } from './types'
  * ```
  */
 export interface WorkkitAiClient {
-  /**
-   * Run inference on a model.
-   *
-   * @param model - The model identifier
-   * @param inputs - Model-specific input parameters
-   * @param options - Optional run configuration
-   * @returns The model output wrapped in an AiResult
-   */
-  run<T = unknown>(
-    model: string,
-    inputs: Record<string, unknown>,
-    options?: RunOptions,
-  ): Promise<AiResult<T>>
+	/**
+	 * Run inference on a model.
+	 *
+	 * @param model - The model identifier
+	 * @param inputs - Model-specific input parameters
+	 * @param options - Optional run configuration
+	 * @returns The model output wrapped in an AiResult
+	 */
+	run<T = unknown>(
+		model: string,
+		inputs: Record<string, unknown>,
+		options?: RunOptions,
+	): Promise<AiResult<T>>;
 }
 
 /**
@@ -36,29 +36,29 @@ export interface WorkkitAiClient {
  * @throws {BindingNotFoundError} If the binding is nullish
  */
 export function ai(binding: AiBinding): WorkkitAiClient {
-  if (!binding) {
-    throw new BindingNotFoundError('AI')
-  }
+	if (!binding) {
+		throw new BindingNotFoundError("AI");
+	}
 
-  return {
-    async run<T = unknown>(
-      model: string,
-      inputs: Record<string, unknown>,
-      options?: RunOptions,
-    ): Promise<AiResult<T>> {
-      const runOptions: Record<string, unknown> = {}
+	return {
+		async run<T = unknown>(
+			model: string,
+			inputs: Record<string, unknown>,
+			options?: RunOptions,
+		): Promise<AiResult<T>> {
+			const runOptions: Record<string, unknown> = {};
 
-      if (options?.gateway) {
-        runOptions.gateway = options.gateway
-      }
+			if (options?.gateway) {
+				runOptions.gateway = options.gateway;
+			}
 
-      if (options?.signal) {
-        runOptions.signal = options.signal
-      }
+			if (options?.signal) {
+				runOptions.signal = options.signal;
+			}
 
-      const data = await binding.run(model, inputs, runOptions) as T
+			const data = (await binding.run(model, inputs, runOptions)) as T;
 
-      return { data, model }
-    },
-  }
+			return { data, model };
+		},
+	};
 }

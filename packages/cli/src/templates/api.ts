@@ -1,32 +1,33 @@
-import type { Feature } from '../commands/init'
-import type { GeneratedFile } from '../commands/init'
+import type { Feature } from "../commands/init";
+import type { GeneratedFile } from "../commands/init";
 
 /**
  * Generate source files for the "api" template.
  * A structured API Worker with route handlers.
  */
 export function generateApiTemplate(name: string, features: Feature[]): GeneratedFile[] {
-  const imports: string[] = []
-  const envFields: string[] = []
+	const imports: string[] = [];
+	const envFields: string[] = [];
 
-  if (features.includes('env')) {
-    imports.push(`import { createEnv } from '@workkit/env'`)
-  }
-  if (features.includes('d1')) {
-    envFields.push('  DB: D1Database')
-  }
-  if (features.includes('kv')) {
-    envFields.push('  KV: KVNamespace')
-  }
-  if (features.includes('r2')) {
-    envFields.push('  BUCKET: R2Bucket')
-  }
+	if (features.includes("env")) {
+		imports.push(`import { createEnv } from '@workkit/env'`);
+	}
+	if (features.includes("d1")) {
+		envFields.push("  DB: D1Database");
+	}
+	if (features.includes("kv")) {
+		envFields.push("  KV: KVNamespace");
+	}
+	if (features.includes("r2")) {
+		envFields.push("  BUCKET: R2Bucket");
+	}
 
-  const envType = envFields.length > 0
-    ? `\nexport interface Env {\n${envFields.join('\n')}\n}\n`
-    : '\nexport interface Env {}\n'
+	const envType =
+		envFields.length > 0
+			? `\nexport interface Env {\n${envFields.join("\n")}\n}\n`
+			: "\nexport interface Env {}\n";
 
-  const routerTs = `${envType}
+	const routerTs = `${envType}
 export interface Route {
   method: string
   pattern: string
@@ -47,9 +48,9 @@ export function createRouter(routes: Route[]) {
     return Response.json({ error: 'Not Found' }, { status: 404 })
   }
 }
-`
+`;
 
-  const handlersTs = `import type { Env } from './router'
+	const handlersTs = `import type { Env } from './router'
 
 export async function healthHandler(_request: Request, _env: Env): Promise<Response> {
   return Response.json({ status: 'ok', name: '${name}' })
@@ -58,14 +59,12 @@ export async function healthHandler(_request: Request, _env: Env): Promise<Respo
 export async function rootHandler(_request: Request, _env: Env): Promise<Response> {
   return Response.json({ message: 'Hello from ${name}!' })
 }
-`
+`;
 
-  const envSetup = features.includes('env')
-    ? `    const env = createEnv<Env>(rawEnv)\n`
-    : ''
-  const envParam = features.includes('env') ? 'rawEnv' : 'env'
+	const envSetup = features.includes("env") ? "    const env = createEnv<Env>(rawEnv)\n" : "";
+	const envParam = features.includes("env") ? "rawEnv" : "env";
 
-  const indexTs = `${imports.join('\n')}${imports.length > 0 ? '\n' : ''}import { createRouter } from './router'
+	const indexTs = `${imports.join("\n")}${imports.length > 0 ? "\n" : ""}import { createRouter } from './router'
 import { healthHandler, rootHandler } from './handlers'
 import type { Env } from './router'
 
@@ -79,9 +78,9 @@ export default {
 ${envSetup}    return router(request, env)
   },
 } satisfies ExportedHandler<Env>
-`
+`;
 
-  const testTs = `import { describe, it, expect } from 'vitest'
+	const testTs = `import { describe, it, expect } from 'vitest'
 import { createRouter } from '../src/router'
 import type { Route, Env } from '../src/router'
 
@@ -109,12 +108,12 @@ describe('API Router', () => {
     expect(res.status).toBe(404)
   })
 })
-`
+`;
 
-  return [
-    { path: 'src/router.ts', content: routerTs },
-    { path: 'src/handlers.ts', content: handlersTs },
-    { path: 'src/index.ts', content: indexTs },
-    { path: 'tests/api.test.ts', content: testTs },
-  ]
+	return [
+		{ path: "src/router.ts", content: routerTs },
+		{ path: "src/handlers.ts", content: handlersTs },
+		{ path: "src/index.ts", content: indexTs },
+		{ path: "tests/api.test.ts", content: testTs },
+	];
 }

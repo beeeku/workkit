@@ -1,6 +1,6 @@
-import { parseEnvSync } from '@workkit/env'
-import type { EnvSchema, InferEnv } from '@workkit/env'
-import type { CloudflareLoadContext } from './types'
+import { parseEnvSync } from "@workkit/env";
+import type { EnvSchema, InferEnv } from "@workkit/env";
+import type { CloudflareLoadContext } from "./types";
 
 /**
  * Creates a reusable env factory bound to a schema.
@@ -25,17 +25,17 @@ import type { CloudflareLoadContext } from './types'
  * ```
  */
 export function createEnvFactory<T extends EnvSchema>(
-  schema: T,
+	schema: T,
 ): (context: CloudflareLoadContext) => InferEnv<T> {
-  const cache = new WeakMap<CloudflareLoadContext, InferEnv<T>>()
+	const cache = new WeakMap<CloudflareLoadContext, InferEnv<T>>();
 
-  return (context: CloudflareLoadContext): InferEnv<T> => {
-    const cached = cache.get(context)
-    if (cached) return cached
+	return (context: CloudflareLoadContext): InferEnv<T> => {
+		const cached = cache.get(context);
+		if (cached) return cached;
 
-    const rawEnv = context.cloudflare.env
-    const parsed = parseEnvSync(rawEnv, schema)
-    cache.set(context, parsed)
-    return parsed
-  }
+		const rawEnv = context.cloudflare.env;
+		const parsed = parseEnvSync(rawEnv, schema);
+		cache.set(context, parsed);
+		return parsed;
+	};
 }

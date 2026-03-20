@@ -1,5 +1,5 @@
-import { ConfigError } from '@workkit/errors'
-import type { AstroAPIContext, CfProperties, CloudflareRuntime } from './types'
+import { ConfigError } from "@workkit/errors";
+import type { AstroAPIContext, CfProperties, CloudflareRuntime } from "./types";
 
 /**
  * Extracts the Cloudflare runtime from an Astro API context.
@@ -9,15 +9,15 @@ import type { AstroAPIContext, CfProperties, CloudflareRuntime } from './types'
  * @internal Shared by env, bindings, and context helpers.
  */
 export function getCloudflareRuntime(context: AstroAPIContext): CloudflareRuntime {
-  const runtime = context.locals?.runtime
-  if (!runtime) {
-    throw new ConfigError(
-      '@workkit/astro: Cloudflare runtime not found in context.locals.runtime. ' +
-        'Make sure you are using @astrojs/cloudflare adapter and the project is ' +
-        'deployed to Cloudflare Pages.',
-    )
-  }
-  return runtime
+	const runtime = context.locals?.runtime;
+	if (!runtime) {
+		throw new ConfigError(
+			"@workkit/astro: Cloudflare runtime not found in context.locals.runtime. " +
+				"Make sure you are using @astrojs/cloudflare adapter and the project is " +
+				"deployed to Cloudflare Pages.",
+		);
+	}
+	return runtime;
 }
 
 /**
@@ -35,9 +35,9 @@ export function getCloudflareRuntime(context: AstroAPIContext): CloudflareRuntim
  * ```
  */
 export function getCFProperties(context: AstroAPIContext): CfProperties | undefined {
-  const runtime = context.locals?.runtime
-  if (!runtime?.cf) return undefined
-  return runtime.cf as unknown as CfProperties
+	const runtime = context.locals?.runtime;
+	if (!runtime?.cf) return undefined;
+	return runtime.cf as unknown as CfProperties;
 }
 
 /**
@@ -58,15 +58,13 @@ export function getCFProperties(context: AstroAPIContext): CfProperties | undefi
  * }
  * ```
  */
-export function getWaitUntil(
-  context: AstroAPIContext,
-): (promise: Promise<unknown>) => void {
-  const runtime = getCloudflareRuntime(context)
-  if (!runtime.ctx?.waitUntil) {
-    throw new ConfigError(
-      '@workkit/astro: ExecutionContext.waitUntil not available. ' +
-        'Make sure the Cloudflare runtime provides an execution context.',
-    )
-  }
-  return runtime.ctx.waitUntil.bind(runtime.ctx)
+export function getWaitUntil(context: AstroAPIContext): (promise: Promise<unknown>) => void {
+	const runtime = getCloudflareRuntime(context);
+	if (!runtime.ctx?.waitUntil) {
+		throw new ConfigError(
+			"@workkit/astro: ExecutionContext.waitUntil not available. " +
+				"Make sure the Cloudflare runtime provides an execution context.",
+		);
+	}
+	return runtime.ctx.waitUntil.bind(runtime.ctx);
 }

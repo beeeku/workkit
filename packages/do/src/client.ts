@@ -1,4 +1,4 @@
-import type { DOClient } from './types'
+import type { DOClient } from "./types";
 
 /**
  * Creates a typed RPC-style client for a Durable Object stub.
@@ -20,38 +20,40 @@ import type { DOClient } from './types'
  * ```
  */
 export function createDOClient<T extends Record<string, (...args: any[]) => Promise<any>>>(
-	namespace: { get(id: any): { fetch(input: Request | string, init?: RequestInit): Promise<Response> } },
+	namespace: {
+		get(id: any): { fetch(input: Request | string, init?: RequestInit): Promise<Response> };
+	},
 	id: { toString(): string },
 ): DOClient<T> {
-	const stub = namespace.get(id)
+	const stub = namespace.get(id);
 
 	return new Proxy({} as DOClient<T>, {
 		get(_target, prop: string) {
 			return async (...args: unknown[]) => {
 				const request = new Request(`https://do-rpc.internal/${prop}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(args),
-				})
+				});
 
-				const response = await stub.fetch(request)
+				const response = await stub.fetch(request);
 
 				if (!response.ok) {
-					const errorBody = await response.text()
-					let message: string
+					const errorBody = await response.text();
+					let message: string;
 					try {
-						const parsed = JSON.parse(errorBody)
-						message = parsed.error || parsed.message || errorBody
+						const parsed = JSON.parse(errorBody);
+						message = parsed.error || parsed.message || errorBody;
 					} catch {
-						message = errorBody
+						message = errorBody;
 					}
-					throw new Error(`DO RPC call "${prop}" failed (${response.status}): ${message}`)
+					throw new Error(`DO RPC call "${prop}" failed (${response.status}): ${message}`);
 				}
 
-				return response.json()
-			}
+				return response.json();
+			};
 		},
-	})
+	});
 }
 
 /**
@@ -65,10 +67,7 @@ export function createDOClient<T extends Record<string, (...args: any[]) => Prom
  */
 export function singleton<
 	TStub extends { fetch(input: Request | string, init?: RequestInit): Promise<Response> },
->(
-	namespace: { idFromName(name: string): unknown; get(id: unknown): TStub },
-	name: string,
-): TStub {
-	const id = namespace.idFromName(name)
-	return namespace.get(id)
+>(namespace: { idFromName(name: string): unknown; get(id: unknown): TStub }, name: string): TStub {
+	const id = namespace.idFromName(name);
+	return namespace.get(id);
 }

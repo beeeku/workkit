@@ -1,5 +1,10 @@
-import type { TokenBucketOptions, TokenBucketState, TokenRateLimiter, RateLimitResult } from './types'
-import { parseDuration } from './duration'
+import { parseDuration } from "./duration";
+import type {
+	RateLimitResult,
+	TokenBucketOptions,
+	TokenBucketState,
+	TokenRateLimiter,
+} from "./types";
 
 /**
  * Create a token bucket rate limiter backed by KV.
@@ -26,56 +31,56 @@ import { parseDuration } from './duration'
  * use Durable Objects as the backing store.
  */
 export function tokenBucket(options: TokenBucketOptions): TokenRateLimiter {
-  const refillIntervalMs = parseDuration(options.refillInterval)
-  const prefix = options.prefix ?? 'rl:tb:'
+	const refillIntervalMs = parseDuration(options.refillInterval);
+	const prefix = options.prefix ?? "rl:tb:";
 
-  return {
-    async consume(key: string, tokens: number = 1): Promise<RateLimitResult> {
-      const now = Date.now()
-      const kvKey = `${prefix}${key}`
+	return {
+		async consume(key: string, tokens = 1): Promise<RateLimitResult> {
+			const now = Date.now();
+			const kvKey = `${prefix}${key}`;
 
-      const existing = await options.namespace.get(kvKey, 'json') as TokenBucketState | null
+			const existing = (await options.namespace.get(kvKey, "json")) as TokenBucketState | null;
 
-      let currentTokens: number
-      let lastRefill: number
+			let currentTokens: number;
+			let lastRefill: number;
 
-      if (existing) {
-        // Calculate refilled tokens since last access
-        const elapsed = now - existing.lastRefill
-        const refillIntervals = Math.floor(elapsed / refillIntervalMs)
-        const refilledTokens = refillIntervals * options.refillRate
-        currentTokens = Math.min(options.capacity, existing.tokens + refilledTokens)
-        lastRefill = existing.lastRefill + refillIntervals * refillIntervalMs
-      } else {
-        // Fresh bucket starts full
-        currentTokens = options.capacity
-        lastRefill = now
-      }
+			if (existing) {
+				// Calculate refilled tokens since last access
+				const elapsed = now - existing.lastRefill;
+				const refillIntervals = Math.floor(elapsed / refillIntervalMs);
+				const refilledTokens = refillIntervals * options.refillRate;
+				currentTokens = Math.min(options.capacity, existing.tokens + refilledTokens);
+				lastRefill = existing.lastRefill + refillIntervals * refillIntervalMs;
+			} else {
+				// Fresh bucket starts full
+				currentTokens = options.capacity;
+				lastRefill = now;
+			}
 
-      const allowed = tokens <= currentTokens
-      let remaining: number
+			const allowed = tokens <= currentTokens;
+			let remaining: number;
 
-      if (allowed) {
-        currentTokens -= tokens
-        remaining = currentTokens
-      } else {
-        // Don't consume tokens on failure
-        remaining = Math.max(0, currentTokens)
-      }
+			if (allowed) {
+				currentTokens -= tokens;
+				remaining = currentTokens;
+			} else {
+				// Don't consume tokens on failure
+				remaining = Math.max(0, currentTokens);
+			}
 
-      const state: TokenBucketState = {
-        tokens: currentTokens,
-        lastRefill,
-      }
+			const state: TokenBucketState = {
+				tokens: currentTokens,
+				lastRefill,
+			};
 
-      await options.namespace.put(kvKey, JSON.stringify(state))
+			await options.namespace.put(kvKey, JSON.stringify(state));
 
-      // Calculate when the next token will be available
-      const tokensNeeded = allowed ? 1 : tokens - currentTokens
-      const refillTime = Math.ceil(tokensNeeded / options.refillRate) * refillIntervalMs
-      const resetAt = new Date(now + refillTime)
+			// Calculate when the next token will be available
+			const tokensNeeded = allowed ? 1 : tokens - currentTokens;
+			const refillTime = Math.ceil(tokensNeeded / options.refillRate) * refillIntervalMs;
+			const resetAt = new Date(now + refillTime);
 
-      return { allowed, remaining, resetAt, limit: options.capacity }
-    },
-  }
+			return { allowed, remaining, resetAt, limit: options.capacity };
+		},
+	};
 }

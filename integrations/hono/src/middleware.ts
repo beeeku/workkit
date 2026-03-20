@@ -1,7 +1,7 @@
-import type { MiddlewareHandler } from 'hono'
-import { parseEnv } from '@workkit/env'
-import type { EnvSchema, InferEnv } from '@workkit/env'
-import type { WorkkitOptions, WorkkitEnv } from './types'
+import { parseEnv } from "@workkit/env";
+import type { EnvSchema, InferEnv } from "@workkit/env";
+import type { MiddlewareHandler } from "hono";
+import type { WorkkitEnv, WorkkitOptions } from "./types";
 
 /**
  * Main workkit middleware — validates environment bindings on first request
@@ -20,19 +20,19 @@ import type { WorkkitOptions, WorkkitEnv } from './types'
  * ```
  */
 export function workkit<T extends EnvSchema>(
-  options: WorkkitOptions<T>,
+	options: WorkkitOptions<T>,
 ): MiddlewareHandler<WorkkitEnv<T>> {
-  let cachedEnv: InferEnv<T> | null = null
+	let cachedEnv: InferEnv<T> | null = null;
 
-  return async (c, next) => {
-    if (!cachedEnv) {
-      const rawEnv = c.env as Record<string, unknown>
-      cachedEnv = await parseEnv(rawEnv, options.env)
-    }
+	return async (c, next) => {
+		if (!cachedEnv) {
+			const rawEnv = c.env as Record<string, unknown>;
+			cachedEnv = await parseEnv(rawEnv, options.env);
+		}
 
-    c.set('workkit:env', cachedEnv)
-    c.set('workkit:envValidated', true)
+		c.set("workkit:env", cachedEnv);
+		c.set("workkit:envValidated", true);
 
-    await next()
-  }
+		await next();
+	};
 }

@@ -1,6 +1,6 @@
-import { encode, decode, toBase64, fromBase64 } from './encoding'
+import { decode, encode, fromBase64, toBase64 } from "./encoding";
 
-const IV_LENGTH = 12 // 96 bits, recommended for AES-GCM
+const IV_LENGTH = 12; // 96 bits, recommended for AES-GCM
 
 /**
  * Encrypt data with AES-256-GCM.
@@ -19,22 +19,18 @@ const IV_LENGTH = 12 // 96 bits, recommended for AES-GCM
  * ```
  */
 export async function encrypt(key: CryptoKey, data: unknown): Promise<string> {
-  const plaintext = typeof data === 'string' ? data : JSON.stringify(data)
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH))
-  const encoded = encode(plaintext)
+	const plaintext = typeof data === "string" ? data : JSON.stringify(data);
+	const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+	const encoded = encode(plaintext);
 
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoded,
-  )
+	const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
 
-  // Concatenate IV + ciphertext
-  const combined = new Uint8Array(IV_LENGTH + ciphertext.byteLength)
-  combined.set(iv, 0)
-  combined.set(new Uint8Array(ciphertext), IV_LENGTH)
+	// Concatenate IV + ciphertext
+	const combined = new Uint8Array(IV_LENGTH + ciphertext.byteLength);
+	combined.set(iv, 0);
+	combined.set(new Uint8Array(ciphertext), IV_LENGTH);
 
-  return toBase64(combined)
+	return toBase64(combined);
 }
 
 /**
@@ -53,28 +49,24 @@ export async function encrypt(key: CryptoKey, data: unknown): Promise<string> {
  * ```
  */
 export async function decrypt(key: CryptoKey, ciphertext: string): Promise<unknown> {
-  if (!ciphertext) throw new Error('Cannot decrypt empty ciphertext')
+	if (!ciphertext) throw new Error("Cannot decrypt empty ciphertext");
 
-  const combined = fromBase64(ciphertext)
-  if (combined.length <= IV_LENGTH) {
-    throw new Error('Ciphertext too short')
-  }
+	const combined = fromBase64(ciphertext);
+	if (combined.length <= IV_LENGTH) {
+		throw new Error("Ciphertext too short");
+	}
 
-  const iv = combined.slice(0, IV_LENGTH)
-  const data = combined.slice(IV_LENGTH)
+	const iv = combined.slice(0, IV_LENGTH);
+	const data = combined.slice(IV_LENGTH);
 
-  const plainBuffer = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    data,
-  )
+	const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
 
-  const plaintext = decode(plainBuffer)
+	const plaintext = decode(plainBuffer);
 
-  // Try to parse as JSON, return raw string if it fails
-  try {
-    return JSON.parse(plaintext)
-  } catch {
-    return plaintext
-  }
+	// Try to parse as JSON, return raw string if it fails
+	try {
+		return JSON.parse(plaintext);
+	} catch {
+		return plaintext;
+	}
 }

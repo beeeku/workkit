@@ -1,11 +1,11 @@
-import type { RateLimitResult } from './types'
+import type { RateLimitResult } from "./types";
 
 /** Standard rate limit header names */
 export interface RateLimitHeaders {
-  'X-RateLimit-Limit': string
-  'X-RateLimit-Remaining': string
-  'X-RateLimit-Reset': string
-  'Retry-After'?: string
+	"X-RateLimit-Limit": string;
+	"X-RateLimit-Remaining": string;
+	"X-RateLimit-Reset": string;
+	"Retry-After"?: string;
 }
 
 /**
@@ -18,18 +18,21 @@ export interface RateLimitHeaders {
  * ```
  */
 export function rateLimitHeaders(result: RateLimitResult): RateLimitHeaders {
-  const headers: RateLimitHeaders = {
-    'X-RateLimit-Limit': String(result.limit),
-    'X-RateLimit-Remaining': String(result.remaining),
-    'X-RateLimit-Reset': String(Math.ceil(result.resetAt.getTime() / 1000)),
-  }
+	const headers: RateLimitHeaders = {
+		"X-RateLimit-Limit": String(result.limit),
+		"X-RateLimit-Remaining": String(result.remaining),
+		"X-RateLimit-Reset": String(Math.ceil(result.resetAt.getTime() / 1000)),
+	};
 
-  if (!result.allowed) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000))
-    headers['Retry-After'] = String(retryAfterSeconds)
-  }
+	if (!result.allowed) {
+		const retryAfterSeconds = Math.max(
+			1,
+			Math.ceil((result.resetAt.getTime() - Date.now()) / 1000),
+		);
+		headers["Retry-After"] = String(retryAfterSeconds);
+	}
 
-  return headers
+	return headers;
 }
 
 /**
@@ -43,20 +46,20 @@ export function rateLimitHeaders(result: RateLimitResult): RateLimitHeaders {
  * ```
  */
 export function rateLimitResponse(result: RateLimitResult, message?: string): Response {
-  const headers = rateLimitHeaders(result)
-  const retryAfter = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000))
+	const headers = rateLimitHeaders(result);
+	const retryAfter = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000));
 
-  return new Response(
-    JSON.stringify({
-      error: message ?? 'Rate limit exceeded',
-      retryAfter,
-    }),
-    {
-      status: 429,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-    },
-  )
+	return new Response(
+		JSON.stringify({
+			error: message ?? "Rate limit exceeded",
+			retryAfter,
+		}),
+		{
+			status: 429,
+			headers: {
+				"Content-Type": "application/json",
+				...headers,
+			},
+		},
+	);
 }

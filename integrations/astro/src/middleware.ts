@@ -1,7 +1,7 @@
-import { parseEnvSync } from '@workkit/env'
-import type { EnvSchema } from '@workkit/env'
-import type { AstroMiddlewareHandler, WorkkitMiddlewareOptions } from './types'
-import { getCloudflareRuntime } from './context'
+import { parseEnvSync } from "@workkit/env";
+import type { EnvSchema } from "@workkit/env";
+import { getCloudflareRuntime } from "./context";
+import type { AstroMiddlewareHandler, WorkkitMiddlewareOptions } from "./types";
 
 /**
  * Creates Astro middleware that validates environment bindings
@@ -24,27 +24,27 @@ import { getCloudflareRuntime } from './context'
  * ```
  */
 export function workkitMiddleware<T extends EnvSchema>(
-  options: WorkkitMiddlewareOptions<T>,
+	options: WorkkitMiddlewareOptions<T>,
 ): AstroMiddlewareHandler {
-  let validated = false
+	let validated = false;
 
-  return async (context, next) => {
-    if (!validated) {
-      try {
-        const runtime = getCloudflareRuntime(context)
-        parseEnvSync(runtime.env, options.env)
-        validated = true
-      } catch (error) {
-        if (options.onError) {
-          return options.onError(error as Error, context)
-        }
-        return new Response('Internal Server Error: Environment configuration invalid', {
-          status: 500,
-          headers: { 'Content-Type': 'text/plain' },
-        })
-      }
-    }
+	return async (context, next) => {
+		if (!validated) {
+			try {
+				const runtime = getCloudflareRuntime(context);
+				parseEnvSync(runtime.env, options.env);
+				validated = true;
+			} catch (error) {
+				if (options.onError) {
+					return options.onError(error as Error, context);
+				}
+				return new Response("Internal Server Error: Environment configuration invalid", {
+					status: 500,
+					headers: { "Content-Type": "text/plain" },
+				});
+			}
+		}
 
-    return next()
-  }
+		return next();
+	};
 }

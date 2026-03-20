@@ -1,7 +1,7 @@
-import type { CacheAsideOptions, TypedCache } from './types'
-import { createMemoryCache } from './memory'
+import { createMemoryCache } from "./memory";
+import type { CacheAsideOptions, TypedCache } from "./types";
 
-const DEFAULT_CACHE = createMemoryCache()
+const DEFAULT_CACHE = createMemoryCache();
 
 /**
  * Cache-aside pattern with typed return values.
@@ -25,30 +25,30 @@ const DEFAULT_CACHE = createMemoryCache()
  * ```
  */
 export function cacheAside<T, A extends unknown[] = [string]>(
-  options: CacheAsideOptions<T, A>,
+	options: CacheAsideOptions<T, A>,
 ): (...args: A) => Promise<T> {
-  const { key: keyFn, ttl, fetch: fetchFn, cache: cacheInstance } = options
-  const c = cacheInstance ?? DEFAULT_CACHE
+	const { key: keyFn, ttl, fetch: fetchFn, cache: cacheInstance } = options;
+	const c = cacheInstance ?? DEFAULT_CACHE;
 
-  return async (...args: A): Promise<T> => {
-    const cacheKey = keyFn(...args)
+	return async (...args: A): Promise<T> => {
+		const cacheKey = keyFn(...args);
 
-    // Try cache first
-    const cached = await c.get(cacheKey)
-    if (cached) {
-      const data = await cached.json() as T
-      return data
-    }
+		// Try cache first
+		const cached = await c.get(cacheKey);
+		if (cached) {
+			const data = (await cached.json()) as T;
+			return data;
+		}
 
-    // Cache miss — fetch
-    const data = await fetchFn(...args)
+		// Cache miss — fetch
+		const data = await fetchFn(...args);
 
-    // Store in cache
-    const response = new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json' },
-    })
-    await c.put(cacheKey, response, { ttl })
+		// Store in cache
+		const response = new Response(JSON.stringify(data), {
+			headers: { "Content-Type": "application/json" },
+		});
+		await c.put(cacheKey, response, { ttl });
 
-    return data
-  }
+		return data;
+	};
 }

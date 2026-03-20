@@ -1,9 +1,9 @@
-import { defineConfig } from 'bunup'
+import { defineConfig } from "bunup";
 
 export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
-  dts: true,
-  sourcemap: 'linked',
-  clean: true,
-})
+	entry: ["src/index.ts"],
+	format: ["esm", "cjs"],
+	dts: true,
+	sourcemap: "linked",
+	clean: true,
+});

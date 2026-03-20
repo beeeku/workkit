@@ -1,5 +1,5 @@
-import type { ScheduledEvent, ExecutionContext } from '@workkit/types'
-import type { CronTaskHandler, LockKV, LockOptions, LockResult } from './types'
+import type { ExecutionContext, ScheduledEvent } from "@workkit/types";
+import type { CronTaskHandler, LockKV, LockOptions, LockResult } from "./types";
 
 /**
  * Attempt to acquire a distributed lock using KV.
@@ -16,44 +16,44 @@ import type { CronTaskHandler, LockKV, LockOptions, LockResult } from './types'
  * occasional duplicate execution is acceptable.
  */
 export async function acquireLock(
-  kv: LockKV,
-  key: string,
-  options: LockOptions = {},
+	kv: LockKV,
+	key: string,
+	options: LockOptions = {},
 ): Promise<LockResult> {
-  const { ttl = 300, lockValue } = options
-  const value = lockValue ?? `lock-${Date.now()}-${Math.random().toString(36).slice(2)}`
+	const { ttl = 300, lockValue } = options;
+	const value = lockValue ?? `lock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  // Check if lock exists
-  const existing = await kv.get(key)
-  if (existing !== null) {
-    return {
-      acquired: false,
-      release: async () => {},
-    }
-  }
+	// Check if lock exists
+	const existing = await kv.get(key);
+	if (existing !== null) {
+		return {
+			acquired: false,
+			release: async () => {},
+		};
+	}
 
-  // Acquire lock with TTL
-  await kv.put(key, value, { expirationTtl: ttl })
+	// Acquire lock with TTL
+	await kv.put(key, value, { expirationTtl: ttl });
 
-  // Verify we got the lock (best-effort, KV doesn't support CAS)
-  const stored = await kv.get(key)
-  if (stored !== value) {
-    return {
-      acquired: false,
-      release: async () => {},
-    }
-  }
+	// Verify we got the lock (best-effort, KV doesn't support CAS)
+	const stored = await kv.get(key);
+	if (stored !== value) {
+		return {
+			acquired: false,
+			release: async () => {},
+		};
+	}
 
-  return {
-    acquired: true,
-    release: async () => {
-      // Only release if we still hold it
-      const current = await kv.get(key)
-      if (current === value) {
-        await kv.delete(key)
-      }
-    },
-  }
+	return {
+		acquired: true,
+		release: async () => {
+			// Only release if we still hold it
+			const current = await kv.get(key);
+			if (current === value) {
+				await kv.delete(key);
+			}
+		},
+	};
 }
 
 /**
@@ -74,27 +74,23 @@ export async function acquireLock(
  * occasional duplicate execution is acceptable.
  */
 export function withLock<E>(
-  getKV: (env: E) => LockKV,
-  lockKey: string,
-  options: LockOptions,
-  handler: CronTaskHandler<E>,
+	getKV: (env: E) => LockKV,
+	lockKey: string,
+	options: LockOptions,
+	handler: CronTaskHandler<E>,
 ): CronTaskHandler<E> {
-  return async (
-    event: ScheduledEvent,
-    env: E,
-    ctx: ExecutionContext,
-  ): Promise<void> => {
-    const kv = getKV(env)
-    const lock = await acquireLock(kv, lockKey, options)
+	return async (event: ScheduledEvent, env: E, ctx: ExecutionContext): Promise<void> => {
+		const kv = getKV(env);
+		const lock = await acquireLock(kv, lockKey, options);
 
-    if (!lock.acquired) {
-      return // Skip — another instance holds the lock
-    }
+		if (!lock.acquired) {
+			return; // Skip — another instance holds the lock
+		}
 
-    try {
-      await handler(event, env, ctx)
-    } finally {
-      await lock.release()
-    }
-  }
+		try {
+			await handler(event, env, ctx);
+		} finally {
+			await lock.release();
+		}
+	};
 }

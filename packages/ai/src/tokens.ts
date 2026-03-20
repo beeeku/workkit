@@ -1,15 +1,15 @@
-import type { AiMessage } from './types'
+import type { AiMessage } from "./types";
 
 /**
  * Overhead tokens per message (role tags, delimiters, etc.)
  * This is a rough approximation of the overhead added by chat formatting.
  */
-const MESSAGE_OVERHEAD = 4
+const MESSAGE_OVERHEAD = 4;
 
 /**
  * Base overhead for a conversation (system prompt framing, etc.)
  */
-const CONVERSATION_OVERHEAD = 3
+const CONVERSATION_OVERHEAD = 3;
 
 /**
  * Estimate token count for a string using word/character heuristics.
@@ -37,18 +37,18 @@ const CONVERSATION_OVERHEAD = 3
  * ```
  */
 export function estimateTokens(input: string | AiMessage[]): number {
-  if (typeof input === 'string') {
-    return estimateStringTokens(input)
-  }
+	if (typeof input === "string") {
+		return estimateStringTokens(input);
+	}
 
-  // Message array: sum content tokens + overhead per message + conversation overhead
-  let total = CONVERSATION_OVERHEAD
+	// Message array: sum content tokens + overhead per message + conversation overhead
+	let total = CONVERSATION_OVERHEAD;
 
-  for (const message of input) {
-    total += estimateStringTokens(message.content) + MESSAGE_OVERHEAD
-  }
+	for (const message of input) {
+		total += estimateStringTokens(message.content) + MESSAGE_OVERHEAD;
+	}
 
-  return total
+	return total;
 }
 
 /**
@@ -62,22 +62,22 @@ export function estimateTokens(input: string | AiMessage[]): number {
  * 5. Numbers and punctuation add tokens
  */
 function estimateStringTokens(text: string): number {
-  if (!text || text.length === 0) return 0
+	if (!text || text.length === 0) return 0;
 
-  // Split on whitespace
-  const words = text.split(/\s+/).filter(w => w.length > 0)
+	// Split on whitespace
+	const words = text.split(/\s+/).filter((w) => w.length > 0);
 
-  let tokens = 0
+	let tokens = 0;
 
-  for (const word of words) {
-    if (word.length <= 4) {
-      // Short words are usually 1 token
-      tokens += 1
-    } else {
-      // Longer words: roughly 1 token per 4 characters
-      tokens += Math.ceil(word.length / 4)
-    }
-  }
+	for (const word of words) {
+		if (word.length <= 4) {
+			// Short words are usually 1 token
+			tokens += 1;
+		} else {
+			// Longer words: roughly 1 token per 4 characters
+			tokens += Math.ceil(word.length / 4);
+		}
+	}
 
-  return Math.max(1, tokens)
+	return Math.max(1, tokens);
 }

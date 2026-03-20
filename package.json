@@ -5,7 +5,7 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
-    "lint": "bunx @biomejs/biome check .",
+    "lint": "biome check .",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
     "changeset": "changeset",
@@ -19,7 +19,8 @@
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
+    "@biomejs/biome": "1.9.4",
     "bunup": "0.16.31"
   },
-  "packageManager": "bun@1.2.0"
+  "packageManager": "bun@1.3.8"
 }

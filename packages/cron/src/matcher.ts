@@ -1,15 +1,15 @@
-import { parseCron } from './parser'
-import type { CronField } from './types'
+import { parseCron } from "./parser";
+import type { CronField } from "./types";
 
 /**
  * Check if two sets are equal.
  */
 function setsEqual(a: CronField, b: CronField): boolean {
-  if (a.size !== b.size) return false
-  for (const val of a) {
-    if (!b.has(val)) return false
-  }
-  return true
+	if (a.size !== b.size) return false;
+	for (const val of a) {
+		if (!b.has(val)) return false;
+	}
+	return true;
 }
 
 /**
@@ -22,18 +22,18 @@ function setsEqual(a: CronField, b: CronField): boolean {
  * @returns true if the schedules are semantically equivalent
  */
 export function matchCron(taskSchedule: string, eventCron: string): boolean {
-  try {
-    const task = parseCron(taskSchedule)
-    const event = parseCron(eventCron)
+	try {
+		const task = parseCron(taskSchedule);
+		const event = parseCron(eventCron);
 
-    return (
-      setsEqual(task.minute, event.minute) &&
-      setsEqual(task.hour, event.hour) &&
-      setsEqual(task.dayOfMonth, event.dayOfMonth) &&
-      setsEqual(task.month, event.month) &&
-      setsEqual(task.dayOfWeek, event.dayOfWeek)
-    )
-  } catch {
-    return false
-  }
+		return (
+			setsEqual(task.minute, event.minute) &&
+			setsEqual(task.hour, event.hour) &&
+			setsEqual(task.dayOfMonth, event.dayOfMonth) &&
+			setsEqual(task.month, event.month) &&
+			setsEqual(task.dayOfWeek, event.dayOfWeek)
+		);
+	} catch {
+		return false;
+	}
 }
