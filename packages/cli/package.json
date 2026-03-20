@@ -6,12 +6,12 @@
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/beeeku/workkit",
+    "url": "git+https://github.com/beeeku/workkit.git",
     "directory": "packages/cli"
   },
   "type": "module",
   "bin": {
-    "workkit": "./dist/index.js"
+    "workkit": "dist/index.js"
   },
   "exports": {
     ".": {
@@ -60,4 +60,7 @@
     "workkit"
   ],
   "sideEffects": false
-}
+,
+  "publishConfig": {
+    "access": "public"
+  }}

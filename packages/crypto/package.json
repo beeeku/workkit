@@ -6,7 +6,7 @@
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/beeeku/workkit",
+    "url": "git+https://github.com/beeeku/workkit.git",
     "directory": "packages/crypto"
   },
   "type": "module",
@@ -45,8 +45,13 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",
