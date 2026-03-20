@@ -15,11 +15,11 @@ export default function Landing() {
           <a href={`${BASE}getting-started`} className="text-slate-400 hover:text-white transition-colors">
             Docs
           </a>
-          <a href={`${BASE}guides/playground`} className="text-slate-400 hover:text-white transition-colors">
-            Playground
+          <a href={`${BASE}guides/env-validation`} className="text-slate-400 hover:text-white transition-colors">
+            Guides
           </a>
-          <a href={`${BASE}guides/comparison`} className="text-slate-400 hover:text-white transition-colors">
-            Compare
+          <a href={`${BASE}api-reference`} className="text-slate-400 hover:text-white transition-colors">
+            API
           </a>
           <a
             href="https://github.com/beeeku/workkit"
