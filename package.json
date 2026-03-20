@@ -5,17 +5,20 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
-    "lint": "turbo lint",
+    "lint": "bunx @biomejs/biome check .",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo build && changeset publish"
+    "release": "turbo build && changeset publish",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
+    "@cloudflare/workers-types": "^4.20250310.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
     "bunup": "0.16.31"
   },
   "packageManager": "bun@1.2.0"

@@ -15,6 +15,10 @@ export type WorkkitErrorCode =
   | 'WORKKIT_FORBIDDEN'
   | 'WORKKIT_INTERNAL'
   | 'WORKKIT_CONFIG'
+  | 'WORKKIT_D1_QUERY'
+  | 'WORKKIT_D1_CONSTRAINT'
+  | 'WORKKIT_D1_BATCH'
+  | 'WORKKIT_D1_MIGRATION'
 
 /**
  * Retry strategy classification.

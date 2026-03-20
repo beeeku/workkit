@@ -9,5 +9,19 @@
   "linter": {
     "enabled": true,
     "rules": { "recommended": true }
+  },
+  "files": {
+    "include": [
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "integrations/**/*.ts",
+      "integrations/**/*.tsx",
+      "tooling/**/*.ts"
+    ],
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/.turbo"
+    ]
   }
 }

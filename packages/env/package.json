@@ -1,0 +1,84 @@
+{
+  "name": "@workkit/env",
+  "version": "0.0.1",
+  "description": "Typed environment bindings with Standard Schema validation for Cloudflare Workers",
+  "license": "MIT",
+  "author": "Bikash Dash <beeeku>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beeeku/workkit",
+    "directory": "packages/env"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./validators": {
+      "import": {
+        "types": "./dist/validators.d.ts",
+        "default": "./dist/validators.js"
+      },
+      "require": {
+        "types": "./dist/validators.d.cts",
+        "default": "./dist/validators.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "@standard-schema/spec": "^1.0.0",
+    "arktype": "^2.2.0",
+    "bunup": "0.16.31",
+    "expect-type": "^1.1.0",
+    "typescript": "^5.7.0",
+    "valibot": "^1.3.1",
+    "vitest": "^3.0.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "@standard-schema/spec": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@standard-schema/spec": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "env",
+    "environment",
+    "validation",
+    "standard-schema",
+    "d1",
+    "kv",
+    "r2",
+    "durable-objects",
+    "workkit"
+  ],
+  "sideEffects": false
+}

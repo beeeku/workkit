@@ -1,0 +1,76 @@
+# workkit
+
+> Composable utilities for Cloudflare Workers. Think TanStack for Workers.
+
+Every package wraps a Cloudflare binding or API with type safety, better DX, and sensible defaults. Use one package or all of them -- they're independent, tree-shakeable, and designed to compose.
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@workkit/types`](packages/types) | Shared TypeScript types for bindings, handlers, and utilities |
+| [`@workkit/errors`](packages/errors) | Structured, retryable error classes with HTTP mapping |
+| [`@workkit/env`](packages/env) | Type-safe env validation using Standard Schema (Zod, Valibot, ArkType) |
+| [`@workkit/kv`](packages/kv) | Typed KV client with serialization, batching, and key prefixing |
+| [`@workkit/d1`](packages/d1) | Typed D1 client with query builder and classified errors |
+| [`@workkit/r2`](packages/r2) | Typed R2 client with streaming, multipart uploads, and presigned URLs |
+| [`@workkit/cache`](packages/cache) | Cache API wrapper with SWR, cache-aside, and tagged invalidation |
+| [`@workkit/queue`](packages/queue) | Typed queue producer/consumer with retry and dead letter support |
+| [`@workkit/do`](packages/do) | Typed DO storage, state machines, alarms, and RPC clients |
+| [`@workkit/cron`](packages/cron) | Declarative cron handler with task routing and distributed locking |
+| [`@workkit/ratelimit`](packages/ratelimit) | KV-backed rate limiting (fixed window, sliding window, token bucket) |
+| [`@workkit/crypto`](packages/crypto) | AES-256-GCM encryption, key derivation, hashing, and random utilities |
+| [`@workkit/ai`](packages/ai) | Typed Workers AI client with streaming, fallback chains, and retry |
+| [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway with routing, cost tracking, and caching |
+| [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
+| [`@workkit/auth`](packages/auth) | JWT, session management, and auth middleware |
+| [`@workkit/testing`](packages/testing) | In-memory mocks for all Cloudflare Workers bindings |
+
+### Integrations
+
+| Package | Description |
+|---------|-------------|
+| [`@workkit/hono`](integrations/hono) | Hono middleware for env validation, error handling, and rate limiting |
+| [`@workkit/astro`](integrations/astro) | Astro middleware and helpers for Cloudflare bindings |
+| [`@workkit/remix`](integrations/remix) | Typed Remix loaders and actions with env validation |
+
+## Quick Start
+
+**1. Install what you need**
+
+```bash
+bun add @workkit/env @workkit/kv @workkit/errors
+```
+
+**2. Validate your environment**
+
+```ts
+import { parseEnvSync } from "@workkit/env"
+import { z } from "zod"
+
+const env = parseEnvSync(rawEnv, {
+  API_KEY: z.string().min(1),
+  CACHE: z.any(),
+})
+// env.API_KEY — string (validated)
+```
+
+**3. Use typed bindings**
+
+```ts
+import { kv } from "@workkit/kv"
+
+const cache = kv<User>(env.CACHE, { prefix: "user:", defaultTtl: 3600 })
+const user = await cache.get("alice") // User | null
+```
+
+## Philosophy
+
+- **Composable, not monolithic.** Each package solves one thing. Use what you need, ignore the rest.
+- **Types over docs.** APIs are designed so TypeScript tells you what to do. If you need to read docs, the types failed.
+- **Standard Schema.** Validation uses the [Standard Schema](https://github.com/standard-schema/standard-schema) spec -- bring Zod, Valibot, ArkType, or any compatible library.
+- **Zero runtime overhead.** Thin wrappers that add type safety and DX without performance cost. No ORMs, no heavy abstractions.
+
+## License
+
+MIT

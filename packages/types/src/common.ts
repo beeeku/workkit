@@ -3,9 +3,6 @@
 /** A value that may or may not be wrapped in a Promise */
 export type MaybePromise<T> = T | Promise<T>
 
-/** Extract the resolved type from a Promise */
-export type Awaited<T> = T extends Promise<infer U> ? U : T
-
 // --- Object helpers ---
 
 /** Flatten an intersection into a single object type (improves IDE display) */

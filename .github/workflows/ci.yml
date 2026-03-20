@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run test
+
+  bundle-size:
+    name: Bundle Size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Check bundle sizes
+        run: |
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|" >> $GITHUB_STEP_SUMMARY
+          has_warning=false
+          for pkg in packages/*/; do
+            if [ -d "$pkg/dist" ]; then
+              name=$(basename "$pkg")
+              size=$(du -sb "$pkg/dist" | cut -f1)
+              human_size=$(du -sh "$pkg/dist" | cut -f1)
+              echo "| @workkit/$name | $human_size |" >> $GITHUB_STEP_SUMMARY
+              if [ "$size" -gt 51200 ]; then
+                echo "::warning::@workkit/$name dist is ${size} bytes (>50KB)"
+                has_warning=true
+              fi
+            fi
+          done
+          for pkg in integrations/*/; do
+            if [ -d "$pkg/dist" ]; then
+              name=$(basename "$pkg")
+              size=$(du -sb "$pkg/dist" | cut -f1)
+              human_size=$(du -sh "$pkg/dist" | cut -f1)
+              echo "| @workkit/$name | $human_size |" >> $GITHUB_STEP_SUMMARY
+              if [ "$size" -gt 51200 ]; then
+                echo "::warning::@workkit/$name dist is ${size} bytes (>50KB)"
+                has_warning=true
+              fi
+            fi
+          done

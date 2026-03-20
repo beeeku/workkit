@@ -1,0 +1,119 @@
+name: Size Report
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  size-report:
+    name: Bundle Size Report
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install & build PR
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      - name: Measure PR sizes
+        id: pr_sizes
+        run: |
+          sizes=""
+          for pkg in packages/* integrations/*; do
+            if [ -d "$pkg/dist" ]; then
+              name=$(basename "$pkg")
+              size=$(du -sb "$pkg/dist" | cut -f1)
+              sizes="$sizes$name:$size\n"
+            fi
+          done
+          echo "sizes<<EOF" >> $GITHUB_OUTPUT
+          printf "$sizes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Install & build base
+        run: |
+          cd base
+          bun install --frozen-lockfile
+          bun run build
+        continue-on-error: true
+
+      - name: Measure base sizes
+        id: base_sizes
+        run: |
+          sizes=""
+          for pkg in base/packages/* base/integrations/*; do
+            if [ -d "$pkg/dist" ]; then
+              name=$(basename "$pkg")
+              size=$(du -sb "$pkg/dist" | cut -f1)
+              sizes="$sizes$name:$size\n"
+            fi
+          done
+          echo "sizes<<EOF" >> $GITHUB_OUTPUT
+          printf "$sizes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Generate size comparison
+        id: comparison
+        run: |
+          comment="## Bundle Size Report\n\n"
+          comment+="| Package | Base | PR | Delta |\n"
+          comment+="|---------|------|-----|-------|\n"
+
+          # Parse PR sizes
+          declare -A pr_map
+          while IFS=: read -r name size; do
+            [ -n "$name" ] && pr_map["$name"]="$size"
+          done <<< "$(printf '${{ steps.pr_sizes.outputs.sizes }}')"
+
+          # Parse base sizes
+          declare -A base_map
+          while IFS=: read -r name size; do
+            [ -n "$name" ] && base_map["$name"]="$size"
+          done <<< "$(printf '${{ steps.base_sizes.outputs.sizes }}')"
+
+          # Combine all package names
+          all_pkgs=$(echo "${!pr_map[@]} ${!base_map[@]}" | tr ' ' '\n' | sort -u)
+
+          for pkg in $all_pkgs; do
+            pr_size="${pr_map[$pkg]:-0}"
+            base_size="${base_map[$pkg]:-0}"
+            delta=$((pr_size - base_size))
+
+            # Human-readable sizes
+            pr_human=$(numfmt --to=iec-i --suffix=B "$pr_size" 2>/dev/null || echo "${pr_size}B")
+            base_human=$(numfmt --to=iec-i --suffix=B "$base_size" 2>/dev/null || echo "${base_size}B")
+
+            if [ "$delta" -gt 0 ]; then
+              delta_human="+$(numfmt --to=iec-i --suffix=B "$delta" 2>/dev/null || echo "${delta}B")"
+            elif [ "$delta" -lt 0 ]; then
+              abs_delta=$(( -delta ))
+              delta_human="-$(numfmt --to=iec-i --suffix=B "$abs_delta" 2>/dev/null || echo "${abs_delta}B")"
+            else
+              delta_human="no change"
+            fi
+
+            comment+="| @workkit/$pkg | $base_human | $pr_human | $delta_human |\n"
+          done
+
+          echo "comment<<EOF" >> $GITHUB_OUTPUT
+          printf "$comment" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: size-report
+          message: ${{ steps.comparison.outputs.comment }}

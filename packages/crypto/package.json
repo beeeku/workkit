@@ -1,0 +1,78 @@
+{
+  "name": "@workkit/crypto",
+  "version": "0.0.1",
+  "description": "Ergonomic WebCrypto wrappers for Cloudflare Workers — AES-256-GCM, HKDF, envelope encryption, hashing",
+  "license": "MIT",
+  "author": "Bikash Dash <beeeku>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beeeku/workkit",
+    "directory": "packages/crypto"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./derive": {
+      "import": {
+        "types": "./dist/derive.d.ts",
+        "default": "./dist/derive.js"
+      },
+      "require": {
+        "types": "./dist/derive.d.cts",
+        "default": "./dist/derive.cjs"
+      }
+    },
+    "./envelope": {
+      "import": {
+        "types": "./dist/envelope.d.ts",
+        "default": "./dist/envelope.js"
+      },
+      "require": {
+        "types": "./dist/envelope.d.cts",
+        "default": "./dist/envelope.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "bunup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@workkit/types": "workspace:*",
+    "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "bunup": "0.16.31",
+    "expect-type": "^1.1.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "crypto",
+    "webcrypto",
+    "encryption",
+    "aes-gcm",
+    "hkdf",
+    "workkit"
+  ]
+}
