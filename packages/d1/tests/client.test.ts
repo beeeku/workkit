@@ -42,6 +42,21 @@ describe('d1()', () => {
     const db = d1(mock, { transformColumns: 'camelCase' })
     expect(db).toBeDefined()
   })
+
+  it('accepts a custom transform function', () => {
+    const mock = createMockD1()
+    const db = d1(mock, { transformColumns: (col: string) => col.toUpperCase() })
+    expect(db).toBeDefined()
+  })
+
+  it('does not transform columns when option is undefined', async () => {
+    const mock = createMockD1({
+      users: [{ id: 1, first_name: 'Alice' }],
+    })
+    const db = d1(mock)
+    const user = await db.first('SELECT * FROM users WHERE id = ?', [1])
+    expect(user).toHaveProperty('first_name')
+  })
 })
 
 describe('first()', () => {

@@ -194,4 +194,46 @@ describe('classifyD1Error', () => {
     expect((err as D1QueryError).sql).toBe('SELECT * FROM widgets WHERE id = ?')
     expect((err as D1QueryError).params).toEqual([42])
   })
+
+  it('preserves cause for generic D1Error', () => {
+    const original = new Error('something unexpected')
+    const err = classifyD1Error(original, 'SELECT 1')
+    expect(err).toBeInstanceOf(D1Error)
+    expect(err.cause).toBe(original)
+  })
+
+  it('includes sql and params in D1Error context', () => {
+    const err = classifyD1Error(
+      new Error('unknown error'),
+      'INSERT INTO t (x) VALUES (?)',
+      [1],
+    )
+    expect(err.context).toEqual({
+      sql: 'INSERT INTO t (x) VALUES (?)',
+      params: [1],
+    })
+  })
+
+  it('handles errors without sql parameter', () => {
+    const err = classifyD1Error(new Error('no such table: missing'))
+    expect(err).toBeInstanceOf(D1QueryError)
+    expect((err as D1QueryError).sql).toBe('unknown')
+  })
+})
+
+describe('D1ConstraintError edge cases', () => {
+  it('defaults constraintType to UNKNOWN with no argument', () => {
+    const err = new D1ConstraintError('some violation')
+    expect(err.constraintType).toBe('UNKNOWN')
+  })
+
+  it('parses constraint type case-insensitively', () => {
+    const err = new D1ConstraintError('violation', 'unique constraint')
+    expect(err.constraintType).toBe('UNIQUE')
+  })
+
+  it('parses FOREIGN KEY case-insensitively', () => {
+    const err = new D1ConstraintError('violation', 'foreign key violated')
+    expect(err.constraintType).toBe('FOREIGN_KEY')
+  })
 })

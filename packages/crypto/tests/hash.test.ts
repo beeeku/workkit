@@ -104,4 +104,43 @@ describe('hmac', () => {
     const valid = await hmac.verify('secret', 'message2', mac)
     expect(valid).toBe(false)
   })
+
+  it('verify returns false for different length MAC', async () => {
+    const valid = await hmac.verify('secret', 'message', 'short')
+    expect(valid).toBe(false)
+  })
+
+  it('verify returns false for empty MAC', async () => {
+    const valid = await hmac.verify('secret', 'message', '')
+    expect(valid).toBe(false)
+  })
+
+  it('rejects empty key (Web Crypto constraint)', async () => {
+    await expect(hmac('', 'data')).rejects.toThrow()
+  })
+
+  it('handles unicode in key and data', async () => {
+    const mac = await hmac('秘密', 'メッセージ 🔐')
+    expect(typeof mac).toBe('string')
+    const valid = await hmac.verify('秘密', 'メッセージ 🔐', mac)
+    expect(valid).toBe(true)
+  })
+})
+
+describe('hash edge cases', () => {
+  it('hashes unicode strings', async () => {
+    const result = await hash('SHA-256', '日本語テスト')
+    expect(result.length).toBe(64)
+    expect(result).toMatch(/^[0-9a-f]+$/)
+  })
+
+  it('hashes very long strings', async () => {
+    const result = await hash('SHA-256', 'x'.repeat(1_000_000))
+    expect(result.length).toBe(64)
+  })
+
+  it('hashes string with newlines and tabs', async () => {
+    const result = await hash('SHA-256', 'line1\nline2\ttab')
+    expect(result.length).toBe(64)
+  })
 })

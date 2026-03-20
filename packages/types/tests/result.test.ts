@@ -65,6 +65,24 @@ describe('Result', () => {
     it('throws on Err with string', () => {
       expect(() => unwrap(Err('boom'))).toThrow('boom')
     })
+
+    it('throws on Err with number (converts to string)', () => {
+      expect(() => unwrap(Err(42))).toThrow('42')
+    })
+
+    it('throws on Err with null (converts to string)', () => {
+      expect(() => unwrap(Err(null))).toThrow('null')
+    })
+
+    it('throws on Err with object (converts to string)', () => {
+      expect(() => unwrap(Err({ code: 'FAIL' }))).toThrow('[object Object]')
+    })
+
+    it('returns the correct value type', () => {
+      const result: Result<{ name: string }, string> = Ok({ name: 'test' })
+      const val = unwrap(result)
+      expect(val.name).toBe('test')
+    })
   })
 
   describe('type-level tests', () => {

@@ -1,0 +1,18 @@
+{
+  "name": "example-basic-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@workkit/env": "workspace:*",
+    "@workkit/kv": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}

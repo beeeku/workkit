@@ -1,0 +1,11 @@
+name = "file-upload"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+JWT_SECRET = "change-me-to-a-32-char-or-longer-secret-key"
+MAX_FILE_SIZE = "10485760"  # 10 MB
+
+[[r2_buckets]]
+binding = "FILES_BUCKET"
+bucket_name = "user-files"

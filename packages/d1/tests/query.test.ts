@@ -468,4 +468,199 @@ describe('DeleteBuilder', () => {
     expect(sql).toBe('DELETE FROM users WHERE (id = ?)')
     expect(params).toEqual([2])
   })
+
+  it('generates DELETE ... RETURNING with specific columns', () => {
+    const builder = new DeleteBuilderImpl(db, 'users')
+      .where({ id: 1 })
+      .returning('id', 'name')
+    const { sql } = builder.toSQL()
+    expect(sql).toContain('RETURNING id, name')
+  })
+})
+
+describe('compileWhere edge cases', () => {
+  it('throws D1Error for invalid (non-object, non-array) condition', () => {
+    expect(() => compileWhere('invalid' as any)).toThrow(D1Error)
+  })
+
+  it('compiles NOT IN with empty array', () => {
+    const result = compileWhere(['status', 'NOT IN', []] as [string, 'NOT IN', unknown[]])
+    expect(result.sql).toBe('status NOT IN ()')
+    expect(result.params).toEqual([])
+  })
+
+  it('compiles object condition with special characters in keys', () => {
+    const result = compileWhere({ 'my column': 'value' })
+    expect(result.sql).toBe('"my column" = ?')
+    expect(result.params).toEqual(['value'])
+  })
+
+  it('handles null values in object conditions', () => {
+    const result = compileWhere({ name: null })
+    expect(result.sql).toBe('name = ?')
+    expect(result.params).toEqual([null])
+  })
+
+  it('handles empty object condition', () => {
+    const result = compileWhere({})
+    expect(result.sql).toBe('')
+    expect(result.params).toEqual([])
+  })
+})
+
+describe('escapeIdentifier edge cases', () => {
+  it('escapes identifiers with embedded double quotes', () => {
+    const escaped = escapeIdentifier('col"name')
+    expect(escaped).toBe('"col""name"')
+  })
+
+  it('escapes identifiers starting with underscore', () => {
+    expect(escapeIdentifier('_private')).toBe('_private')
+  })
+
+  it('passes through identifiers with underscores and numbers', () => {
+    expect(escapeIdentifier('table_2_name')).toBe('table_2_name')
+  })
+
+  it('escapes empty string', () => {
+    expect(escapeIdentifier('')).toBe('""')
+  })
+})
+
+describe('InsertBuilder edge cases', () => {
+  let db: D1Database
+
+  beforeEach(() => {
+    db = createMockD1({ users: [] })
+  })
+
+  it('throws D1Error when no values provided', () => {
+    const builder = new InsertBuilderImpl(db, 'users')
+    expect(() => builder.toSQL()).toThrow('INSERT requires at least one row of values')
+  })
+
+  it('handles values with null fields', () => {
+    const builder = new InsertBuilderImpl(db, 'users')
+      .values({ name: 'Alice', email: null })
+    const { sql, params } = builder.toSQL()
+    expect(sql).toBe('INSERT INTO users (name, email) VALUES (?, ?)')
+    expect(params).toEqual(['Alice', null])
+  })
+
+  it('handles values with undefined fields', () => {
+    const builder = new InsertBuilderImpl(db, 'users')
+      .values({ name: 'Alice', bio: undefined })
+    const { params } = builder.toSQL()
+    expect(params).toContain(undefined)
+  })
+})
+
+describe('UpdateBuilder edge cases', () => {
+  let db: D1Database
+
+  beforeEach(() => {
+    db = createMockD1({
+      users: [{ id: 1, name: 'Alice', active: true }],
+    })
+  })
+
+  it('throws specific error message for UPDATE without WHERE', async () => {
+    const builder = new UpdateBuilderImpl(db, 'users').set({ active: false })
+    await expect(builder.run()).rejects.toThrow(
+      'UPDATE without WHERE is not allowed',
+    )
+  })
+
+  it('merges multiple set() calls', () => {
+    const builder = new UpdateBuilderImpl(db, 'users')
+      .set({ name: 'Bob' })
+      .set({ active: false })
+      .where({ id: 1 })
+    const { sql, params } = builder.toSQL()
+    expect(sql).toBe('UPDATE users SET name = ?, active = ? WHERE (id = ?)')
+    expect(params).toEqual(['Bob', false, 1])
+  })
+
+  it('generates UPDATE with raw SQL where clause', () => {
+    const builder = new UpdateBuilderImpl(db, 'users')
+      .set({ active: false })
+      .where('id > ? AND id < ?', [10, 20])
+    const { sql, params } = builder.toSQL()
+    expect(sql).toBe('UPDATE users SET active = ? WHERE (id > ? AND id < ?)')
+    expect(params).toEqual([false, 10, 20])
+  })
+})
+
+describe('DeleteBuilder edge cases', () => {
+  let db: D1Database
+
+  beforeEach(() => {
+    db = createMockD1({ users: [{ id: 1, name: 'Alice' }] })
+  })
+
+  it('throws specific error message for DELETE without WHERE', async () => {
+    const builder = new DeleteBuilderImpl(db, 'users')
+    await expect(builder.run()).rejects.toThrow(
+      'DELETE without WHERE is not allowed',
+    )
+  })
+
+  it('generates DELETE with raw SQL where clause', () => {
+    const builder = new DeleteBuilderImpl(db, 'users')
+      .where('created_at < ?', ['2020-01-01'])
+    const { sql, params } = builder.toSQL()
+    expect(sql).toBe('DELETE FROM users WHERE (created_at < ?)')
+    expect(params).toEqual(['2020-01-01'])
+  })
+})
+
+describe('SelectBuilder edge cases', () => {
+  let db: D1Database
+
+  beforeEach(() => {
+    db = createMockD1({
+      users: [
+        { id: 1, name: 'Alice', age: 30 },
+        { id: 2, name: 'Bob', age: 25 },
+      ],
+    })
+  })
+
+  it('columns with aggregates pass through unescaped', () => {
+    const builder = new SelectBuilderImpl(db, 'users').columns('COUNT(*)')
+    const { sql } = builder.toSQL()
+    expect(sql).toBe('SELECT COUNT(*) FROM users')
+  })
+
+  it('first() auto-sets LIMIT 1 when not specified', async () => {
+    const builder = new SelectBuilderImpl(db, 'users')
+    const { sql } = builder.toSQL()
+    expect(sql).not.toContain('LIMIT')
+    // After calling first(), LIMIT should be set internally
+    const user = await builder.first()
+    expect(user).toBeDefined()
+  })
+
+  it('supports multiple orderBy calls', () => {
+    const builder = new SelectBuilderImpl(db, 'users')
+      .orderBy('name', 'ASC')
+      .orderBy('age', 'desc')
+    const { sql } = builder.toSQL()
+    expect(sql).toContain('ORDER BY name ASC, age DESC')
+  })
+
+  it('having() without groupBy still generates SQL', () => {
+    const builder = new SelectBuilderImpl(db, 'users')
+      .having('COUNT(*) > ?', [1])
+    const { sql } = builder.toSQL()
+    expect(sql).toContain('HAVING COUNT(*) > ?')
+  })
+
+  it('where with raw SQL and no params defaults to empty array', () => {
+    const builder = new SelectBuilderImpl(db, 'users')
+      .where('1 = 1')
+    const { sql, params } = builder.toSQL()
+    expect(sql).toBe('SELECT * FROM users WHERE (1 = 1)')
+    expect(params).toEqual([])
+  })
 })

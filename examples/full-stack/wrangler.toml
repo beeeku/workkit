@@ -1,0 +1,20 @@
+name = "full-stack"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+JWT_SECRET = "change-me-to-a-32-char-or-longer-secret-key"
+ENVIRONMENT = "development"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fullstack-db"
+database_id = "your-d1-database-id"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "your-session-kv-id"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "your-ratelimit-kv-id"

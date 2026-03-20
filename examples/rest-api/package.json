@@ -1,0 +1,23 @@
+{
+  "name": "example-rest-api",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute rest-api-db --local --file=./schema.sql"
+  },
+  "dependencies": {
+    "@workkit/auth": "workspace:*",
+    "@workkit/d1": "workspace:*",
+    "@workkit/env": "workspace:*",
+    "@workkit/errors": "workspace:*",
+    "@workkit/hono": "workspace:*",
+    "hono": "^4.7.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}

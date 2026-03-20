@@ -1,0 +1,19 @@
+name = "cron-tasks"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cron-tasks-db"
+database_id = "your-d1-database-id"
+
+[[kv_namespaces]]
+binding = "LOCK_KV"
+id = "your-kv-namespace-id"
+
+[triggers]
+crons = [
+  "0 * * * *",     # Every hour — cleanup sessions
+  "0 0 * * *",     # Midnight UTC — daily report
+  "*/5 * * * *",   # Every 5 minutes — health check
+]

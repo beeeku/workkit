@@ -158,4 +158,55 @@ describe('migrationStatus', () => {
     const status = await migrationStatus(db, migrations)
     expect(status.total).toBe(3)
   })
+
+  it('uses custom table name for status', async () => {
+    const migrations = [
+      { name: '001_test', sql: 'CREATE TABLE IF NOT EXISTS t1 (id INTEGER PRIMARY KEY)' },
+    ]
+    await migrate(db, migrations, { tableName: 'my_migrations' })
+    const status = await migrationStatus(db, migrations, { tableName: 'my_migrations' })
+    expect(status.applied).toContain('001_test')
+  })
+})
+
+describe('validateTableName (SQL injection prevention)', () => {
+  let db: D1Database
+
+  beforeEach(() => {
+    db = createMockD1()
+  })
+
+  it('rejects table names with SQL injection attempts', async () => {
+    await expect(
+      migrate(db, [], { tableName: 'migrations; DROP TABLE users; --' }),
+    ).rejects.toThrow(/Invalid migration table name/)
+  })
+
+  it('rejects table names with spaces', async () => {
+    await expect(
+      migrate(db, [], { tableName: 'my table' }),
+    ).rejects.toThrow(/Invalid migration table name/)
+  })
+
+  it('rejects table names starting with numbers', async () => {
+    await expect(
+      migrate(db, [], { tableName: '123migrations' }),
+    ).rejects.toThrow(/Invalid migration table name/)
+  })
+
+  it('rejects table names with special characters', async () => {
+    await expect(
+      migrate(db, [], { tableName: 'my-migrations' }),
+    ).rejects.toThrow(/Invalid migration table name/)
+  })
+
+  it('accepts valid table names with underscores', async () => {
+    const result = await migrate(db, [], { tableName: '_my_migrations_v2' })
+    expect(result.applied).toBe(0)
+  })
+
+  it('accepts standard alphanumeric table names', async () => {
+    const result = await migrate(db, [], { tableName: 'migrations' })
+    expect(result.applied).toBe(0)
+  })
 })

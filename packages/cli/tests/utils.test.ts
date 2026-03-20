@@ -56,6 +56,61 @@ describe('parseArgs', () => {
     expect(result.positionals).toEqual([])
     expect(result.flags).toEqual({})
   })
+
+  it('handles --flag=value with empty value', () => {
+    const result = parseArgs(['--name='])
+    expect(result.flags['name']).toBe('')
+  })
+
+  it('handles --flag=value with equals in value', () => {
+    const result = parseArgs(['--query=key=value'])
+    expect(result.flags['query']).toBe('key=value')
+  })
+
+  it('handles multiple -- separators (only first matters)', () => {
+    const result = parseArgs(['--', '--a', '--', '--b'])
+    expect(result.positionals).toEqual(['--a', '--', '--b'])
+    expect(result.flags).toEqual({})
+  })
+
+  it('short flag followed by another flag is treated as boolean', () => {
+    const result = parseArgs(['-v', '--debug'])
+    expect(result.flags['v']).toBe(true)
+    expect(result.flags['debug']).toBe(true)
+  })
+
+  it('short flag followed by short flag is treated as boolean', () => {
+    const result = parseArgs(['-a', '-b'])
+    expect(result.flags['a']).toBe(true)
+    expect(result.flags['b']).toBe(true)
+  })
+
+  it('handles --no-flag for various flag names', () => {
+    const result = parseArgs(['--no-verbose', '--no-color', '--no-debug'])
+    expect(result.flags['verbose']).toBe(false)
+    expect(result.flags['color']).toBe(false)
+    expect(result.flags['debug']).toBe(false)
+  })
+
+  it('handles flag value that looks like a number as string', () => {
+    const result = parseArgs(['--port', '3000'])
+    expect(result.flags['port']).toBe('3000')
+    expect(typeof result.flags['port']).toBe('string')
+  })
+})
+
+describe('joinPath edge cases', () => {
+  it('handles empty parts', () => {
+    expect(joinPath('', 'b')).toBe('/b')
+  })
+
+  it('handles multiple slashes', () => {
+    expect(joinPath('a///', '///b')).toBe('a/b')
+  })
+
+  it('handles no arguments', () => {
+    expect(joinPath()).toBe('')
+  })
 })
 
 describe('joinPath', () => {

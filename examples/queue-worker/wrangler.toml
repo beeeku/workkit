@@ -1,0 +1,27 @@
+name = "queue-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+EMAIL_API_KEY = "dev-email-api-key"
+
+# Main email queue — this worker both produces and consumes
+[[queues.producers]]
+binding = "EMAIL_QUEUE"
+queue = "email-jobs"
+
+[[queues.consumers]]
+queue = "email-jobs"
+max_batch_size = 10
+max_retries = 3
+dead_letter_queue = "email-dlq"
+
+# Dead letter queue — failed messages land here
+[[queues.producers]]
+binding = "EMAIL_DLQ"
+queue = "email-dlq"
+
+[[queues.consumers]]
+queue = "email-dlq"
+max_batch_size = 10
+max_retries = 0

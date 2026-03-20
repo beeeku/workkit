@@ -1,0 +1,22 @@
+{
+  "name": "example-ai-chatbot",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@workkit/ai": "workspace:*",
+    "@workkit/cache": "workspace:*",
+    "@workkit/env": "workspace:*",
+    "@workkit/hono": "workspace:*",
+    "@workkit/ratelimit": "workspace:*",
+    "hono": "^4.7.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250310.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}

@@ -111,4 +111,34 @@ describe('encrypt / decrypt', () => {
     const result = await decrypt(key, ciphertext)
     expect(result).toBe(unicode)
   })
+
+  it('throws on ciphertext that is too short (only IV, no data)', async () => {
+    const key = await generateKey()
+    // Create a base64 string that decodes to exactly 12 bytes (IV_LENGTH)
+    const tooShort = btoa(String.fromCharCode(...new Uint8Array(12)))
+    await expect(decrypt(key, tooShort)).rejects.toThrow('Ciphertext too short')
+  })
+
+  it('throws on ciphertext shorter than IV length', async () => {
+    const key = await generateKey()
+    const tooShort = btoa(String.fromCharCode(...new Uint8Array(5)))
+    await expect(decrypt(key, tooShort)).rejects.toThrow('Ciphertext too short')
+  })
+
+  it('round-trips nested objects', async () => {
+    const key = await generateKey()
+    const nested = { a: { b: { c: [1, 2, { d: 'deep' }] } } }
+    const ct = await encrypt(key, nested)
+    const result = await decrypt(key, ct)
+    expect(result).toEqual(nested)
+  })
+
+  it('round-trips special JSON values', async () => {
+    const key = await generateKey()
+    for (const value of [0, -1, '', false, []]) {
+      const ct = await encrypt(key, value)
+      const result = await decrypt(key, ct)
+      expect(result).toEqual(value)
+    }
+  })
 })
