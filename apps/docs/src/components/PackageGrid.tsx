@@ -19,13 +19,15 @@ const packages = [
   { name: 'cli', desc: 'Scaffolding & code generation', icon: '⌨️' },
 ];
 
+const BASE = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
 export default function PackageGrid() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {packages.map((pkg) => (
         <a
           key={pkg.name}
-          href={`/api-reference#workkit${pkg.name}`}
+          href={`${BASE}api-reference#workkit${pkg.name}`}
           className="group rounded-lg border border-slate-800 bg-slate-900/50 p-4 hover:border-sky-400/50 hover:bg-slate-900 transition-all"
         >
           <div className="text-2xl mb-2">{pkg.icon}</div>

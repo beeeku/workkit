@@ -1,22 +1,24 @@
 import CodeExample from './CodeExample';
 import PackageGrid from './PackageGrid';
 
+const BASE = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Nav */}
       <nav className="flex items-center justify-between max-w-6xl mx-auto px-6 py-5">
-        <a href="/" className="font-mono font-bold text-xl text-white tracking-tight">
+        <a href={BASE} className="font-mono font-bold text-xl text-white tracking-tight">
           workkit
         </a>
         <div className="flex items-center gap-6 text-sm">
-          <a href="/getting-started" className="text-slate-400 hover:text-white transition-colors">
+          <a href={`${BASE}getting-started`} className="text-slate-400 hover:text-white transition-colors">
             Docs
           </a>
-          <a href="/guides/playground" className="text-slate-400 hover:text-white transition-colors">
+          <a href={`${BASE}guides/playground`} className="text-slate-400 hover:text-white transition-colors">
             Playground
           </a>
-          <a href="/guides/comparison" className="text-slate-400 hover:text-white transition-colors">
+          <a href={`${BASE}guides/comparison`} className="text-slate-400 hover:text-white transition-colors">
             Compare
           </a>
           <a
@@ -52,7 +54,7 @@ export default function Landing() {
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="/getting-started"
+            href={`${BASE}getting-started`}
             className="rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold px-7 py-3 text-sm transition-colors"
           >
             Get Started

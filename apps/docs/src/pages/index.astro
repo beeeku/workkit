@@ -9,7 +9,7 @@ import Landing from '../components/Landing';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>workkit — Composable utilities for Cloudflare Workers</title>
     <meta name="description" content="Type-safe, composable utilities for every Cloudflare Workers binding. Think TanStack for Workers." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL.replace(/\/?$/, '/')}favicon.svg`} />
   </head>
   <body class="bg-slate-950 text-white">
     <Landing client:load />
