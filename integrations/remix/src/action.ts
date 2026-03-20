@@ -3,12 +3,7 @@ import type { EnvSchema, InferEnv } from "@workkit/env";
 import { ValidationError } from "@workkit/errors";
 import type { ValidationIssue } from "@workkit/errors";
 import { createEnvFactory } from "./env";
-import type {
-	ActionFunctionArgs,
-	ActionWithBodyOptions,
-	ActionWithoutBodyOptions,
-	TypedActionArgs,
-} from "./types";
+import type { ActionFunctionArgs, ActionWithBodyOptions, ActionWithoutBodyOptions } from "./types";
 
 /**
  * Options for createAction.
@@ -81,12 +76,12 @@ export function createAction<T extends EnvSchema, TBody>(
 
 			if ("body" in actionConfig && actionConfig.body) {
 				const bodyConfig = actionConfig as ActionWithBodyOptions<InferEnv<T>, TBody>;
-				const parsedBody = await parseBody(args.request, bodyConfig.body);
+				const parsedBody = await parseBody<TBody>(args.request, bodyConfig.body);
 				const result = await bodyConfig.handler({
 					request: args.request,
 					params: args.params as Record<string, string | undefined>,
 					env,
-					body: parsedBody,
+					body: parsedBody as TBody,
 					context: args.context,
 				});
 				return toResponse(result);
@@ -114,12 +109,12 @@ export function createAction<T extends EnvSchema, TBody>(
 
 		if ("body" in actionConfig && actionConfig.body) {
 			const bodyConfig = actionConfig as ActionWithBodyOptions<Record<string, unknown>, TBody>;
-			const parsedBody = await parseBody(args.request, bodyConfig.body);
+			const parsedBody = await parseBody<TBody>(args.request, bodyConfig.body);
 			const result = await bodyConfig.handler({
 				request: args.request,
 				params: args.params as Record<string, string | undefined>,
 				env,
-				body: parsedBody,
+				body: parsedBody as TBody,
 				context: args.context,
 			});
 			return toResponse(result);
@@ -166,15 +161,17 @@ async function parseBody<TBody>(
 	const resolved = result instanceof Promise ? await result : result;
 
 	if ("issues" in resolved && resolved.issues) {
-		const issues: ValidationIssue[] = resolved.issues.map((issue) => ({
-			path: (issue.path ?? []).map((p) => {
-				if (typeof p === "object" && p !== null && "key" in p) {
-					return String((p as { key: unknown }).key);
-				}
-				return String(p);
+		const issues: ValidationIssue[] = resolved.issues.map(
+			(issue: { path?: readonly unknown[]; message: string }) => ({
+				path: (issue.path ?? []).map((p: unknown) => {
+					if (typeof p === "object" && p !== null && "key" in p) {
+						return String((p as { key: unknown }).key);
+					}
+					return String(p);
+				}),
+				message: issue.message,
 			}),
-			message: issue.message,
-		}));
+		);
 		throw new ValidationError("Request body validation failed", issues);
 	}
 

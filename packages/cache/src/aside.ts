@@ -1,5 +1,5 @@
 import { createMemoryCache } from "./memory";
-import type { CacheAsideOptions, TypedCache } from "./types";
+import type { CacheAsideOptions } from "./types";
 
 const DEFAULT_CACHE = createMemoryCache();
 

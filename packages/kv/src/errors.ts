@@ -55,22 +55,24 @@ export function assertValidTtl(ttl: number | undefined): void {
 export function wrapKVError(error: unknown, context: KVErrorContext): never {
 	const message = error instanceof Error ? error.message : String(error);
 
+	const ctx = context as unknown as Record<string, unknown>;
+
 	if (message.includes("timeout") || message.includes("timed out")) {
 		throw new TimeoutError(`KV.${context.operation}`, undefined, {
 			cause: error,
-			context,
+			context: ctx,
 		});
 	}
 
 	if (message.includes("503") || message.includes("service") || message.includes("unavailable")) {
 		throw new ServiceUnavailableError("KV", {
 			cause: error,
-			context,
+			context: ctx,
 		});
 	}
 
 	throw new InternalError(`KV.${context.operation} failed: ${message}`, {
 		cause: error,
-		context,
+		context: ctx,
 	});
 }

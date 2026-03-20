@@ -47,7 +47,7 @@ export async function fallback<T = unknown>(
 	const errors: Array<{ model: string; error: unknown }> = [];
 
 	for (let i = 0; i < models.length; i++) {
-		const entry = models[i];
+		const entry = models[i]!;
 		attempted.push(entry.model);
 
 		try {
@@ -71,7 +71,7 @@ export async function fallback<T = unknown>(
 
 			// If this isn't the last model, call onFallback
 			if (i < models.length - 1 && options?.onFallback) {
-				options.onFallback(entry.model, err, models[i + 1].model);
+				options.onFallback(entry.model, err, models[i + 1]!.model);
 			}
 		}
 	}

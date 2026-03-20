@@ -54,6 +54,6 @@ export function composite(limiters: RateLimiter[]): CompositeRateLimiter {
 function earliestReset(results: RateLimitResult[]): Date {
 	return results.reduce(
 		(earliest, r) => (r.resetAt.getTime() < earliest.getTime() ? r.resetAt : earliest),
-		results[0].resetAt,
+		results[0]!.resetAt,
 	);
 }

@@ -7,19 +7,22 @@ export type Platform = "workers" | "node" | "bun" | "deno" | "unknown";
  * Detects the current runtime platform.
  */
 export function detectPlatform(): Platform {
+	const g = globalThis as unknown as Record<string, unknown>;
 	// Workers: no process global, has global caches API
-	if (
-		typeof globalThis.process === "undefined" &&
-		typeof (globalThis as Record<string, unknown>).caches !== "undefined"
-	) {
+	if (typeof g.process === "undefined" && typeof g.caches !== "undefined") {
 		return "workers";
 	}
 	// Bun
-	if (typeof (globalThis as Record<string, unknown>).Bun !== "undefined") return "bun";
+	if (typeof g.Bun !== "undefined") return "bun";
 	// Deno
-	if (typeof (globalThis as Record<string, unknown>).Deno !== "undefined") return "deno";
+	if (typeof g.Deno !== "undefined") return "deno";
 	// Node
-	if (typeof globalThis.process?.versions?.node !== "undefined") return "node";
+	if (
+		typeof g.process === "object" &&
+		g.process !== null &&
+		typeof (g.process as Record<string, unknown>).versions === "object"
+	)
+		return "node";
 	return "unknown";
 }
 
@@ -32,14 +35,15 @@ export function resolveEnv(explicitEnv?: Record<string, unknown>): Record<string
 	if (explicitEnv) return explicitEnv;
 
 	const platform = detectPlatform();
+	const g = globalThis as unknown as Record<string, unknown>;
 	switch (platform) {
 		case "node":
 		case "bun":
-			return process.env as Record<string, unknown>;
-		case "deno":
-			return (
-				globalThis as Record<string, Record<string, () => Record<string, unknown>>>
-			).Deno.env.toObject();
+			return (g.process as Record<string, unknown>).env as Record<string, unknown>;
+		case "deno": {
+			const deno = g.Deno as { env: { toObject: () => Record<string, unknown> } };
+			return deno.env.toObject();
+		}
 		case "workers":
 			throw new Error(
 				"@workkit/env: On Cloudflare Workers, you must pass the env object explicitly. " +

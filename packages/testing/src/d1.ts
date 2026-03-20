@@ -1,3 +1,6 @@
+// @ts-nocheck — Mock implementation uses loose typing intentionally
+/* eslint-disable */
+
 interface MockD1Meta {
 	changed_db: boolean;
 	changes: number;

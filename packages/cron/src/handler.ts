@@ -14,7 +14,7 @@ function applyMiddleware<E>(
 	let wrapped = handler;
 	// Apply in reverse so the first middleware is outermost
 	for (let i = middleware.length - 1; i >= 0; i--) {
-		wrapped = middleware[i](wrapped, taskName);
+		wrapped = middleware[i]!(wrapped, taskName);
 	}
 	return wrapped;
 }

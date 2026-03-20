@@ -1,7 +1,6 @@
 import type {
 	QueueSendBatchOptions,
 	QueueSendOptions,
-	TypedMessage,
 	TypedMessageBatch,
 	TypedMessageSendRequest,
 	TypedQueue,

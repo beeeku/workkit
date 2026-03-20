@@ -1,5 +1,5 @@
 import { WorkkitError } from "../base";
-import type { RetryStrategy, WorkkitErrorOptions } from "../types";
+import type { RetryStrategy } from "../types";
 
 export class InternalError extends WorkkitError {
 	readonly code = "WORKKIT_INTERNAL" as const;

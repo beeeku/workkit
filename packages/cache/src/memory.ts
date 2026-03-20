@@ -71,7 +71,7 @@ export function createMemoryCache(config?: MemoryCacheConfig): TypedCache & {
 		if (options?.ttl !== undefined) return options.ttl;
 		if (options?.cacheControl) {
 			const match = options.cacheControl.match(/max-age=(\d+)/);
-			if (match) return Number.parseInt(match[1], 10);
+			if (match) return Number.parseInt(match[1]!, 10);
 		}
 		if (defaultTtl !== undefined) return defaultTtl;
 		return null;

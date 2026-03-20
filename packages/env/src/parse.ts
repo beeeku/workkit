@@ -1,4 +1,3 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { ConfigError } from "@workkit/errors";
 import { type EnvIssue, EnvValidationError } from "./errors";
 import type { EnvSchema, InferEnv } from "./types";

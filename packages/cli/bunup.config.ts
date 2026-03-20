@@ -7,7 +7,5 @@ export default defineConfig({
 	sourcemap: "linked",
 	external: ["@workkit/types", "@workkit/errors", "@workkit/env", "@workkit/d1"],
 	clean: true,
-	banner: {
-		js: "#!/usr/bin/env node",
-	},
+	banner: "#!/usr/bin/env node",
 });

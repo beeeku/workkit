@@ -35,9 +35,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/types": "workspace:*",
+    "@standard-schema/spec": "^1.1.0",
+    "@workkit/env": "workspace:*",
     "@workkit/errors": "workspace:*",
-    "@workkit/env": "workspace:*"
+    "@workkit/types": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250310.0",

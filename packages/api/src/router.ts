@@ -238,7 +238,7 @@ async function executeMiddleware<TEnv>(
 		if (index >= middleware.length) {
 			return handler();
 		}
-		const mw = middleware[index++];
+		const mw = middleware[index++]!;
 		return mw(request, env, next as MiddlewareNext);
 	};
 
@@ -305,7 +305,7 @@ function resolveOrigin(
 ): string {
 	if (typeof config === "string") return config;
 	if (Array.isArray(config)) {
-		return config.includes(requestOrigin) ? requestOrigin : config[0];
+		return config.includes(requestOrigin) ? requestOrigin : config[0]!;
 	}
 	return config(requestOrigin) ? requestOrigin : "";
 }

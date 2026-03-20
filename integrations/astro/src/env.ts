@@ -1,6 +1,5 @@
-import { createEnvParser, parseEnvSync } from "@workkit/env";
+import { createEnvParser } from "@workkit/env";
 import type { EnvSchema, InferEnv } from "@workkit/env";
-import { ConfigError } from "@workkit/errors";
 import { getCloudflareRuntime } from "./context";
 import type { AstroAPIContext, EnvAccessor } from "./types";
 

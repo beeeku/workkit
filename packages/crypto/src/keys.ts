@@ -2,12 +2,15 @@ import { fromBase64, toBase64 } from "./encoding";
 
 /** Generate a new AES-256-GCM CryptoKey */
 export async function generateKey(): Promise<CryptoKey> {
-	return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+	return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+		"encrypt",
+		"decrypt",
+	]) as Promise<CryptoKey>;
 }
 
 /** Export a CryptoKey to a base64 string */
 export async function exportKey(key: CryptoKey): Promise<string> {
-	const raw = await crypto.subtle.exportKey("raw", key);
+	const raw = (await crypto.subtle.exportKey("raw", key)) as ArrayBuffer;
 	return toBase64(raw);
 }
 

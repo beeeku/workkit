@@ -7,6 +7,7 @@ import {
 import type {
 	AiInput,
 	AiOutput,
+	ChatMessage,
 	Gateway,
 	GatewayConfig,
 	ProviderConfig,
@@ -163,13 +164,14 @@ function buildOpenAiBody(model: string, input: AiInput): Record<string, unknown>
 }
 
 function buildAnthropicBody(model: string, input: AiInput): Record<string, unknown> {
-	if ("messages" in input) {
+	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
+		const msgs = (input as { messages: ChatMessage[] }).messages;
 		// Anthropic requires system messages to be separate
-		const systemMsg = input.messages.find((m) => m.role === "system");
-		const nonSystem = input.messages.filter((m) => m.role !== "system");
+		const systemMsg = msgs.find((m: ChatMessage) => m.role === "system");
+		const nonSystem = msgs.filter((m: ChatMessage) => m.role !== "system");
 		const body: Record<string, unknown> = {
 			model,
-			messages: nonSystem.map((m) => ({ role: m.role, content: m.content })),
+			messages: nonSystem.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
 			max_tokens: 1024,
 		};
 		if (systemMsg) {
@@ -293,7 +295,7 @@ export function createGateway<P extends ProviderMap>(config: GatewayConfig<P>): 
 		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
 			if (!model) {
 				throw new ValidationError("Model name is required", [
-					{ path: "model", message: "Model name cannot be empty" },
+					{ path: ["model"], message: "Model name cannot be empty" },
 				]);
 			}
 

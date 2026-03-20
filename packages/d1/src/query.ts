@@ -165,8 +165,8 @@ export class SelectBuilderImpl<T> implements SelectBuilder<T> {
 				if (i > 0) {
 					whereParts.push(this._whereJoiners[i - 1] ?? "AND");
 				}
-				whereParts.push(`(${this._wheres[i].sql})`);
-				params.push(...this._wheres[i].params);
+				whereParts.push(`(${this._wheres[i]!.sql})`);
+				params.push(...this._wheres[i]!.params);
 			}
 			parts.push(`WHERE ${whereParts.join(" ")}`);
 		}
@@ -291,7 +291,7 @@ export class InsertBuilderImpl implements InsertBuilder {
 			throw new D1Error("INSERT requires at least one row of values");
 		}
 
-		const columns = Object.keys(this._data[0]);
+		const columns = Object.keys(this._data[0]!);
 		const params: unknown[] = [];
 		const valuePlaceholders: string[] = [];
 
@@ -405,8 +405,8 @@ export class UpdateBuilderImpl implements UpdateBuilder {
 				if (i > 0) {
 					whereParts.push(this._whereJoiners[i - 1] ?? "AND");
 				}
-				whereParts.push(`(${this._wheres[i].sql})`);
-				params.push(...this._wheres[i].params);
+				whereParts.push(`(${this._wheres[i]!.sql})`);
+				params.push(...this._wheres[i]!.params);
 			}
 			sql += ` WHERE ${whereParts.join(" ")}`;
 		}
@@ -481,8 +481,8 @@ export class DeleteBuilderImpl implements DeleteBuilder {
 				if (i > 0) {
 					whereParts.push(this._whereJoiners[i - 1] ?? "AND");
 				}
-				whereParts.push(`(${this._wheres[i].sql})`);
-				params.push(...this._wheres[i].params);
+				whereParts.push(`(${this._wheres[i]!.sql})`);
+				params.push(...this._wheres[i]!.params);
 			}
 			sql += ` WHERE ${whereParts.join(" ")}`;
 		}

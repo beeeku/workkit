@@ -25,23 +25,23 @@ export function parseDuration(duration: Duration): number {
 	if (!match) {
 		throw new ValidationError("duration", [
 			{
-				path: "duration",
+				path: ["duration"],
 				message: `Invalid duration format: "${duration}". Expected format: <number><unit> where unit is s, m, h, or d`,
 			},
 		]);
 	}
 
-	const value = Number.parseInt(match[1], 10);
-	const unit = match[2];
+	const value = Number.parseInt(match[1]!, 10);
+	const unit = match[2]!;
 
 	if (value <= 0) {
 		throw new ValidationError("duration", [
 			{
-				path: "duration",
+				path: ["duration"],
 				message: `Duration value must be positive, got ${value}`,
 			},
 		]);
 	}
 
-	return value * UNIT_MS[unit];
+	return value * UNIT_MS[unit]!;
 }

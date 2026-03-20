@@ -65,7 +65,7 @@ async function pMap<T, R>(
 	async function worker(): Promise<void> {
 		while (index < items.length) {
 			const i = index++;
-			results[i] = await fn(items[i]);
+			results[i] = await fn(items[i]!);
 		}
 	}
 

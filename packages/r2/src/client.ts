@@ -95,7 +95,7 @@ export function r2<M extends Record<string, string> = Record<string, string>>(
 				validateR2Key(key);
 			}
 			try {
-				await binding.delete(keyArray.length === 1 ? keyArray[0] : keyArray);
+				await binding.delete(keyArray.length === 1 ? keyArray[0]! : keyArray);
 			} catch (err) {
 				const key = Array.isArray(keys) ? keys.join(", ") : keys;
 				wrapR2Error(err, { key, operation: "delete" });

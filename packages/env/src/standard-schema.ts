@@ -30,12 +30,11 @@ export function validateValueSync(
  * Type guard: is this object a Standard Schema?
  */
 export function isStandardSchema(value: unknown): value is StandardSchemaV1 {
+	if (typeof value !== "object" || value === null || !("~standard" in value)) return false;
+	const standard = (value as Record<string, unknown>)["~standard"];
 	return (
-		typeof value === "object" &&
-		value !== null &&
-		"~standard" in value &&
-		typeof (value as Record<string, unknown>)["~standard"] === "object" &&
-		(value as Record<string, unknown>)["~standard"] !== null &&
-		typeof (value as Record<string, Record<string, unknown>>)["~standard"].validate === "function"
+		typeof standard === "object" &&
+		standard !== null &&
+		typeof (standard as Record<string, unknown>).validate === "function"
 	);
 }

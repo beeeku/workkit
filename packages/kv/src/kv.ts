@@ -112,7 +112,7 @@ export function kv<T>(binding: KVNamespace, options?: KVOptions): WorkkitKV<T> {
 			}
 		},
 
-		async getMany(keys: string[], opts?: GetOptions): Promise<Map<string, T>> {
+		async getMany(keys: string[], _opts?: GetOptions): Promise<Map<string, T>> {
 			if (keys.length === 0) return new Map();
 			const fullKeys = keys.map((k) => prefixKey(prefix, k));
 			try {

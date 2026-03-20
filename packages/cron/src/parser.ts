@@ -45,7 +45,7 @@ const FIELD_SPECS: FieldSpec[] = [
  */
 function resolveToken(token: string, names?: Record<string, number>): number | null {
 	const upper = token.toUpperCase();
-	if (names && upper in names) return names[upper];
+	if (names && upper in names) return names[upper]!;
 	const n = Number(token);
 	if (Number.isNaN(n) || !Number.isInteger(n)) return null;
 	return n;
@@ -68,8 +68,8 @@ function parseField(field: string, spec: FieldSpec): CronField | null {
 		let step = 1;
 
 		if (stepMatch) {
-			base = stepMatch[1];
-			step = Number(stepMatch[2]);
+			base = stepMatch[1]!;
+			step = Number(stepMatch[2]!);
 			if (step <= 0) return null;
 		}
 
@@ -80,7 +80,7 @@ function parseField(field: string, spec: FieldSpec): CronField | null {
 			}
 		} else if (base.includes("-")) {
 			// Range
-			const [startStr, endStr] = base.split("-");
+			const [startStr, endStr] = base.split("-") as [string, string];
 			const start = resolveToken(startStr, names);
 			const end = resolveToken(endStr, names);
 			if (start === null || end === null) return null;
@@ -125,7 +125,7 @@ export function parseCron(expression: string): ParsedCron {
 
 	const parsed: CronField[] = [];
 	for (let i = 0; i < 5; i++) {
-		const result = parseField(fields[i], FIELD_SPECS[i]);
+		const result = parseField(fields[i]!, FIELD_SPECS[i]!);
 		if (result === null) {
 			throw new ValidationError(`Invalid cron field at position ${i}: "${fields[i]}"`, [
 				{ path: ["field", `${i}`], message: `Invalid value: "${fields[i]}"` },
@@ -135,11 +135,11 @@ export function parseCron(expression: string): ParsedCron {
 	}
 
 	return {
-		minute: parsed[0],
-		hour: parsed[1],
-		dayOfMonth: parsed[2],
-		month: parsed[3],
-		dayOfWeek: parsed[4],
+		minute: parsed[0]!,
+		hour: parsed[1]!,
+		dayOfMonth: parsed[2]!,
+		month: parsed[3]!,
+		dayOfWeek: parsed[4]!,
 	};
 }
 
@@ -167,11 +167,11 @@ export function describeCron(expression: string): string {
 	const isAllMonths = parsed.month.size === 12;
 	const isAllDow = parsed.dayOfWeek.size === 7;
 
-	const minuteVal = parsed.minute.size === 1 ? [...parsed.minute][0] : null;
-	const hourVal = parsed.hour.size === 1 ? [...parsed.hour][0] : null;
-	const dayVal = parsed.dayOfMonth.size === 1 ? [...parsed.dayOfMonth][0] : null;
-	const monthVal = parsed.month.size === 1 ? [...parsed.month][0] : null;
-	const dowVal = parsed.dayOfWeek.size === 1 ? [...parsed.dayOfWeek][0] : null;
+	const minuteVal = parsed.minute.size === 1 ? [...parsed.minute][0]! : null;
+	const hourVal = parsed.hour.size === 1 ? [...parsed.hour][0]! : null;
+	const dayVal = parsed.dayOfMonth.size === 1 ? [...parsed.dayOfMonth][0]! : null;
+	const monthVal = parsed.month.size === 1 ? [...parsed.month][0]! : null;
+	const dowVal = parsed.dayOfWeek.size === 1 ? [...parsed.dayOfWeek][0]! : null;
 
 	// Every minute
 	if (isAllMinutes && isAllHours && isAllDays && isAllMonths && isAllDow) {
@@ -203,9 +203,8 @@ export function describeCron(expression: string): string {
 
 	// Specific day of week
 	if (minuteVal !== null && hourVal !== null && isAllDays && isAllMonths && dowVal !== null) {
-		const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
-			dowVal
-		];
+		const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+		const dayName = dayNames[dowVal]!;
 		return `Every ${dayName} at ${formatTime(hourVal, minuteVal)}`;
 	}
 
@@ -216,7 +215,7 @@ export function describeCron(expression: string): string {
 
 	// Specific month and day
 	if (minuteVal !== null && hourVal !== null && dayVal !== null && monthVal !== null && isAllDow) {
-		const monthName = [
+		const monthNames = [
 			"",
 			"January",
 			"February",
@@ -230,7 +229,8 @@ export function describeCron(expression: string): string {
 			"October",
 			"November",
 			"December",
-		][monthVal];
+		];
+		const monthName = monthNames[monthVal]!;
 		return `On day ${dayVal} of ${monthName} at ${formatTime(hourVal, minuteVal)}`;
 	}
 
@@ -252,9 +252,9 @@ function detectStep(values: CronField, min: number, max: number): number | null 
 	if (sorted.length <= 1) return sorted.length === 1 ? null : null;
 	if (sorted[0] !== min) return null;
 
-	const step = sorted[1] - sorted[0];
+	const step = sorted[1]! - sorted[0]!;
 	for (let i = 2; i < sorted.length; i++) {
-		if (sorted[i] - sorted[i - 1] !== step) return null;
+		if (sorted[i]! - sorted[i - 1]! !== step) return null;
 	}
 
 	// Verify it covers the full range

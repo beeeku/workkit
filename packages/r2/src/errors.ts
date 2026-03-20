@@ -65,30 +65,31 @@ export function validateR2Key(key: string): void {
  */
 export function wrapR2Error(error: unknown, context: R2ErrorContext): never {
 	const message = error instanceof Error ? error.message : String(error);
+	const ctx = context as unknown as Record<string, unknown>;
 
 	if (message.includes("timeout") || message.includes("timed out")) {
 		throw new TimeoutError(`R2.${context.operation}`, undefined, {
 			cause: error,
-			context,
+			context: ctx,
 		});
 	}
 
 	if (message.includes("503") || message.includes("service") || message.includes("unavailable")) {
 		throw new ServiceUnavailableError("R2", {
 			cause: error,
-			context,
+			context: ctx,
 		});
 	}
 
 	if (message.includes("not found") || message.includes("404")) {
 		throw new NotFoundError("R2 object", context.key, {
 			cause: error,
-			context,
+			context: ctx,
 		});
 	}
 
 	throw new InternalError(`R2.${context.operation} failed: ${message}`, {
 		cause: error,
-		context,
+		context: ctx,
 	});
 }

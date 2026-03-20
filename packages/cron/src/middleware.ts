@@ -12,11 +12,9 @@ export function withTimeout<E = unknown>(ms: number): CronMiddleware<E> {
 	return (handler: CronTaskHandler<E>, taskName: string): CronTaskHandler<E> => {
 		return async (event: ScheduledEvent, env: E, ctx: ExecutionContext): Promise<void> => {
 			let timeoutId: ReturnType<typeof setTimeout>;
-			let timedOut = false;
 
-			const timeoutPromise = new Promise<void>((resolve, reject) => {
+			const timeoutPromise = new Promise<void>((_resolve, reject) => {
 				timeoutId = setTimeout(() => {
-					timedOut = true;
 					reject(new TimeoutError(`Cron task "${taskName}" timed out after ${ms}ms`));
 				}, ms);
 			});

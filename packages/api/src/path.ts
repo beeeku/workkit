@@ -44,9 +44,9 @@ export function matchPath(pattern: string, path: string): PathMatch {
 
 		const params: Record<string, string> = {};
 		for (let i = 0; i < checkSegments.length; i++) {
-			const seg = checkSegments[i];
+			const seg = checkSegments[i]!;
 			if (seg.startsWith(":")) {
-				params[seg.slice(1)] = decodeURIComponent(pathSegments[i]);
+				params[seg.slice(1)] = decodeURIComponent(pathSegments[i]!);
 			} else if (seg !== pathSegments[i]) {
 				return { matched: false };
 			}
@@ -66,9 +66,9 @@ export function matchPath(pattern: string, path: string): PathMatch {
 	const params: Record<string, string> = {};
 
 	for (let i = 0; i < patternSegments.length; i++) {
-		const seg = patternSegments[i];
+		const seg = patternSegments[i]!;
 		if (seg.startsWith(":")) {
-			params[seg.slice(1)] = decodeURIComponent(pathSegments[i]);
+			params[seg.slice(1)] = decodeURIComponent(pathSegments[i]!);
 		} else if (seg !== pathSegments[i]) {
 			return { matched: false };
 		}

@@ -78,7 +78,7 @@ export function routeToFnName(method: string, path: string): string {
 /**
  * Generate a typed API client from route definitions.
  */
-export function generateClientCode(routes: RouteDefinition[], baseUrl = ""): string {
+export function generateClientCode(routes: RouteDefinition[], _baseUrl = ""): string {
 	const lines: string[] = [
 		"/**",
 		" * Auto-generated API client by workkit gen client.",

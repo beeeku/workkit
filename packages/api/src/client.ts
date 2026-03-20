@@ -1,4 +1,4 @@
-import { buildPath, parseQuery } from "./path";
+import { buildPath } from "./path";
 import type { ApiDefinition, ClientConfig } from "./types";
 
 /**

@@ -16,7 +16,7 @@ export function toBase64(buf: ArrayBuffer | Uint8Array): string {
 	const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
 	let binary = "";
 	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
+		binary += String.fromCharCode(bytes[i]!);
 	}
 	return btoa(binary);
 }
@@ -36,7 +36,7 @@ export function toHex(buf: ArrayBuffer | Uint8Array): string {
 	const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
 	let hex = "";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += bytes[i].toString(16).padStart(2, "0");
+		hex += bytes[i]!.toString(16).padStart(2, "0");
 	}
 	return hex;
 }
