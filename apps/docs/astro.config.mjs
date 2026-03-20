@@ -4,7 +4,8 @@ import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
 
 export default defineConfig({
-  site: 'https://workkit.bika.sh',
+  site: 'https://beeeku.github.io',
+  base: '/workkit',
   integrations: [
     starlight({
       title: 'workkit',
