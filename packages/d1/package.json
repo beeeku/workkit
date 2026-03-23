@@ -1,6 +1,6 @@
 {
   "name": "@workkit/d1",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Type-safe D1 query helpers with query builder, batch operations, and migrations for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash",

@@ -1,6 +1,6 @@
 {
   "name": "@workkit/remix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Remix integration for Cloudflare Workers — typed loader/action helpers, env validation, error boundaries",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

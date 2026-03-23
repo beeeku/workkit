@@ -1,6 +1,6 @@
 {
   "name": "@workkit/auth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Auth handler patterns for Cloudflare Workers — JWT validation, session management, typed auth context",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

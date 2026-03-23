@@ -1,6 +1,6 @@
 {
   "name": "@workkit/types",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared TypeScript types for Cloudflare Workers — Result, branded IDs, typed bindings, and utility types",
   "type": "module",
   "main": "./dist/index.cjs",

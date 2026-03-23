@@ -1,6 +1,6 @@
 {
   "name": "@workkit/env",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed environment bindings with Standard Schema validation for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

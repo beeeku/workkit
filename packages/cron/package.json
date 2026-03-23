@@ -1,6 +1,6 @@
 {
   "name": "@workkit/cron",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cron trigger patterns for Cloudflare Workers — declarative scheduled task handlers with distributed locking",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

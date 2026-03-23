@@ -1,5 +1,14 @@
 # @workkit/hono
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix workspace:_ dependencies leaking into published packages. Added resolve script to replace workspace:_ with actual semver versions before npm publish.
+- Updated dependencies
+  - @workkit/errors@1.0.1
+  - @workkit/env@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

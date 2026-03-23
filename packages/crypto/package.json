@@ -1,6 +1,6 @@
 {
   "name": "@workkit/crypto",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ergonomic WebCrypto wrappers for Cloudflare Workers — AES-256-GCM, HKDF, envelope encryption, hashing",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
