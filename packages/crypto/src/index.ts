@@ -1,5 +1,5 @@
 // Encryption
-export { encrypt, decrypt } from "./encrypt";
+export { encrypt, decrypt, encryptWithAAD, decryptWithAAD } from "./encrypt";
 
 // Key management
 export { generateKey, exportKey, importKey } from "./keys";
