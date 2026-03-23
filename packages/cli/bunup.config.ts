@@ -5,7 +5,6 @@ export default defineConfig({
 	format: ["esm"],
 	dts: true,
 	sourcemap: "linked",
-	external: ["@workkit/types", "@workkit/errors", "@workkit/env", "@workkit/d1"],
 	clean: true,
 	banner: "#!/usr/bin/env node",
 });

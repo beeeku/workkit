@@ -33,12 +33,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@workkit/d1": "workspace:*",
-    "@workkit/env": "workspace:*",
-    "@workkit/errors": "workspace:*",
-    "@workkit/types": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^25.5.0"
   },
