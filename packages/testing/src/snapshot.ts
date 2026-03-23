@@ -55,7 +55,12 @@ export function snapshotEnv(env: Record<string, unknown>): EnvSnapshot {
 		}
 
 		// KV: has _store (Map) and get/put/list/delete methods
-		if (obj._store instanceof Map && typeof obj.get === "function" && typeof obj.list === "function" && typeof obj.put === "function") {
+		if (
+			obj._store instanceof Map &&
+			typeof obj.get === "function" &&
+			typeof obj.list === "function" &&
+			typeof obj.put === "function"
+		) {
 			bindings[name] = { type: "kv", count: (obj._store as Map<string, unknown>).size };
 			summary.kv++;
 			continue;

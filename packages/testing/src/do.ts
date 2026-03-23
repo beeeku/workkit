@@ -7,7 +7,8 @@ import { type MockOperations, createOperationTracker } from "./observable";
 export function createMockDO(): DurableObjectStorage & {
 	_store: Map<string, unknown>;
 	_alarm: number | null;
-} & MockOperations & ErrorInjection {
+} & MockOperations &
+	ErrorInjection {
 	const store = new Map<string, unknown>();
 	let alarm: number | null = null;
 	const tracker = createOperationTracker();

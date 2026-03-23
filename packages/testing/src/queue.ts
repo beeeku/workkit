@@ -9,7 +9,8 @@ interface MockMessage {
 /**
  * In-memory Queue mock for unit testing.
  */
-export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOperations & ErrorInjection {
+export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOperations &
+	ErrorInjection {
 	const messages: MockMessage[] = [];
 	const tracker = createOperationTracker();
 	const injector = createErrorInjector();

@@ -70,7 +70,8 @@ import { type MockOperations, createOperationTracker } from "./observable";
 /**
  * In-memory R2Bucket mock for unit testing.
  */
-export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> } & MockOperations & ErrorInjection {
+export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> } & MockOperations &
+	ErrorInjection {
 	const store = new Map<string, StoredObject>();
 	const tracker = createOperationTracker();
 	const injector = createErrorInjector();
