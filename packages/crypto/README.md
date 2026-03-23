@@ -80,6 +80,50 @@ const id = randomUUID() // crypto.randomUUID()
 - **`randomHex(length)`** — Random hex string
 - **`randomUUID()`** — UUID v4
 
+### Digital Signatures
+
+- **`sign(privateKey, data)`** — Sign data with a private key. Returns a base64-encoded signature. Accepts strings or JSON-serializable values.
+- **`sign.verify(publicKey, data, signature)`** — Verify a signature. Returns `boolean`.
+- **`generateSigningKeyPair(algorithm?)`** — Generate a signing key pair. Ed25519 by default, ECDSA P-256 fallback.
+- **`exportSigningKey(key)`** — Export a signing key (public or private) to base64. Uses SPKI for public, PKCS8 for private.
+- **`importSigningKey(base64, type, algorithm?)`** — Import a signing key from base64. `type` is `"public"` or `"private"`.
+
+```ts
+import { sign, generateSigningKeyPair, exportSigningKey, importSigningKey } from "@workkit/crypto"
+
+const { publicKey, privateKey } = await generateSigningKeyPair() // Ed25519
+const signature = await sign(privateKey, { userId: "123" })
+const valid = await sign.verify(publicKey, { userId: "123" }, signature) // true
+
+const exported = await exportSigningKey(publicKey)
+const restored = await importSigningKey(exported, "public")
+```
+
+### Key Rotation
+
+- **`envelope.rotate(oldMasterKey, newMasterKey, encryptedKey, encryptedData)`** — Re-encrypt the DEK with a new master key. Data stays encrypted with the same DEK — O(1) regardless of data size.
+
+```ts
+import { envelope, generateKey } from "@workkit/crypto"
+
+const newMaster = await generateKey()
+const rotated = await envelope.rotate(oldMaster, newMaster, sealed.encryptedKey, sealed.encryptedData)
+const data = await envelope.open(newMaster, rotated.encryptedKey, rotated.encryptedData)
+```
+
+### AAD Encryption
+
+- **`encryptWithAAD(key, data, aad)`** — AES-256-GCM encrypt with Additional Authenticated Data. The AAD is verified during decryption but never encrypted.
+- **`decryptWithAAD(key, ciphertext, aad)`** — Decrypt ciphertext with the same AAD used during encryption. Fails if AAD doesn't match.
+
+```ts
+import { encryptWithAAD, decryptWithAAD, deriveKey } from "@workkit/crypto"
+
+const key = await deriveKey(secret, salt)
+const token = await encryptWithAAD(key, { role: "admin" }, "user:123")
+const data = await decryptWithAAD(key, token, "user:123") // { role: "admin" }
+```
+
 ## License
 
 MIT

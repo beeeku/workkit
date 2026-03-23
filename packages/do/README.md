@@ -90,6 +90,64 @@ const globalCounter = singleton<CounterAPI>(env.COUNTER, "global")
 - **`createDOClient<T>(namespace, id)`** — RPC-style typed client for DO stubs
 - **`singleton<T>(namespace, name)`** — Get a named singleton DO instance
 
+### Versioned Storage
+
+- **`versionedStorage<Schema>(raw, options)`** — Wraps `typedStorage` with schema version tracking and forward-only migrations. Runs pending migrations sequentially in a transaction — if any migration fails, the entire transaction rolls back.
+
+```ts
+import { versionedStorage } from "@workkit/do"
+
+const store = await versionedStorage<MySchema>(state.storage, {
+  version: 3,
+  migrations: [
+    { from: 1, to: 2, migrate: async (s) => { await s.put("newField", "default") } },
+    { from: 2, to: 3, migrate: async (s) => { await s.delete("oldField") } },
+  ],
+})
+```
+
+### Event Sourcing
+
+- **`createEventStore<State, Event>(storage, options)`** — Immutable event log with reducer-based state materialization and periodic snapshots.
+  - `.append(event)` — Append an event and return the materialized state
+  - `.getState()` — Materialize current state from snapshot + replay
+  - `.getEvents(options?)` — Query events with `after` and `limit` pagination
+  - `.rebuild()` — Clear snapshots and replay all events from scratch
+
+```ts
+import { createEventStore } from "@workkit/do"
+
+const store = createEventStore<OrderState, OrderEvent>(storage, {
+  initialState: { status: "pending", items: [] },
+  reducer: (state, event) => { /* return new state */ },
+  snapshotEvery: 50,
+})
+await store.append({ type: "item_added", item: { sku: "A1", qty: 2 } })
+const state = await store.getState()
+```
+
+### Time Series
+
+- **`createTimeSeries<Value>(storage, options)`** — Bucketed metrics aggregation in DO storage with configurable granularity, retention, and custom reducers.
+  - `.record(value, at?)` — Record a value into the current time bucket
+  - `.query(from, to)` — Query entries in a date range
+  - `.rollup(granularity)` — Aggregate fine-grained buckets into `"hour"` or `"day"` rollups
+  - `.prune()` — Delete entries older than the retention period. Returns count deleted.
+
+```ts
+import { createTimeSeries } from "@workkit/do"
+
+const ts = createTimeSeries(storage, {
+  prefix: "api_requests",
+  granularity: "minute",
+  retention: "7d",
+})
+await ts.record(1)
+const results = await ts.query(hourAgo, now)
+const daily = await ts.rollup("day")
+const pruned = await ts.prune()
+```
+
 ## License
 
 MIT

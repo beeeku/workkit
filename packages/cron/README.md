@@ -86,6 +86,52 @@ export default {
 - **`nextRun(expression)`** — Calculate the next run time
 - **`isValidCron(expression)`** — Validate a cron expression
 
+### Jitter Middleware
+
+- **`withJitter(maxSeconds)`** — Add random delay before task execution to prevent thundering herd when multiple workers share the same schedule. Delay is uniformly distributed between 0 and `maxSeconds`.
+
+```ts
+import { createCronHandler, withJitter } from "@workkit/cron"
+
+export default {
+  scheduled: createCronHandler({
+    middleware: [withJitter(30)], // random 0-30s delay
+    tasks: { syncUsers: { schedule: "0 * * * *", handler: syncUsers } },
+  }),
+}
+```
+
+### Cron Builder
+
+- **`cron()`** — Fluent cron expression builder. Chain `.every(n?)` or `.on()` with time units and `.build()` to produce a valid cron string.
+
+```ts
+import { cron } from "@workkit/cron"
+
+cron().every(5).minutes().build()          // "*/5 * * * *"
+cron().every().day().at(9).build()         // "0 9 * * *"
+cron().on().monday().at(14, 30).build()    // "30 14 * * 1"
+cron().every().weekday().at(8).build()     // "0 8 * * 1-5"
+```
+
+### Task Dependencies
+
+- **`after: ['taskName']`** — Declare dependencies between tasks. Tasks are topologically sorted and executed in dependency order. Dependent tasks are skipped if a dependency fails. Circular dependencies throw a `ValidationError`.
+
+```ts
+import { createCronHandler } from "@workkit/cron"
+
+export default {
+  scheduled: createCronHandler({
+    tasks: {
+      fetchData: { schedule: "0 * * * *", handler: fetchHandler },
+      transform: { schedule: "0 * * * *", handler: transformHandler, after: ["fetchData"] },
+      publish:   { schedule: "0 * * * *", handler: publishHandler, after: ["transform"] },
+    },
+  }),
+}
+```
+
 ## License
 
 MIT
