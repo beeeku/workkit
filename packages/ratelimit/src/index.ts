@@ -4,6 +4,7 @@ export { slidingWindow } from "./sliding-window";
 export { tokenBucket } from "./token-bucket";
 export { composite } from "./composite";
 export { tiered } from "./tiered";
+export { quota } from "./quota";
 
 // Utilities
 export { parseDuration } from "./duration";
@@ -22,5 +23,11 @@ export type {
 	TieredOptions,
 	TierConfig,
 	TieredRateLimiter,
+	QuotaOptions,
+	QuotaLimit,
+	QuotaResult,
+	QuotaWindowResult,
+	QuotaUsage,
+	QuotaLimiter,
 } from "./types";
 export type { RateLimitHeaders } from "./headers";
