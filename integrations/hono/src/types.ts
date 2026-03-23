@@ -80,6 +80,40 @@ export interface CacheOptions {
 }
 
 /**
+ * Options for the tieredRateLimit middleware.
+ */
+export interface TieredRateLimitOptions {
+	/** KV namespace for storing rate limit counters */
+	namespace: KVNamespace;
+	/** Tier definitions — e.g. { free: { limit: 100 }, pro: { limit: 10000 } } */
+	tiers: Record<string, { limit: number }>;
+	/** Window duration — e.g. '1m', '1h', '1d' */
+	window: string;
+	/** Function to extract the rate limit key from context */
+	keyFn: (c: Context) => string | Promise<string>;
+	/** Function to determine the user's tier from context */
+	tierFn: (c: Context) => string | Promise<string>;
+	/** Default tier to fall back to for unknown tiers */
+	defaultTier?: string;
+	/** Custom response when rate limited (optional) */
+	onRateLimited?: (c: Context) => Response | Promise<Response>;
+}
+
+/**
+ * Options for the quotaLimit middleware.
+ */
+export interface QuotaLimitOptions {
+	/** KV namespace for storing quota counters */
+	namespace: KVNamespace;
+	/** Array of window/limit pairs — e.g. [{ window: '1h', limit: 10 }, { window: '1d', limit: 100 }] */
+	limits: Array<{ window: string; limit: number }>;
+	/** Function to extract the quota key from context */
+	keyFn: (c: Context) => string | Promise<string>;
+	/** Custom response when quota exceeded (optional) */
+	onQuotaExceeded?: (c: Context) => Response | Promise<Response>;
+}
+
+/**
  * Hono environment type with workkit context variables.
  */
 export interface WorkkitEnv<T extends EnvSchema = EnvSchema> extends Env {
