@@ -4,6 +4,9 @@ export { typedStorage } from "./storage";
 // Versioned Storage
 export { versionedStorage } from "./versioned-storage";
 
+// Event Store
+export { createEventStore } from "./event-store";
+
 // State Machine
 export { createStateMachine } from "./state-machine";
 
@@ -28,3 +31,9 @@ export type {
 } from "./types";
 
 export type { Migration, VersionedStorageOptions } from "./versioned-storage";
+
+export type {
+	EventStore,
+	EventStoreOptions,
+	StoredEvent,
+} from "./event-store";
