@@ -1,7 +1,7 @@
 # workkit
 
 [![CI](https://github.com/beeeku/workkit/actions/workflows/ci.yml/badge.svg)](https://github.com/beeeku/workkit/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@workkit/types?label=npm)](https://www.npmjs.com/org/workkit)
+[![npm](https://img.shields.io/npm/v/workkit?label=npm)](https://www.npmjs.com/org/workkit)
 
 > Composable utilities for Cloudflare Workers. Think TanStack for Workers.
 
