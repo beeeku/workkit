@@ -18,11 +18,11 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/d1`](packages/d1) | Typed D1 client with query builder and classified errors |
 | [`@workkit/r2`](packages/r2) | Typed R2 client with streaming, multipart uploads, and presigned URLs |
 | [`@workkit/cache`](packages/cache) | Cache API wrapper with SWR, cache-aside, and tagged invalidation |
-| [`@workkit/queue`](packages/queue) | Typed queue producer/consumer with retry and dead letter support |
-| [`@workkit/do`](packages/do) | Typed DO storage, state machines, alarms, and RPC clients |
-| [`@workkit/cron`](packages/cron) | Declarative cron handler with task routing and distributed locking |
-| [`@workkit/ratelimit`](packages/ratelimit) | KV-backed rate limiting (fixed window, sliding window, token bucket) |
-| [`@workkit/crypto`](packages/crypto) | AES-256-GCM encryption, key derivation, hashing, and random utilities |
+| [`@workkit/queue`](packages/queue) | Typed queue producer/consumer with retry, DLQ, circuit breaker, and workflow primitives |
+| [`@workkit/do`](packages/do) | Typed DO storage, state machines, alarms, event sourcing, and time-series aggregations |
+| [`@workkit/cron`](packages/cron) | Declarative cron handler with task routing, dependencies, fluent builder, and jitter |
+| [`@workkit/ratelimit`](packages/ratelimit) | KV-backed rate limiting (fixed/sliding/token bucket), tiered limits, and quota tracking |
+| [`@workkit/crypto`](packages/crypto) | AES-256-GCM encryption, digital signatures, key rotation, AAD, and random utilities |
 | [`@workkit/ai`](packages/ai) | Typed Workers AI client with streaming, fallback chains, and retry |
 | [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway with routing, cost tracking, and caching |
 | [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
