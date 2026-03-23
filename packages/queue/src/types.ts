@@ -113,5 +113,21 @@ export interface CircuitBreakerState {
 	halfOpenAttempts: number;
 }
 
+// --- Workflow types ---
+
+/** Options for createWorkflow() */
+export interface WorkflowOptions<Body, Context = Record<string, unknown>> {
+	steps: WorkflowStep<Body, Context>[];
+	onComplete?: (body: Body, context: Context) => Promise<void>;
+	onError?: (error: unknown, stepName: string, body: Body) => Promise<void>;
+}
+
+/** A single workflow step */
+export interface WorkflowStep<Body, Context> {
+	name: string;
+	process: (body: Body, context: Context) => Promise<Partial<Context>>;
+	rollback?: (body: Body, context: Context) => Promise<void>;
+}
+
 // Re-export for convenience
 export type { RetryDelayAction } from "./retry";

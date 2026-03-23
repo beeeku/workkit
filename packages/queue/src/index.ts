@@ -14,6 +14,9 @@ export { createDLQProcessor } from "./dlq";
 // Circuit breaker
 export { withCircuitBreaker } from "./circuit-breaker";
 
+// Workflow
+export { createWorkflow } from "./workflow";
+
 // Duration
 export { parseDuration } from "./duration";
 
@@ -30,4 +33,6 @@ export type {
 	Duration,
 	CircuitBreakerOptions,
 	CircuitBreakerState,
+	WorkflowOptions,
+	WorkflowStep,
 } from "./types";
