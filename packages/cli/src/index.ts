@@ -98,7 +98,13 @@ export async function run(argv: string[]): Promise<void> {
 				const { executeAdd } = await import("./commands/add");
 				const packages = positionals.slice(1);
 				const nodeFs = await import("node:fs");
-				const result = await executeAdd({ packages, cwd }, nodeFs);
+				const result = await executeAdd(
+					{ packages, cwd },
+					{
+						readFileSync: (path: string, encoding: string) =>
+							nodeFs.readFileSync(path, encoding as BufferEncoding) as string,
+					},
+				);
 				if (result.added.length > 0) {
 					success(`Added: ${result.added.join(", ")}`);
 					log("\nRun: bun install");
