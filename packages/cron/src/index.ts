@@ -29,3 +29,7 @@ export { withLock, acquireLock } from "./lock";
 
 // Parser
 export { parseCron, describeCron, nextRun, isValidCron } from "./parser";
+
+// Builder
+export { cron } from "./builder";
+export type { CronBuilder, EveryBuilder, OnBuilder, DayBuilder, CronBuildable } from "./builder";
