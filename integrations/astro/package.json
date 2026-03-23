@@ -35,7 +35,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*",
     "@workkit/env": "workspace:*"
   },
@@ -43,7 +42,8 @@
     "astro": ">=4.0.0"
   },
   "devDependencies": {
-    "@standard-schema/spec": "^1.1.0"
+    "@standard-schema/spec": "^1.1.0",
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",

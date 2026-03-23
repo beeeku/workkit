@@ -29,8 +29,20 @@
 			"packages/**/*.tsx",
 			"integrations/**/*.ts",
 			"integrations/**/*.tsx",
-			"tooling/**/*.ts"
+			"tooling/**/*.ts",
+			"apps/**/*.ts",
+			"apps/**/*.tsx",
+			"apps/**/*.astro",
+			"examples/**/*.ts",
+			"e2e/**/*.ts"
 		],
 		"ignore": ["**/node_modules", "**/dist", "**/.turbo"]
-	}
+	},
+	"overrides": [
+		{
+			"include": ["**/*.json", "**/*.jsonc"],
+			"linter": { "enabled": false },
+			"formatter": { "enabled": true }
+		}
+	]
 }

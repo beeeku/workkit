@@ -45,8 +45,10 @@
     "workkit"
   ],
   "dependencies": {
-    "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@workkit/types": "workspace:*"
   },
   "scripts": {
     "build": "bunup",

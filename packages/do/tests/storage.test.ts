@@ -1,5 +1,4 @@
-import { expectTypeOf } from "expect-type";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { typedStorage } from "../src/storage";
 import { createMockStorage } from "./helpers";
 

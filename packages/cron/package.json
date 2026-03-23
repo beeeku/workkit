@@ -35,8 +35,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",

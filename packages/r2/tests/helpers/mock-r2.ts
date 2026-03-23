@@ -314,15 +314,3 @@ export function stringToStream(text: string): ReadableStream {
 		},
 	});
 }
-
-/**
- * Helper: create a ReadableStream from an ArrayBuffer.
- */
-export function bufferToStream(buffer: ArrayBuffer): ReadableStream {
-	return new ReadableStream({
-		start(controller) {
-			controller.enqueue(new Uint8Array(buffer));
-			controller.close();
-		},
-	});
-}

@@ -11,101 +11,101 @@
  *                                                         ↓
  *                                             DLQ Queue → DLQ Processor → Alert
  */
-import { parseEnv } from '@workkit/env'
-import { queue as queueValidator } from '@workkit/env/validators'
-import { queue } from '@workkit/queue'
-import { createConsumer, createDLQProcessor, RetryAction } from '@workkit/queue'
-import { WorkkitError, isRetryable } from '@workkit/errors'
-import { z } from 'zod'
+import { parseEnv } from "@workkit/env";
+import { queue as queueValidator } from "@workkit/env/validators";
+import { WorkkitError, isRetryable } from "@workkit/errors";
+import { queue } from "@workkit/queue";
+import { RetryAction, createConsumer, createDLQProcessor } from "@workkit/queue";
+import { z } from "zod";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface EmailJob {
-  type: 'welcome' | 'reset-password' | 'notification'
-  to: string
-  subject: string
-  templateId: string
-  data: Record<string, unknown>
-  attemptedAt?: string
+	type: "welcome" | "reset-password" | "notification";
+	to: string;
+	subject: string;
+	templateId: string;
+	data: Record<string, unknown>;
+	attemptedAt?: string;
 }
 
 // ─── Environment Schema ───────────────────────────────────────────────────────
 
 const envSchema = {
-  EMAIL_QUEUE: queueValidator(),
-  EMAIL_DLQ: queueValidator(),
-  EMAIL_API_KEY: z.string().min(1),
-}
+	EMAIL_QUEUE: queueValidator(),
+	EMAIL_DLQ: queueValidator(),
+	EMAIL_API_KEY: z.string().min(1),
+};
 
 // ─── Simulated Email Service ──────────────────────────────────────────────────
 
 async function sendEmail(job: EmailJob, apiKey: string): Promise<void> {
-  // Simulate transient failures (network, rate limits)
-  if (Math.random() < 0.1) {
-    const error = new Error('Email service temporarily unavailable')
-    ;(error as any).retryable = true
-    throw error
-  }
+	// Simulate transient failures (network, rate limits)
+	if (Math.random() < 0.1) {
+		const error = new Error("Email service temporarily unavailable");
+		(error as any).retryable = true;
+		throw error;
+	}
 
-  // Simulate permanent failures (invalid address)
-  if (job.to.includes('invalid')) {
-    throw new Error(`Invalid email address: ${job.to}`)
-  }
+	// Simulate permanent failures (invalid address)
+	if (job.to.includes("invalid")) {
+		throw new Error(`Invalid email address: ${job.to}`);
+	}
 
-  console.log(`[email] Sent "${job.subject}" to ${job.to} via template ${job.templateId}`)
+	console.log(`[email] Sent "${job.subject}" to ${job.to} via template ${job.templateId}`);
 }
 
 // ─── HTTP Producer ────────────────────────────────────────────────────────────
 
 const sendEmailSchema = z.object({
-  type: z.enum(['welcome', 'reset-password', 'notification']),
-  to: z.string().email(),
-  subject: z.string().min(1),
-  templateId: z.string().min(1),
-  data: z.record(z.unknown()).default({}),
-})
+	type: z.enum(["welcome", "reset-password", "notification"]),
+	to: z.string().email(),
+	subject: z.string().min(1),
+	templateId: z.string().min(1),
+	data: z.record(z.unknown()).default({}),
+});
 
 async function handleFetch(request: Request, rawEnv: Record<string, unknown>): Promise<Response> {
-  if (request.method !== 'POST') {
-    return Response.json({ error: 'Method not allowed' }, { status: 405 })
-  }
+	if (request.method !== "POST") {
+		return Response.json({ error: "Method not allowed" }, { status: 405 });
+	}
 
-  const env = await parseEnv(rawEnv, envSchema)
-  const url = new URL(request.url)
+	const env = await parseEnv(rawEnv, envSchema);
+	const url = new URL(request.url);
 
-  if (url.pathname === '/send') {
-    const body = sendEmailSchema.parse(await request.json())
+	if (url.pathname === "/send") {
+		const body = sendEmailSchema.parse(await request.json());
 
-    // ─── BEFORE (raw Cloudflare API) ────────────────────────────────
-    // await env.EMAIL_QUEUE.send(body)
-    // // No type safety — body could be anything
-    // // No batch support
-    // // No way to know if the queue binding exists until runtime
+		// ─── BEFORE (raw Cloudflare API) ────────────────────────────────
+		// await env.EMAIL_QUEUE.send(body)
+		// // No type safety — body could be anything
+		// // No batch support
+		// // No way to know if the queue binding exists until runtime
 
-    // ─── AFTER (workkit) ────────────────────────────────────────────
-    const emailQueue = queue<EmailJob>(env.EMAIL_QUEUE)
-    await emailQueue.send({
-      ...body,
-      attemptedAt: new Date().toISOString(),
-    })
+		// ─── AFTER (workkit) ────────────────────────────────────────────
+		const emailQueue = queue<EmailJob>(env.EMAIL_QUEUE);
+		await emailQueue.send({
+			...body,
+			attemptedAt: new Date().toISOString(),
+		});
 
-    return Response.json({ message: 'Email queued', to: body.to })
-  }
+		return Response.json({ message: "Email queued", to: body.to });
+	}
 
-  if (url.pathname === '/send-batch') {
-    const body = z.array(sendEmailSchema).parse(await request.json())
+	if (url.pathname === "/send-batch") {
+		const body = z.array(sendEmailSchema).parse(await request.json());
 
-    const emailQueue = queue<EmailJob>(env.EMAIL_QUEUE)
-    await emailQueue.sendBatch(
-      body.map((job) => ({
-        body: { ...job, attemptedAt: new Date().toISOString() },
-      })),
-    )
+		const emailQueue = queue<EmailJob>(env.EMAIL_QUEUE);
+		await emailQueue.sendBatch(
+			body.map((job) => ({
+				body: { ...job, attemptedAt: new Date().toISOString() },
+			})),
+		);
 
-    return Response.json({ message: `${body.length} emails queued` })
-  }
+		return Response.json({ message: `${body.length} emails queued` });
+	}
 
-  return Response.json({ error: 'Not found' }, { status: 404 })
+	return Response.json({ error: "Not found" }, { status: 404 });
 }
 
 // ─── Queue Consumer ───────────────────────────────────────────────────────────
@@ -138,39 +138,39 @@ async function handleFetch(request: Request, rawEnv: Record<string, unknown>): P
 //   - Concurrency control built in
 
 const emailConsumer = createConsumer<EmailJob>({
-  maxRetries: 3,
+	maxRetries: 3,
 
-  async process(message) {
-    const job = message.body
-    console.log(
-      `[consumer] Processing ${job.type} email to ${job.to} (attempt ${message.attempts})`,
-    )
+	async process(message) {
+		const job = message.body;
+		console.log(
+			`[consumer] Processing ${job.type} email to ${job.to} (attempt ${message.attempts})`,
+		);
 
-    try {
-      await sendEmail(job, '') // API key would come from env in real usage
-      // Returning void = success, message will be acked
-    } catch (error) {
-      // Classify the error: is it worth retrying?
-      if (error instanceof Error && (error as any).retryable) {
-        // Transient error — retry with delay
-        return RetryAction.RETRY
-      }
+		try {
+			await sendEmail(job, ""); // API key would come from env in real usage
+			// Returning void = success, message will be acked
+		} catch (error) {
+			// Classify the error: is it worth retrying?
+			if (error instanceof Error && (error as any).retryable) {
+				// Transient error — retry with delay
+				return RetryAction.RETRY;
+			}
 
-      // Permanent error — send to dead letter queue immediately
-      return RetryAction.DEAD_LETTER
-    }
-  },
+			// Permanent error — send to dead letter queue immediately
+			return RetryAction.DEAD_LETTER;
+		}
+	},
 
-  onError(error, message) {
-    console.error(
-      `[consumer] Failed to process message ${message.id}:`,
-      error instanceof Error ? error.message : error,
-      `(attempt ${message.attempts})`,
-    )
-  },
+	onError(error, message) {
+		console.error(
+			`[consumer] Failed to process message ${message.id}:`,
+			error instanceof Error ? error.message : error,
+			`(attempt ${message.attempts})`,
+		);
+	},
 
-  concurrency: 5, // Process up to 5 messages in parallel
-})
+	concurrency: 5, // Process up to 5 messages in parallel
+});
 
 // ─── Dead Letter Queue Processor ──────────────────────────────────────────────
 //
@@ -178,52 +178,49 @@ const emailConsumer = createConsumer<EmailJob>({
 // and could alert an on-call team, write to a database, or queue a manual review.
 
 const dlqProcessor = createDLQProcessor<EmailJob>({
-  async process(message, metadata) {
-    console.error(
-      `[DLQ] Message ${metadata.messageId} failed after ${metadata.attempts} attempts`,
-      `Queue: ${metadata.queue}`,
-      `Job: ${JSON.stringify(message.body)}`,
-    )
+	async process(message, metadata) {
+		console.error(
+			`[DLQ] Message ${metadata.messageId} failed after ${metadata.attempts} attempts`,
+			`Queue: ${metadata.queue}`,
+			`Job: ${JSON.stringify(message.body)}`,
+		);
 
-    // In production, you would:
-    // - Send an alert to Slack/PagerDuty
-    // - Store in a D1 table for manual review
-    // - Emit a metric to your observability platform
-  },
+		// In production, you would:
+		// - Send an alert to Slack/PagerDuty
+		// - Store in a D1 table for manual review
+		// - Emit a metric to your observability platform
+	},
 
-  onError(error, message) {
-    console.error('[DLQ] Failed to process DLQ message:', error)
-  },
-})
+	onError(error, message) {
+		console.error("[DLQ] Failed to process DLQ message:", error);
+	},
+});
 
 // ─── Worker Export ────────────────────────────────────────────────────────────
 
 export default {
-  fetch: handleFetch,
+	fetch: handleFetch,
 
-  async queue(
-    batch: MessageBatch<EmailJob>,
-    env: Record<string, unknown>,
-  ): Promise<void> {
-    const validatedEnv = await parseEnv(env, envSchema)
+	async queue(batch: MessageBatch<EmailJob>, env: Record<string, unknown>): Promise<void> {
+		const validatedEnv = await parseEnv(env, envSchema);
 
-    // Route to the correct consumer based on which queue delivered the batch
-    if (batch.queue === 'email-dlq') {
-      await dlqProcessor(batch as any, env)
-    } else {
-      // Pass the DLQ binding to the consumer for automatic forwarding
-      const consumer = createConsumer<EmailJob>({
-        maxRetries: 3,
-        deadLetterQueue: validatedEnv.EMAIL_DLQ as any,
-        async process(message) {
-          await sendEmail(message.body, validatedEnv.EMAIL_API_KEY)
-        },
-        onError(error, message) {
-          console.error(`[consumer] Error:`, error)
-        },
-        concurrency: 5,
-      })
-      await consumer(batch as any, env)
-    }
-  },
-}
+		// Route to the correct consumer based on which queue delivered the batch
+		if (batch.queue === "email-dlq") {
+			await dlqProcessor(batch as any, env);
+		} else {
+			// Pass the DLQ binding to the consumer for automatic forwarding
+			const consumer = createConsumer<EmailJob>({
+				maxRetries: 3,
+				deadLetterQueue: validatedEnv.EMAIL_DLQ as any,
+				async process(message) {
+					await sendEmail(message.body, validatedEnv.EMAIL_API_KEY);
+				},
+				onError(error, message) {
+					console.error("[consumer] Error:", error);
+				},
+				concurrency: 5,
+			});
+			await consumer(batch as any, env);
+		}
+	},
+};

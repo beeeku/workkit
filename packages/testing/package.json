@@ -13,43 +13,43 @@
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
       }
     },
     "./kv": {
       "import": {
-        "types": "./dist/kv.d.ts",
-        "default": "./dist/kv.js"
+        "types": "./dist/src/kv.d.ts",
+        "default": "./dist/src/kv.js"
       }
     },
     "./d1": {
       "import": {
-        "types": "./dist/d1.d.ts",
-        "default": "./dist/d1.js"
+        "types": "./dist/src/d1.d.ts",
+        "default": "./dist/src/d1.js"
       }
     },
     "./r2": {
       "import": {
-        "types": "./dist/r2.d.ts",
-        "default": "./dist/r2.js"
+        "types": "./dist/src/r2.d.ts",
+        "default": "./dist/src/r2.js"
       }
     },
     "./queue": {
       "import": {
-        "types": "./dist/queue.d.ts",
-        "default": "./dist/queue.js"
+        "types": "./dist/src/queue.d.ts",
+        "default": "./dist/src/queue.js"
       }
     },
     "./do": {
       "import": {
-        "types": "./dist/do.d.ts",
-        "default": "./dist/do.js"
+        "types": "./dist/src/do.d.ts",
+        "default": "./dist/src/do.js"
       }
     }
   },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "files": [
     "dist"
   ],

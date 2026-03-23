@@ -1,21 +1,49 @@
-export { kv } from "./kv";
+// ─── Core factory ─────────────────────────────────────────────────────
+export { kv } from "./client";
 
+// ─── Types ────────────────────────────────────────────────────────────
 export type {
+	TypedKV,
 	WorkkitKV,
 	KVOptions,
+	KVOptionsWithoutSchema,
+	KVOptionsWithSchema,
+	KVPutOptions,
+	KVListOptions,
+	KVEntry,
+	KVKeyEntry,
+	KVGetWithMetadataResult,
+	// Backward compat
 	GetOptions,
 	PutOptions,
 	ListOptions,
 	KVListEntry,
-	KVGetWithMetadataResult,
-	KVBatchPutEntry,
 	KVListPage,
+	KVBatchPutEntry,
 	SerializerType,
 } from "./types";
 
-// Key validation and manipulation utilities
-export { validateKey, prefixKey, stripPrefix } from "./utils";
+// ─── Errors ───────────────────────────────────────────────────────────
+export {
+	KVError,
+	KVNotFoundError,
+	KVValidationError,
+	KVSerializationError,
+} from "./kv-errors";
 
-// Error utilities for KV operations
+// Backward compat error utilities
 export { wrapKVError, assertKVBinding, assertValidTtl } from "./errors";
 export type { KVErrorContext } from "./errors";
+
+// ─── Serialization ────────────────────────────────────────────────────
+export type { Serializer } from "./serializer";
+export { jsonSerializer, textSerializer, resolveSerializer } from "./serializer";
+
+// ─── Prefix utilities ─────────────────────────────────────────────────
+export { prefixKey, stripPrefix, combinePrefixes } from "./prefix";
+
+// Backward compat
+export { validateKey } from "./utils";
+
+// ─── Validation ───────────────────────────────────────────────────────
+export { validateValue } from "./validation";

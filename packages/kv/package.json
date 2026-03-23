@@ -1,7 +1,7 @@
 {
   "name": "@workkit/kv",
-  "version": "0.0.1",
-  "description": "Typed KV namespace utilities for Cloudflare Workers \u2014 prefix namespacing, batch ops, cursor iteration",
+  "version": "0.1.0",
+  "description": "Typed KV operations with Standard Schema validation for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
@@ -21,7 +21,9 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
   "publishConfig": {
@@ -35,8 +37,21 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/types": "workspace:*",
     "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@standard-schema/spec": "^1.0.0",
+    "@workkit/types": "workspace:*",
+    "zod": "^4.3.6",
+    "valibot": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@standard-schema/spec": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@standard-schema/spec": {
+      "optional": true
+    }
   },
   "keywords": [
     "cloudflare",
@@ -44,7 +59,7 @@
     "kv",
     "key-value",
     "typed",
-    "namespace",
+    "standard-schema",
     "workkit"
   ]
 }

@@ -182,7 +182,8 @@ function schemaToJsonSchema(schema: StandardSchemaV1): Record<string, unknown> {
 	}
 
 	// Zod's internal shape — attempt to generate a minimal schema
-	if (s._def?.typeName) {
+	// Zod v4 uses _def.type (lowercase), v3 used _def.typeName
+	if (s._def?.typeName || s._def?.type) {
 		return zodDefToJsonSchema(s._def);
 	}
 
@@ -190,21 +191,34 @@ function schemaToJsonSchema(schema: StandardSchemaV1): Record<string, unknown> {
 	return { type: "object" };
 }
 
-/** Best-effort Zod definition to JSON Schema conversion */
+/** Best-effort Zod definition to JSON Schema conversion.
+ *  Supports both Zod v3 (typeName: "ZodString") and v4 (type: "string") internals.
+ */
 function zodDefToJsonSchema(def: any): Record<string, unknown> {
-	switch (def.typeName) {
+	// Normalise: Zod v3 uses `typeName`, v4 uses `type` (lowercase)
+	const kind: string = def.typeName ?? def.type ?? "";
+
+	switch (kind) {
 		case "ZodString":
+		case "string":
 			return { type: "string" };
 		case "ZodNumber":
+		case "number":
 			return { type: "number" };
 		case "ZodBoolean":
+		case "boolean":
 			return { type: "boolean" };
 		case "ZodArray":
+		case "array": {
+			// v3: def.type is the element schema, v4: def.element
+			const element = def.element ?? def.type;
 			return {
 				type: "array",
-				items: def.type?._def ? zodDefToJsonSchema(def.type._def) : {},
+				items: element?._def ? zodDefToJsonSchema(element._def) : {},
 			};
-		case "ZodObject": {
+		}
+		case "ZodObject":
+		case "object": {
 			const properties: Record<string, unknown> = {};
 			const required: string[] = [];
 
@@ -214,8 +228,9 @@ function zodDefToJsonSchema(def: any): Record<string, unknown> {
 					const v = value as any;
 					if (v?._def) {
 						properties[key] = zodDefToJsonSchema(v._def);
-						// Check if field is optional
-						if (v._def.typeName !== "ZodOptional") {
+						// Check if field is optional (v3: typeName, v4: type)
+						const fieldKind = v._def.typeName ?? v._def.type;
+						if (fieldKind !== "ZodOptional" && fieldKind !== "optional") {
 							required.push(key);
 						}
 					}
@@ -227,10 +242,17 @@ function zodDefToJsonSchema(def: any): Record<string, unknown> {
 			return result;
 		}
 		case "ZodOptional":
+		case "optional":
 			return def.innerType?._def ? zodDefToJsonSchema(def.innerType._def) : {};
 		case "ZodEnum":
-			return { type: "string", enum: def.values };
+		case "enum":
+			// v3: def.values (array), v4: def.entries (object)
+			return {
+				type: "string",
+				enum: def.values ?? (def.entries ? Object.values(def.entries) : []),
+			};
 		case "ZodLiteral":
+		case "literal":
 			return { type: typeof def.value, const: def.value };
 		default:
 			return {};

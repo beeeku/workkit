@@ -19,7 +19,6 @@ export const bold: (s: string) => string = wrap(1, 22);
 export const dim: (s: string) => string = wrap(2, 22);
 const red: (s: string) => string = wrap(31, 39);
 const green: (s: string) => string = wrap(32, 39);
-const yellow: (s: string) => string = wrap(33, 39);
 const blue: (s: string) => string = wrap(34, 39);
 export const cyan: (s: string) => string = wrap(36, 39);
 
@@ -31,10 +30,6 @@ export function log(msg: string): void {
 
 export function success(msg: string): void {
 	console.log(`${green("✓")} ${msg}`);
-}
-
-export function warn(msg: string): void {
-	console.log(`${yellow("⚠")} ${msg}`);
 }
 
 export function error(msg: string): void {

@@ -1,3 +1,8 @@
+import { extractBearerToken, signJWT, verifyJWT } from "@workkit/auth";
+import { r2 as r2Validator } from "@workkit/env/validators";
+import { NotFoundError, UnauthorizedError, ValidationError } from "@workkit/errors";
+import { getEnv, workkit, workkitErrorHandler } from "@workkit/hono";
+import { createPresignedUrl, r2, streamToBuffer } from "@workkit/r2";
 /**
  * File Upload — R2 file upload/download with presigned URLs and auth
  *
@@ -7,51 +12,46 @@
  *   - Presigned URLs for direct client-to-R2 uploads
  *   - Streaming downloads with proper Content-Type headers
  */
-import { Hono } from 'hono'
-import { workkit, getEnv, workkitErrorHandler } from '@workkit/hono'
-import { r2 as r2Validator } from '@workkit/env/validators'
-import { r2, createPresignedUrl, streamToBuffer } from '@workkit/r2'
-import { signJWT, verifyJWT, extractBearerToken } from '@workkit/auth'
-import { NotFoundError, UnauthorizedError, ValidationError } from '@workkit/errors'
-import { z } from 'zod'
+import { Hono } from "hono";
+import { z } from "zod";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FileMetadata {
-  userId: string
-  originalName: string
-  mimeType: string
-  uploadedAt: string
+	userId: string;
+	originalName: string;
+	mimeType: string;
+	uploadedAt: string;
 }
 
 interface JWTPayload {
-  sub: string
-  email: string
+	sub: string;
+	email: string;
 }
 
 // ─── Environment Schema ───────────────────────────────────────────────────────
 
 const envSchema = {
-  FILES_BUCKET: r2Validator(),
-  JWT_SECRET: z.string().min(32),
-  MAX_FILE_SIZE: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
-}
+	FILES_BUCKET: r2Validator(),
+	JWT_SECRET: z.string().min(32),
+	MAX_FILE_SIZE: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
+};
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 
-type Env = { Bindings: Record<string, unknown> }
-const app = new Hono<Env>()
+type Env = { Bindings: Record<string, unknown> };
+const app = new Hono<Env>();
 
-app.use('*', workkit({ env: envSchema }))
-app.onError(workkitErrorHandler())
+app.use("*", workkit({ env: envSchema }));
+app.onError(workkitErrorHandler());
 
 // ─── Auth Helper ──────────────────────────────────────────────────────────────
 
 async function requireAuth(c: any): Promise<JWTPayload> {
-  const token = extractBearerToken(c.req.raw)
-  if (!token) throw new UnauthorizedError('Missing Authorization header')
-  const env = getEnv(c)
-  return verifyJWT<JWTPayload>(token, { secret: env.JWT_SECRET })
+	const token = extractBearerToken(c.req.raw);
+	if (!token) throw new UnauthorizedError("Missing Authorization header");
+	const env = getEnv(c);
+	return verifyJWT<JWTPayload>(token, { secret: env.JWT_SECRET });
 }
 
 // ─── Upload File (Direct) ─────────────────────────────────────────────────────
@@ -72,45 +72,48 @@ async function requireAuth(c: any): Promise<JWTPayload> {
 //   - Automatic error wrapping (R2 errors → WorkkitErrors)
 //   - Structured customMetadata
 
-app.post('/files', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const bucket = r2<FileMetadata>(env.FILES_BUCKET)
+app.post("/files", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const bucket = r2<FileMetadata>(env.FILES_BUCKET);
 
-  const formData = await c.req.formData()
-  const file = formData.get('file')
-  if (!(file instanceof File)) {
-    throw new ValidationError('Missing "file" in form data', [
-      { path: ['file'], message: 'Expected a file upload' },
-    ])
-  }
+	const formData = await c.req.formData();
+	const file = formData.get("file");
+	if (!(file instanceof File)) {
+		throw new ValidationError('Missing "file" in form data', [
+			{ path: ["file"], message: "Expected a file upload" },
+		]);
+	}
 
-  // Validate file size
-  if (file.size > env.MAX_FILE_SIZE) {
-    throw new ValidationError(`File too large: ${file.size} bytes (max ${env.MAX_FILE_SIZE})`, [
-      { path: ['file'], message: `Max size is ${env.MAX_FILE_SIZE} bytes` },
-    ])
-  }
+	// Validate file size
+	if (file.size > env.MAX_FILE_SIZE) {
+		throw new ValidationError(`File too large: ${file.size} bytes (max ${env.MAX_FILE_SIZE})`, [
+			{ path: ["file"], message: `Max size is ${env.MAX_FILE_SIZE} bytes` },
+		]);
+	}
 
-  const key = `uploads/${auth.sub}/${Date.now()}-${file.name}`
+	const key = `uploads/${auth.sub}/${Date.now()}-${file.name}`;
 
-  const obj = await bucket.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type },
-    customMetadata: {
-      userId: auth.sub,
-      originalName: file.name,
-      mimeType: file.type,
-      uploadedAt: new Date().toISOString(),
-    },
-  })
+	const obj = await bucket.put(key, file.stream(), {
+		httpMetadata: { contentType: file.type },
+		customMetadata: {
+			userId: auth.sub,
+			originalName: file.name,
+			mimeType: file.type,
+			uploadedAt: new Date().toISOString(),
+		},
+	});
 
-  return c.json({
-    key,
-    size: obj.size,
-    etag: obj.etag,
-    uploaded: obj.uploaded.toISOString(),
-  }, 201)
-})
+	return c.json(
+		{
+			key,
+			size: obj.size,
+			etag: obj.etag,
+			uploaded: obj.uploaded.toISOString(),
+		},
+		201,
+	);
+});
 
 // ─── Get Presigned Upload URL ─────────────────────────────────────────────────
 //
@@ -118,149 +121,149 @@ app.post('/files', async (c) => {
 // Useful for large files — the upload goes directly to R2, not through the Worker.
 
 const presignedUploadSchema = z.object({
-  filename: z.string().min(1).max(255),
-  contentType: z.string().default('application/octet-stream'),
-  maxSize: z.number().positive().optional(),
-})
+	filename: z.string().min(1).max(255),
+	contentType: z.string().default("application/octet-stream"),
+	maxSize: z.number().positive().optional(),
+});
 
-app.post('/files/presigned-upload', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const body = presignedUploadSchema.parse(await c.req.json())
+app.post("/files/presigned-upload", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const body = presignedUploadSchema.parse(await c.req.json());
 
-  const key = `uploads/${auth.sub}/${Date.now()}-${body.filename}`
+	const key = `uploads/${auth.sub}/${Date.now()}-${body.filename}`;
 
-  const url = await createPresignedUrl(env.FILES_BUCKET, {
-    key,
-    method: 'PUT',
-    expiresIn: 3600, // 1 hour
-    maxSize: body.maxSize ?? env.MAX_FILE_SIZE,
-  })
+	const url = await createPresignedUrl(env.FILES_BUCKET, {
+		key,
+		method: "PUT",
+		expiresIn: 3600, // 1 hour
+		maxSize: body.maxSize ?? env.MAX_FILE_SIZE,
+	});
 
-  return c.json({ uploadUrl: url, key, expiresIn: 3600 })
-})
+	return c.json({ uploadUrl: url, key, expiresIn: 3600 });
+});
 
 // ─── Get Presigned Download URL ───────────────────────────────────────────────
 
-app.get('/files/:key{.+}/presigned', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const key = c.req.param('key')
+app.get("/files/:key{.+}/presigned", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const key = c.req.param("key");
 
-  // Verify the file exists and belongs to the user
-  const bucket = r2<FileMetadata>(env.FILES_BUCKET)
-  const head = await bucket.head(key)
-  if (!head) {
-    throw new NotFoundError(`File not found: ${key}`)
-  }
+	// Verify the file exists and belongs to the user
+	const bucket = r2<FileMetadata>(env.FILES_BUCKET);
+	const head = await bucket.head(key);
+	if (!head) {
+		throw new NotFoundError(`File not found: ${key}`);
+	}
 
-  if (head.customMetadata?.userId !== auth.sub) {
-    throw new UnauthorizedError('You do not own this file')
-  }
+	if (head.customMetadata?.userId !== auth.sub) {
+		throw new UnauthorizedError("You do not own this file");
+	}
 
-  const url = await createPresignedUrl(env.FILES_BUCKET, {
-    key,
-    method: 'GET',
-    expiresIn: 3600,
-  })
+	const url = await createPresignedUrl(env.FILES_BUCKET, {
+		key,
+		method: "GET",
+		expiresIn: 3600,
+	});
 
-  return c.json({ downloadUrl: url, expiresIn: 3600 })
-})
+	return c.json({ downloadUrl: url, expiresIn: 3600 });
+});
 
 // ─── Download File ────────────────────────────────────────────────────────────
 //
 // Streams the file directly from R2 to the client with proper headers.
 
-app.get('/files/:key{.+}', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const key = c.req.param('key')
+app.get("/files/:key{.+}", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const key = c.req.param("key");
 
-  const bucket = r2<FileMetadata>(env.FILES_BUCKET)
-  const obj = await bucket.get(key)
+	const bucket = r2<FileMetadata>(env.FILES_BUCKET);
+	const obj = await bucket.get(key);
 
-  if (!obj) {
-    throw new NotFoundError(`File not found: ${key}`)
-  }
+	if (!obj) {
+		throw new NotFoundError(`File not found: ${key}`);
+	}
 
-  // Verify ownership
-  if (obj.customMetadata?.userId !== auth.sub) {
-    throw new UnauthorizedError('You do not own this file')
-  }
+	// Verify ownership
+	if (obj.customMetadata?.userId !== auth.sub) {
+		throw new UnauthorizedError("You do not own this file");
+	}
 
-  const headers = new Headers()
-  headers.set('Content-Type', obj.httpMetadata?.contentType ?? 'application/octet-stream')
-  headers.set('Content-Length', String(obj.size))
-  headers.set('ETag', obj.etag)
+	const headers = new Headers();
+	headers.set("Content-Type", obj.httpMetadata?.contentType ?? "application/octet-stream");
+	headers.set("Content-Length", String(obj.size));
+	headers.set("ETag", obj.etag);
 
-  if (obj.customMetadata?.originalName) {
-    headers.set('Content-Disposition', `attachment; filename="${obj.customMetadata.originalName}"`)
-  }
+	if (obj.customMetadata?.originalName) {
+		headers.set("Content-Disposition", `attachment; filename="${obj.customMetadata.originalName}"`);
+	}
 
-  return new Response(obj.body, { headers })
-})
+	return new Response(obj.body, { headers });
+});
 
 // ─── List Files ───────────────────────────────────────────────────────────────
 //
 // Lists all files for the authenticated user with pagination.
 
-app.get('/files', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const bucket = r2<FileMetadata>(env.FILES_BUCKET)
+app.get("/files", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const bucket = r2<FileMetadata>(env.FILES_BUCKET);
 
-  const cursor = c.req.query('cursor')
-  const limit = Math.min(parseInt(c.req.query('limit') ?? '50', 10), 100)
+	const cursor = c.req.query("cursor");
+	const limit = Math.min(Number.parseInt(c.req.query("limit") ?? "50", 10), 100);
 
-  // List with prefix scoping to user's directory
-  const page = await bucket.listPage({
-    prefix: `uploads/${auth.sub}/`,
-    limit,
-    cursor: cursor ?? undefined,
-  })
+	// List with prefix scoping to user's directory
+	const page = await bucket.listPage({
+		prefix: `uploads/${auth.sub}/`,
+		limit,
+		cursor: cursor ?? undefined,
+	});
 
-  const files = page.objects.map((obj) => ({
-    key: obj.key,
-    size: obj.size,
-    uploaded: obj.uploaded.toISOString(),
-    contentType: obj.httpMetadata?.contentType,
-    originalName: obj.customMetadata?.originalName,
-  }))
+	const files = page.objects.map((obj) => ({
+		key: obj.key,
+		size: obj.size,
+		uploaded: obj.uploaded.toISOString(),
+		contentType: obj.httpMetadata?.contentType,
+		originalName: obj.customMetadata?.originalName,
+	}));
 
-  return c.json({
-    files,
-    cursor: page.cursor,
-    hasMore: page.truncated,
-  })
-})
+	return c.json({
+		files,
+		cursor: page.cursor,
+		hasMore: page.truncated,
+	});
+});
 
 // ─── Delete File ──────────────────────────────────────────────────────────────
 
-app.delete('/files/:key{.+}', async (c) => {
-  const auth = await requireAuth(c)
-  const env = getEnv(c)
-  const key = c.req.param('key')
+app.delete("/files/:key{.+}", async (c) => {
+	const auth = await requireAuth(c);
+	const env = getEnv(c);
+	const key = c.req.param("key");
 
-  const bucket = r2<FileMetadata>(env.FILES_BUCKET)
+	const bucket = r2<FileMetadata>(env.FILES_BUCKET);
 
-  // Verify ownership before deleting
-  const head = await bucket.head(key)
-  if (!head) {
-    throw new NotFoundError(`File not found: ${key}`)
-  }
+	// Verify ownership before deleting
+	const head = await bucket.head(key);
+	if (!head) {
+		throw new NotFoundError(`File not found: ${key}`);
+	}
 
-  if (head.customMetadata?.userId !== auth.sub) {
-    throw new UnauthorizedError('You do not own this file')
-  }
+	if (head.customMetadata?.userId !== auth.sub) {
+		throw new UnauthorizedError("You do not own this file");
+	}
 
-  await bucket.delete(key)
-  return c.json({ message: 'File deleted', key })
-})
+	await bucket.delete(key);
+	return c.json({ message: "File deleted", key });
+});
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
-app.get('/health', (c) => c.json({ status: 'ok' }))
+app.get("/health", (c) => c.json({ status: "ok" }));
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-export default app
+export default app;

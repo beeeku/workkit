@@ -1,8 +1,9 @@
 {
   "name": "@workkit/types",
   "version": "0.0.1",
-  "description": "Shared TypeScript types for Cloudflare Workers \u2014 Result, branded IDs, typed bindings, and utility types",
+  "description": "Shared TypeScript types for Cloudflare Workers — Result, branded IDs, typed bindings, and utility types",
   "type": "module",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,11 +11,18 @@
       "import": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "bunup",

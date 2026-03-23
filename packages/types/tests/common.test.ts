@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
+	type Awaited,
 	type Dict,
 	type KeysMatching,
 	type MaybePromise,
@@ -87,6 +88,16 @@ describe("common", () => {
 			type Obj = { name: string; age: number; active: boolean; count: number };
 			type NumberKeys = KeysMatching<Obj, number>;
 			expectTypeOf<NumberKeys>().toEqualTypeOf<"age" | "count">();
+		});
+
+		it("Awaited extracts resolved type from Promise", () => {
+			expectTypeOf<Awaited<Promise<number>>>().toBeNumber();
+			expectTypeOf<Awaited<Promise<string>>>().toBeString();
+		});
+
+		it("Awaited passes through non-Promise types", () => {
+			expectTypeOf<Awaited<number>>().toBeNumber();
+			expectTypeOf<Awaited<string>>().toBeString();
 		});
 	});
 });

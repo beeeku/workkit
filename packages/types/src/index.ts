@@ -52,6 +52,19 @@ export type {
 	KVNamespaceListKey,
 } from "./bindings";
 
+// Env types
+export type {
+	BindingDef,
+	BindingTypeCheck,
+	EnvSchema,
+	InferEnv,
+	InferBindingType,
+	EnvParseSuccess,
+	EnvParseFailure,
+	EnvValidationError,
+	EnvParseResult,
+} from "./env";
+
 // JSON types
 export type {
 	JsonPrimitive,
@@ -83,6 +96,7 @@ export type {
 // Common utility types
 export {
 	type MaybePromise,
+	type Awaited,
 	type Prettify,
 	type RequireKeys,
 	type OptionalKeys,
