@@ -1,3 +1,5 @@
+import { type MockOperations, createOperationTracker } from "./observable";
+
 interface MockKVEntry {
 	value: string;
 	expiration?: number;
@@ -8,13 +10,32 @@ interface MockKVEntry {
  * In-memory KVNamespace mock for unit testing.
  * Map-based storage with expiration support.
  */
-export function createMockKV(): KVNamespace & { _store: Map<string, MockKVEntry> } {
+export function createMockKV(
+	initialData?: Record<string, unknown>,
+): KVNamespace & { _store: Map<string, MockKVEntry> } & MockOperations {
 	const store = new Map<string, MockKVEntry>();
+	const tracker = createOperationTracker();
+
+	if (initialData) {
+		for (const [key, value] of Object.entries(initialData)) {
+			store.set(key, {
+				value: typeof value === "string" ? JSON.stringify(value) : JSON.stringify(value),
+			});
+		}
+	}
 
 	return {
 		_store: store,
+		get operations() {
+			return tracker.operations;
+		},
+		reads: tracker.reads.bind(tracker),
+		writes: tracker.writes.bind(tracker),
+		deletes: tracker.deletes.bind(tracker),
+		reset: tracker.reset.bind(tracker),
 
 		async get(key: string, options?: any): Promise<any> {
+			tracker._record("read", key);
 			const entry = store.get(key);
 			if (!entry) return null;
 			if (entry.expiration && entry.expiration < Date.now() / 1000) {
@@ -27,6 +48,7 @@ export function createMockKV(): KVNamespace & { _store: Map<string, MockKVEntry>
 		},
 
 		async getWithMetadata(key: string, options?: any): Promise<any> {
+			tracker._record("read", key);
 			const entry = store.get(key);
 			if (!entry) return { value: null, metadata: null, cacheStatus: null };
 			if (entry.expiration && entry.expiration < Date.now() / 1000) {
@@ -39,6 +61,7 @@ export function createMockKV(): KVNamespace & { _store: Map<string, MockKVEntry>
 		},
 
 		async put(key: string, value: any, options?: any): Promise<void> {
+			tracker._record("write", key);
 			const entry: MockKVEntry = {
 				value: typeof value === "string" ? value : JSON.stringify(value),
 			};
@@ -50,10 +73,12 @@ export function createMockKV(): KVNamespace & { _store: Map<string, MockKVEntry>
 		},
 
 		async delete(key: string): Promise<void> {
+			tracker._record("delete", key);
 			store.delete(key);
 		},
 
 		async list(options?: any): Promise<any> {
+			tracker._record("list");
 			const prefix = options?.prefix ?? "";
 			const limit = options?.limit ?? 1000;
 			const entries = [...store.entries()]

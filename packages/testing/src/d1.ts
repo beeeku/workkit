@@ -1,6 +1,8 @@
 // @ts-nocheck — Mock implementation uses loose typing intentionally
 /* eslint-disable */
 
+import { type MockOperations, createOperationTracker } from "./observable";
+
 interface MockD1Meta {
 	changed_db: boolean;
 	changes: number;
@@ -35,8 +37,9 @@ interface TableData {
  */
 export function createMockD1(
 	initialTables?: Record<string, Record<string, unknown>[]>,
-): D1Database {
+): D1Database & MockOperations {
 	const tables = new Map<string, TableData>();
+	const tracker = createOperationTracker();
 
 	if (initialTables) {
 		for (const [name, rows] of Object.entries(initialTables)) {
@@ -67,10 +70,22 @@ export function createMockD1(
 			return { results: [], meta: mockMeta({ changed_db: true }) };
 		}
 
-		if (/^INSERT\s+INTO/i.test(trimmed)) return executeInsert(trimmed, params);
-		if (/^SELECT/i.test(trimmed)) return executeSelect(trimmed, params);
-		if (/^UPDATE/i.test(trimmed)) return executeUpdate(trimmed, params);
-		if (/^DELETE\s+FROM/i.test(trimmed)) return executeDelete(trimmed, params);
+		if (/^INSERT\s+INTO/i.test(trimmed)) {
+			tracker._record("write");
+			return executeInsert(trimmed, params);
+		}
+		if (/^SELECT/i.test(trimmed)) {
+			tracker._record("read");
+			return executeSelect(trimmed, params);
+		}
+		if (/^UPDATE/i.test(trimmed)) {
+			tracker._record("write");
+			return executeUpdate(trimmed, params);
+		}
+		if (/^DELETE\s+FROM/i.test(trimmed)) {
+			tracker._record("delete");
+			return executeDelete(trimmed, params);
+		}
 
 		if (/^DROP\s+TABLE/i.test(trimmed)) {
 			const match = trimmed.match(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?["`]?(\w+)["`]?/i);
@@ -537,6 +552,14 @@ export function createMockD1(
 	}
 
 	const db = {
+		get operations() {
+			return tracker.operations;
+		},
+		reads: tracker.reads.bind(tracker),
+		writes: tracker.writes.bind(tracker),
+		deletes: tracker.deletes.bind(tracker),
+		reset: tracker.reset.bind(tracker),
+
 		prepare(sql: string) {
 			const stmt = createStatement(sql);
 			const originalBind = stmt.bind.bind(stmt);
@@ -575,7 +598,7 @@ export function createMockD1(
 		dump: async () => new ArrayBuffer(0),
 	};
 
-	return db as unknown as D1Database;
+	return db as unknown as D1Database & MockOperations;
 }
 
 /**

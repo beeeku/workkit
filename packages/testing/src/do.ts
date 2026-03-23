@@ -1,17 +1,23 @@
+import { type MockOperations, createOperationTracker } from "./observable";
+
 /**
  * In-memory DurableObjectStorage mock for unit testing.
  */
 export function createMockDO(): DurableObjectStorage & {
 	_store: Map<string, unknown>;
 	_alarm: number | null;
-} {
+} & MockOperations {
 	const store = new Map<string, unknown>();
 	let alarm: number | null = null;
+	const tracker = createOperationTracker();
 
 	function createStorageApi(targetStore: Map<string, unknown>) {
 		return {
 			async get(keyOrKeys: string | string[]): Promise<any> {
 				if (Array.isArray(keyOrKeys)) {
+					for (const key of keyOrKeys) {
+						tracker._record("read", key);
+					}
 					const result = new Map<string, unknown>();
 					for (const key of keyOrKeys) {
 						if (targetStore.has(key)) {
@@ -20,14 +26,17 @@ export function createMockDO(): DurableObjectStorage & {
 					}
 					return result;
 				}
+				tracker._record("read", keyOrKeys);
 				return targetStore.get(keyOrKeys);
 			},
 
 			async put(keyOrEntries: string | Record<string, unknown>, value?: unknown): Promise<void> {
 				if (typeof keyOrEntries === "string") {
+					tracker._record("write", keyOrEntries);
 					targetStore.set(keyOrEntries, value);
 				} else {
 					for (const [k, v] of Object.entries(keyOrEntries)) {
+						tracker._record("write", k);
 						targetStore.set(k, v);
 					}
 				}
@@ -37,10 +46,12 @@ export function createMockDO(): DurableObjectStorage & {
 				if (Array.isArray(keyOrKeys)) {
 					let count = 0;
 					for (const key of keyOrKeys) {
+						tracker._record("delete", key);
 						if (targetStore.delete(key)) count++;
 					}
 					return count;
 				}
+				tracker._record("delete", keyOrKeys);
 				return targetStore.delete(keyOrKeys);
 			},
 
@@ -51,6 +62,7 @@ export function createMockDO(): DurableObjectStorage & {
 				limit?: number;
 				reverse?: boolean;
 			}): Promise<Map<string, unknown>> {
+				tracker._record("list");
 				let entries = [...targetStore.entries()].sort(([a], [b]) => a.localeCompare(b));
 
 				if (options?.prefix) {
@@ -79,6 +91,13 @@ export function createMockDO(): DurableObjectStorage & {
 	const storage = {
 		_store: store,
 		_alarm: alarm,
+		get operations() {
+			return tracker.operations;
+		},
+		reads: tracker.reads.bind(tracker),
+		writes: tracker.writes.bind(tracker),
+		deletes: tracker.deletes.bind(tracker),
+		reset: tracker.reset.bind(tracker),
 
 		get: api.get,
 		put: api.put,
