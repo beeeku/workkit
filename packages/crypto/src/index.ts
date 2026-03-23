@@ -10,8 +10,18 @@ export { deriveKey } from "./derive";
 // Hashing
 export { hash, hmac } from "./hash";
 
+// Signing
+export { sign, generateSigningKeyPair, exportSigningKey, importSigningKey } from "./sign";
+
 // Random utilities
 export { randomBytes, randomHex, randomUUID } from "./random";
 
 // Types
-export type { HashAlgorithm, SealedEnvelope, HmacFn } from "./types";
+export type {
+	HashAlgorithm,
+	SealedEnvelope,
+	HmacFn,
+	SignAlgorithm,
+	SignFn,
+	SigningKeyPair,
+} from "./types";
