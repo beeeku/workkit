@@ -43,4 +43,20 @@ export const envelope = {
 		// Decrypt the data with the DEK
 		return decrypt(dek, encryptedData);
 	},
+
+	/**
+	 * Rotate the master key for an existing envelope.
+	 * Decrypts the DEK with the old master, re-encrypts with the new master.
+	 * Data remains encrypted with the same DEK — O(1) regardless of data size.
+	 */
+	async rotate(
+		oldMasterKey: CryptoKey,
+		newMasterKey: CryptoKey,
+		encryptedKey: string,
+		encryptedData: string,
+	): Promise<SealedEnvelope> {
+		const dekExported = (await decrypt(oldMasterKey, encryptedKey)) as string;
+		const newEncryptedKey = await encrypt(newMasterKey, dekExported);
+		return { encryptedData, encryptedKey: newEncryptedKey };
+	},
 };
