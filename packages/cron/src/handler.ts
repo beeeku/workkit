@@ -1,6 +1,13 @@
+import { ValidationError } from "@workkit/errors";
 import type { ExecutionContext, ScheduledEvent } from "@workkit/types";
 import { matchCron } from "./matcher";
-import type { CronHandler, CronHandlerOptions, CronMiddleware, CronTaskHandler } from "./types";
+import type {
+	CronHandler,
+	CronHandlerOptions,
+	CronMiddleware,
+	CronTask,
+	CronTaskHandler,
+} from "./types";
 
 /**
  * Apply middleware stack to a handler.
@@ -20,6 +27,62 @@ function applyMiddleware<E>(
 }
 
 /**
+ * Topological sort using Kahn's algorithm.
+ * Returns task names in dependency order.
+ * Throws ValidationError if a cycle is detected.
+ */
+function topoSort(taskNames: string[], tasks: Record<string, CronTask<unknown>>): string[] {
+	// Build adjacency list and in-degree map
+	const inDegree = new Map<string, number>();
+	const dependents = new Map<string, string[]>();
+	const taskSet = new Set(taskNames);
+
+	for (const name of taskNames) {
+		inDegree.set(name, 0);
+		dependents.set(name, []);
+	}
+
+	for (const name of taskNames) {
+		const deps = tasks[name]?.after ?? [];
+		for (const dep of deps) {
+			if (taskSet.has(dep)) {
+				inDegree.set(name, (inDegree.get(name) ?? 0) + 1);
+				dependents.get(dep)!.push(name);
+			}
+		}
+	}
+
+	// Collect nodes with no incoming edges
+	const queue: string[] = [];
+	for (const name of taskNames) {
+		if (inDegree.get(name) === 0) {
+			queue.push(name);
+		}
+	}
+
+	const sorted: string[] = [];
+	while (queue.length > 0) {
+		const node = queue.shift()!;
+		sorted.push(node);
+		for (const dep of dependents.get(node) ?? []) {
+			const newDegree = (inDegree.get(dep) ?? 1) - 1;
+			inDegree.set(dep, newDegree);
+			if (newDegree === 0) {
+				queue.push(dep);
+			}
+		}
+	}
+
+	if (sorted.length !== taskNames.length) {
+		throw new ValidationError("Circular dependency detected in task definitions", [
+			{ path: ["tasks"], message: "Tasks contain circular dependencies" },
+		]);
+	}
+
+	return sorted;
+}
+
+/**
  * Create a scheduled event handler that routes incoming cron triggers
  * to matching task handlers.
  *
@@ -29,31 +92,50 @@ function applyMiddleware<E>(
 export function createCronHandler<E = unknown>(options: CronHandlerOptions<E>): CronHandler<E> {
 	const { tasks, middleware = [], onNoMatch } = options;
 
+	// Validate dependencies at creation time — detect cycles early
+	const allNames = Object.keys(tasks);
+	topoSort(allNames, tasks as Record<string, CronTask<unknown>>);
+
 	return async (event: ScheduledEvent, env: E, ctx: ExecutionContext): Promise<void> => {
-		const matched: { name: string; handler: CronTaskHandler<E> }[] = [];
+		const matchedMap = new Map<string, CronTaskHandler<E>>();
 
 		for (const [name, task] of Object.entries(tasks)) {
 			if (matchCron(task.schedule, event.cron)) {
 				const wrappedHandler =
 					middleware.length > 0 ? applyMiddleware(task.handler, middleware, name) : task.handler;
-				matched.push({ name, handler: wrappedHandler });
+				matchedMap.set(name, wrappedHandler);
 			}
 		}
 
-		if (matched.length === 0) {
+		if (matchedMap.size === 0) {
 			if (onNoMatch) {
 				await onNoMatch(event, env, ctx);
 			}
 			return;
 		}
 
-		// Run all matching tasks. If any throws, propagate the first error.
+		// Topological sort of matched tasks
+		const matchedNames = [...matchedMap.keys()];
+		const sorted = topoSort(matchedNames, tasks as Record<string, CronTask<unknown>>);
+
+		// Execute in dependency order, tracking failures
+		const failed = new Set<string>();
 		const errors: Error[] = [];
 
-		for (const { handler } of matched) {
+		for (const name of sorted) {
+			// Skip if any dependency failed
+			const deps = tasks[name]?.after ?? [];
+			const depFailed = deps.some((dep) => failed.has(dep));
+			if (depFailed) {
+				failed.add(name);
+				continue;
+			}
+
+			const handler = matchedMap.get(name)!;
 			try {
 				await handler(event, env, ctx);
 			} catch (error) {
+				failed.add(name);
 				errors.push(error instanceof Error ? error : new Error(String(error)));
 			}
 		}

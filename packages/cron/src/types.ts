@@ -6,6 +6,8 @@ export interface CronTask<E = unknown> {
 	schedule: string;
 	/** Task handler function */
 	handler: CronTaskHandler<E>;
+	/** Task names that must complete before this task runs */
+	after?: string[];
 }
 
 /** Handler function for a cron task */
@@ -32,6 +34,8 @@ export interface CronHandlerOptions<E = unknown> {
 	middleware?: CronMiddleware<E>[];
 	/** Called when no task matches the incoming cron expression */
 	onNoMatch?: (event: ScheduledEvent, env: E, ctx: ExecutionContext) => void | Promise<void>;
+	/** Run independent tasks in parallel (default: false for backward compat) */
+	parallel?: boolean;
 }
 
 /** The scheduled handler returned by createCronHandler */

@@ -1,6 +1,6 @@
 import { TimeoutError } from "@workkit/errors";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { withErrorReporting, withRetry, withTimeout } from "../src/middleware";
+import { withErrorReporting, withJitter, withRetry, withTimeout } from "../src/middleware";
 import { createMockCtx, createMockEvent } from "./helpers/mock";
 
 type TestEnv = { ERROR_QUEUE: string };
@@ -187,5 +187,37 @@ describe("withErrorReporting()", () => {
 
 		expect(consoleSpy).toHaveBeenCalled();
 		consoleSpy.mockRestore();
+	});
+});
+
+describe("withJitter", () => {
+	it("executes handler after a delay", async () => {
+		const handler = vi.fn();
+		const jittered = withJitter(0.1)(handler, "test-task");
+		await jittered(createMockEvent("0 * * * *"), {} as any, createMockCtx());
+		expect(handler).toHaveBeenCalledOnce();
+	});
+
+	it("delay is within range", async () => {
+		const start = Date.now();
+		const handler = vi.fn();
+		const jittered = withJitter(0.05)(handler, "test-task");
+		await jittered(createMockEvent("0 * * * *"), {} as any, createMockCtx());
+		const elapsed = Date.now() - start;
+		expect(elapsed).toBeLessThanOrEqual(100);
+	});
+
+	it("propagates handler errors through jitter", async () => {
+		const handler = vi.fn().mockRejectedValue(new Error("task failed"));
+		const jittered = withJitter(0.01)(handler, "test-task");
+		await expect(jittered(createMockEvent("0 * * * *"), {} as any, createMockCtx())).rejects.toThrow("task failed");
+	});
+
+	it("throws ValidationError for zero maxSeconds", () => {
+		expect(() => withJitter(0)).toThrow();
+	});
+
+	it("throws ValidationError for negative maxSeconds", () => {
+		expect(() => withJitter(-1)).toThrow();
 	});
 });
