@@ -1,6 +1,6 @@
 {
   "name": "@workkit/queue",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Ergonomic typed queue producer/consumer patterns for Cloudflare Workers Queues",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
