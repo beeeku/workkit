@@ -1,4 +1,4 @@
-import { TimeoutError } from "@workkit/errors";
+import { TimeoutError, ValidationError } from "@workkit/errors";
 import type { ExecutionContext, ScheduledEvent } from "@workkit/types";
 import type { CronMiddleware, CronTaskHandler, ErrorReporter } from "./types";
 
@@ -97,6 +97,30 @@ export function withErrorReporting<E = unknown>(
 				}
 				throw error;
 			}
+		};
+	};
+}
+
+/**
+ * Create a middleware that adds random jitter before task execution.
+ * Useful for preventing thundering herd problems when multiple workers
+ * have the same cron schedule.
+ *
+ * @param maxSeconds Maximum jitter delay in seconds (must be positive)
+ * @returns Middleware that delays execution by a random amount up to maxSeconds
+ */
+export function withJitter<E = unknown>(maxSeconds: number): CronMiddleware<E> {
+	if (maxSeconds <= 0) {
+		throw new ValidationError("maxSeconds must be positive", [
+			{ path: ["maxSeconds"], message: `Expected positive number, got ${maxSeconds}` },
+		]);
+	}
+
+	return (handler: CronTaskHandler<E>, _taskName: string): CronTaskHandler<E> => {
+		return async (event: ScheduledEvent, env: E, ctx: ExecutionContext): Promise<void> => {
+			const delayMs = Math.random() * maxSeconds * 1000;
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			await handler(event, env, ctx);
 		};
 	};
 }

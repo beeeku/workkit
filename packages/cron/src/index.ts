@@ -22,7 +22,7 @@ export { createCronHandler } from "./handler";
 export { matchCron } from "./matcher";
 
 // Middleware
-export { withTimeout, withRetry, withErrorReporting } from "./middleware";
+export { withTimeout, withRetry, withErrorReporting, withJitter } from "./middleware";
 
 // Lock
 export { withLock, acquireLock } from "./lock";
