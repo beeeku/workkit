@@ -1,6 +1,15 @@
 // Typed Storage
 export { typedStorage } from "./storage";
 
+// Versioned Storage
+export { versionedStorage } from "./versioned-storage";
+
+// Event Store
+export { createEventStore } from "./event-store";
+
+// Time Series
+export { createTimeSeries } from "./time-series";
+
 // State Machine
 export { createStateMachine } from "./state-machine";
 
@@ -23,3 +32,17 @@ export type {
 	AlarmHandler,
 	DOClient,
 } from "./types";
+
+export type { Migration, VersionedStorageOptions } from "./versioned-storage";
+
+export type {
+	EventStore,
+	EventStoreOptions,
+	StoredEvent,
+} from "./event-store";
+
+export type {
+	TimeSeries,
+	TimeSeriesEntry,
+	TimeSeriesOptions,
+} from "./time-series";
