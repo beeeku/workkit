@@ -1,6 +1,6 @@
 {
   "name": "@workkit/kv",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Typed KV operations with Standard Schema validation for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

@@ -1,7 +1,7 @@
 {
   "name": "@workkit/do",
-  "version": "0.0.1",
-  "description": "Durable Object abstractions for Cloudflare Workers \u2014 typed storage, state machines, alarm helpers, DO client utilities",
+  "version": "0.1.0",
+  "description": "Durable Object abstractions for Cloudflare Workers — typed storage, state machines, alarm helpers, DO client utilities",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

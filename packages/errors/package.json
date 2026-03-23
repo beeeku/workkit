@@ -1,6 +1,6 @@
 {
   "name": "@workkit/errors",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Structured error types with retry classification for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

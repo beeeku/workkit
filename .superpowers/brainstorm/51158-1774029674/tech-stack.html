@@ -1,0 +1,65 @@
+<h2>What framework should power the site?</h2>
+<p class="subtitle">You want to dogfood workkit — so the site should use @workkit/* packages. The question is what sits on top.</p>
+
+<div class="options">
+  <div class="option" data-choice="astro-starlight" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Astro + Starlight (docs) + custom pages</h3>
+      <p>Starlight handles docs/guides with search, sidebar, i18n. Custom Astro pages for landing, playground, comparisons. Deploys to Cloudflare Pages. Uses <code>@workkit/astro</code> integration.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Best-in-class docs out of the box (TanStack uses this)</li>
+          <li>Your 16 markdown docs work immediately</li>
+          <li>Dogfoods @workkit/astro</li>
+          <li>Static + SSR hybrid on Cloudflare Pages</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Starlight has opinions — customization requires overrides</li>
+          <li>Playground needs a custom island component</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hono-custom" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hono + custom everything (full dogfood)</h3>
+      <p>Build the entire site as a Cloudflare Worker with Hono. Render docs from markdown, build your own playground, use <code>@workkit/hono</code>, <code>@workkit/kv</code> (caching), <code>@workkit/d1</code> (analytics), <code>@workkit/r2</code> (assets).</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Maximum dogfooding — uses 8+ workkit packages</li>
+          <li>The site IS the demo ("built with workkit")</li>
+          <li>Full control over everything</li>
+          <li>Shows what's possible with the ecosystem</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Build docs infrastructure from scratch</li>
+          <li>No search, sidebar, i18n for free</li>
+          <li>Significantly more work upfront</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Astro Starlight (docs) + Hono Worker (API/playground backend)</h3>
+      <p>Best of both: Starlight for docs, custom Astro pages for landing/comparisons. A separate Hono Worker powers the playground, live demos, and analytics — dogfooding the full workkit stack.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Docs are excellent AND the backend is a showcase</li>
+          <li>Playground API uses @workkit/hono, kv, d1, r2, etc.</li>
+          <li>"Docs powered by Starlight, playground powered by workkit"</li>
+          <li>Ship docs fast, iterate on playground separately</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Two deployments to manage</li>
+          <li>Slightly more infra complexity</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 {
   "name": "@workkit/astro",
-  "version": "0.0.1",
-  "description": "Astro integration for Cloudflare Pages \u2014 typed env access, binding helpers, middleware",
+  "version": "0.1.0",
+  "description": "Astro integration for Cloudflare Pages — typed env access, binding helpers, middleware",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

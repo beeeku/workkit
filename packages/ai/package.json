@@ -1,7 +1,7 @@
 {
   "name": "@workkit/ai",
-  "version": "0.0.1",
-  "description": "Typed helpers for Cloudflare Workers AI \u2014 type-safe model calls, streaming, fallback chains",
+  "version": "0.1.0",
+  "description": "Typed helpers for Cloudflare Workers AI — type-safe model calls, streaming, fallback chains",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

@@ -49,7 +49,7 @@
     },
     "integrations/astro": {
       "name": "@workkit/astro",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/env": "workspace:*",
         "@workkit/errors": "workspace:*",
@@ -64,7 +64,7 @@
     },
     "integrations/hono": {
       "name": "@workkit/hono",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/env": "workspace:*",
         "@workkit/errors": "workspace:*",
@@ -80,7 +80,7 @@
     },
     "integrations/remix": {
       "name": "@workkit/remix",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/env": "workspace:*",
         "@workkit/errors": "workspace:*",
@@ -95,7 +95,7 @@
     },
     "packages/ai": {
       "name": "@workkit/ai",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
@@ -103,7 +103,7 @@
     },
     "packages/ai-gateway": {
       "name": "@workkit/ai-gateway",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
@@ -111,7 +111,7 @@
     },
     "packages/api": {
       "name": "@workkit/api",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -122,7 +122,7 @@
     },
     "packages/auth": {
       "name": "@workkit/auth",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -132,11 +132,11 @@
     },
     "packages/cache": {
       "name": "@workkit/cache",
-      "version": "0.0.1",
+      "version": "0.1.0",
     },
     "packages/cli": {
       "name": "workkit",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "bin": {
         "workkit": "dist/index.js",
       },
@@ -146,7 +146,7 @@
     },
     "packages/cron": {
       "name": "@workkit/cron",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -156,11 +156,11 @@
     },
     "packages/crypto": {
       "name": "@workkit/crypto",
-      "version": "0.0.1",
+      "version": "0.1.0",
     },
     "packages/d1": {
       "name": "@workkit/d1",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -170,7 +170,7 @@
     },
     "packages/do": {
       "name": "@workkit/do",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -180,7 +180,7 @@
     },
     "packages/env": {
       "name": "@workkit/env",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -199,7 +199,7 @@
     },
     "packages/errors": {
       "name": "@workkit/errors",
-      "version": "0.0.1",
+      "version": "1.0.0",
       "devDependencies": {
         "@workkit/types": "workspace:*",
       },
@@ -212,7 +212,7 @@
     },
     "packages/kv": {
       "name": "@workkit/kv",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -231,7 +231,7 @@
     },
     "packages/queue": {
       "name": "@workkit/queue",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
@@ -239,7 +239,7 @@
     },
     "packages/r2": {
       "name": "@workkit/r2",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
@@ -247,7 +247,7 @@
     },
     "packages/ratelimit": {
       "name": "@workkit/ratelimit",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "workspace:*",
@@ -255,11 +255,11 @@
     },
     "packages/testing": {
       "name": "@workkit/testing",
-      "version": "0.0.1",
+      "version": "0.1.0",
     },
     "packages/types": {
       "name": "@workkit/types",
-      "version": "0.0.1",
+      "version": "1.0.0",
       "devDependencies": {
         "@standard-schema/spec": "^1.0.0",
       },

@@ -1,0 +1,44 @@
+<h2>What should the playground do?</h2>
+<p class="subtitle">The playground is the wow-factor. But scope matters — pick what ships first.</p>
+
+<div class="options">
+  <div class="option" data-choice="code-editor" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Code Editor + Run (like StackBlitz/CodeSandbox)</h3>
+      <p>Monaco editor with workkit packages pre-loaded. Users write Worker code, hit Run, and see the response. Code executes on a real Cloudflare Worker backend with actual bindings (KV, D1, R2).</p>
+      <ul style="margin-top:8px;opacity:0.8;font-size:13px">
+        <li>Full editor experience with autocomplete</li>
+        <li>Real bindings (sandboxed per session)</li>
+        <li>Share snippets via URL</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="guided-examples" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Guided Examples (like Svelte REPL)</h3>
+      <p>Pre-built examples with editable code. Each example demonstrates one package. Users tweak values and see results. Before/after toggle shows raw Cloudflare API vs workkit.</p>
+      <ul style="margin-top:8px;opacity:0.8;font-size:13px">
+        <li>Curated, always-working examples</li>
+        <li>Before/after comparison built in</li>
+        <li>Lower complexity to build</li>
+        <li>Each example links to the relevant docs page</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="both-phased" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Guided First → Full Editor Later</h3>
+      <p>Ship guided examples first (each of your 8 existing examples becomes a playground entry). Phase 2 adds a free-form editor. The guided examples become "starter templates" in the full editor.</p>
+      <ul style="margin-top:8px;opacity:0.8;font-size:13px">
+        <li>Ships fast — examples already exist</li>
+        <li>Evolves naturally into full playground</li>
+        <li>Guided examples are better for adoption anyway</li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 {
   "name": "@workkit/api",
-  "version": "0.0.1",
-  "description": "Declarative API definitions with Standard Schema validation for Cloudflare Workers \u2014 Encore-inspired typed endpoints",
+  "version": "0.1.0",
+  "description": "Declarative API definitions with Standard Schema validation for Cloudflare Workers — Encore-inspired typed endpoints",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

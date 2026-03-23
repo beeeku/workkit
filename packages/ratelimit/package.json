@@ -1,7 +1,7 @@
 {
   "name": "@workkit/ratelimit",
-  "version": "0.0.1",
-  "description": "Rate limiting primitives for Cloudflare Workers \u2014 fixed window, sliding window, and token bucket algorithms",
+  "version": "0.1.0",
+  "description": "Rate limiting primitives for Cloudflare Workers — fixed window, sliding window, and token bucket algorithms",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

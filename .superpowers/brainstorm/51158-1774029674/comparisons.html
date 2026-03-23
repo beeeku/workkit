@@ -1,0 +1,74 @@
+<h2>How should comparisons and live demos work?</h2>
+<p class="subtitle">Two features to nail down — then I'll present the full design</p>
+
+<div class="section">
+  <h3>Comparisons — what to compare against?</h3>
+  <p class="subtitle">Pick all that apply</p>
+</div>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="raw-cf" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Raw Cloudflare APIs</h3>
+      <p>Before/after: verbose raw binding code vs clean workkit code. Your examples already have these comments. High impact — this is the core pitch.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="sst" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>SST / Ion</h3>
+      <p>Infrastructure-as-code approach vs workkit's library approach. Different philosophies — SST wraps deployment, workkit wraps bindings.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hono-only" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Hono-only (no workkit)</h3>
+      <p>Show what Hono gives you (routing, middleware) vs what workkit adds on top (typed bindings, error handling, env validation). Complementary, not competitive.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="feature-matrix" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Feature Matrix Page</h3>
+      <p>Grid comparing workkit vs raw APIs vs flarekit vs superflare vs worktop (dead). Shows feature coverage per package. Like TanStack's comparison tables.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px">
+  <h3>Live Demos — what to deploy?</h3>
+  <p class="subtitle">Pick all that apply</p>
+</div>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="demo-api" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Live REST API</h3>
+      <p>Deployed Worker running the rest-api example. Users can hit endpoints directly and see responses. Shows @workkit/hono + d1 + auth + errors in action.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="demo-realtime" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Realtime Counter</h3>
+      <p>Deployed Durable Object counter. Multiple visitors see the same count update live. Shows @workkit/do state machines in action.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="demo-ai" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>AI Chatbot</h3>
+      <p>Deployed AI chatbot using Workers AI. Streaming responses with rate limiting. Shows @workkit/ai + ratelimit + cache.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="demo-upload" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>File Upload</h3>
+      <p>Drag-and-drop file upload to R2 with presigned URLs. Shows @workkit/r2 multipart + presigned flow.</p>
+    </div>
+  </div>
+</div>

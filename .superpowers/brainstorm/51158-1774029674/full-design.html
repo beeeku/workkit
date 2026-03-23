@@ -1,0 +1,244 @@
+<h2>workkit.dev — Full Design</h2>
+<p class="subtitle">Astro Starlight docs + Hono Worker backend. Review each section below.</p>
+
+<!-- Architecture -->
+<div class="section">
+  <h3>Architecture</h3>
+  <div class="mockup">
+    <div class="mockup-header">System Overview</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:20px">
+      <div style="display:flex;gap:32px;flex-wrap:wrap">
+        <div style="flex:1;min-width:250px">
+          <div style="background:#2a2a3e;padding:16px;border-radius:8px;border:1px solid #444">
+            <strong style="color:#7dd3fc">Cloudflare Pages</strong><br>
+            <span style="opacity:0.7">apps/docs/</span><br><br>
+            ├── Astro + Starlight<br>
+            ├── @workkit/astro integration<br>
+            ├── Landing page (custom)<br>
+            ├── Docs (16 markdown files)<br>
+            ├── Playground UI (guided examples)<br>
+            ├── Comparison pages<br>
+            └── Feature matrix<br>
+          </div>
+        </div>
+        <div style="flex:1;min-width:250px">
+          <div style="background:#2a2a3e;padding:16px;border-radius:8px;border:1px solid #444">
+            <strong style="color:#fbbf24">Cloudflare Worker</strong><br>
+            <span style="opacity:0.7">apps/api/</span><br><br>
+            ├── @workkit/hono (routing)<br>
+            ├── @workkit/env (config)<br>
+            ├── @workkit/d1 (analytics, snippets)<br>
+            ├── @workkit/kv (caching)<br>
+            ├── @workkit/r2 (assets)<br>
+            ├── @workkit/ratelimit (abuse protection)<br>
+            ├── @workkit/ai (chatbot demo)<br>
+            └── @workkit/errors (structured errors)<br>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;opacity:0.5">
+        Pages calls Worker API for playground execution, live demos, and analytics
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Site Map -->
+<div class="section">
+  <h3>Site Map</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#7dd3fc">/</strong><br>
+      <span style="opacity:0.7">Landing page</span><br>
+      <span style="font-size:12px;opacity:0.5">Hero, package grid, code examples, "built with workkit" badge</span>
+    </div>
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#7dd3fc">/docs/*</strong><br>
+      <span style="opacity:0.7">Starlight docs</span><br>
+      <span style="font-size:12px;opacity:0.5">Getting started, 10 guides, API reference, migration, contributing</span>
+    </div>
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#7dd3fc">/playground</strong><br>
+      <span style="opacity:0.7">Guided examples</span><br>
+      <span style="font-size:12px;opacity:0.5">8 editable examples with real Worker execution</span>
+    </div>
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#7dd3fc">/compare</strong><br>
+      <span style="opacity:0.7">Before/after + matrix</span><br>
+      <span style="font-size:12px;opacity:0.5">Raw CF APIs vs workkit, feature comparison grid</span>
+    </div>
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#fbbf24">/demo/api</strong><br>
+      <span style="opacity:0.7">Live REST API</span><br>
+      <span style="font-size:12px;opacity:0.5">Deployed Worker — hit real endpoints</span>
+    </div>
+    <div style="background:#1e1e2e;padding:16px;border-radius:8px;border:1px solid #333">
+      <strong style="color:#fbbf24">/demo/chat</strong><br>
+      <span style="opacity:0.7">AI Chatbot</span><br>
+      <span style="font-size:12px;opacity:0.5">Streaming AI with rate limiting</span>
+    </div>
+  </div>
+</div>
+
+<!-- Playground Design -->
+<div class="section">
+  <h3>Playground (Phase 1 — Guided Examples)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Playground Layout</div>
+    <div class="mockup-body" style="padding:0">
+      <div style="display:flex;height:350px">
+        <!-- Sidebar -->
+        <div style="width:200px;background:#1a1a2e;border-right:1px solid #333;padding:12px;font-size:13px">
+          <div style="opacity:0.5;font-size:11px;text-transform:uppercase;margin-bottom:8px">Examples</div>
+          <div style="padding:6px 8px;background:#2a2a4e;border-radius:4px;margin-bottom:4px;color:#7dd3fc">Basic Worker</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">REST API</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">Queue Worker</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">Cron Tasks</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">AI Chatbot</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">File Upload</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">Realtime Counter</div>
+          <div style="padding:6px 8px;margin-bottom:4px;opacity:0.7">Full Stack App</div>
+        </div>
+        <!-- Editor -->
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div style="display:flex;border-bottom:1px solid #333;font-size:12px">
+            <div style="padding:8px 16px;background:#2a2a3e;border-bottom:2px solid #7dd3fc">workkit</div>
+            <div style="padding:8px 16px;opacity:0.5">raw cloudflare</div>
+          </div>
+          <div style="flex:1;padding:16px;font-family:monospace;font-size:12px;line-height:1.6;overflow:auto;background:#0d0d1a">
+            <span style="color:#c792ea">import</span> { parseEnvSync } <span style="color:#c792ea">from</span> <span style="color:#c3e88d">"@workkit/env"</span><br>
+            <span style="color:#c792ea">import</span> { kv } <span style="color:#c792ea">from</span> <span style="color:#c3e88d">"@workkit/kv"</span><br>
+            <span style="color:#c792ea">import</span> { z } <span style="color:#c792ea">from</span> <span style="color:#c3e88d">"zod"</span><br>
+            <br>
+            <span style="color:#c792ea">const</span> env = <span style="color:#82aaff">parseEnvSync</span>(rawEnv, {<br>
+            &nbsp;&nbsp;API_KEY: z.<span style="color:#82aaff">string</span>().<span style="color:#82aaff">min</span>(<span style="color:#f78c6c">1</span>),<br>
+            &nbsp;&nbsp;CACHE: z.<span style="color:#82aaff">any</span>(),<br>
+            })<br>
+            <br>
+            <span style="color:#c792ea">const</span> cache = <span style="color:#82aaff">kv</span>&lt;User&gt;(env.CACHE, {<br>
+            &nbsp;&nbsp;prefix: <span style="color:#c3e88d">"user:"</span>,<br>
+            &nbsp;&nbsp;defaultTtl: <span style="color:#f78c6c">3600</span><br>
+            })
+          </div>
+        </div>
+        <!-- Output -->
+        <div style="width:280px;border-left:1px solid #333;display:flex;flex-direction:column">
+          <div style="padding:8px 16px;border-bottom:1px solid #333;font-size:12px;opacity:0.5">Output</div>
+          <div style="flex:1;padding:16px;font-family:monospace;font-size:12px;line-height:1.6;background:#0a0a15">
+            <span style="color:#4ec9b0">200 OK</span><br>
+            <span style="opacity:0.5">Content-Type: application/json</span><br><br>
+            {<br>
+            &nbsp;&nbsp;<span style="color:#7dd3fc">"user"</span>: {<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc">"name"</span>: <span style="color:#c3e88d">"Alice"</span>,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7dd3fc">"email"</span>: <span style="color:#c3e88d">"alice@..."</span><br>
+            &nbsp;&nbsp;}<br>
+            }
+          </div>
+          <div style="padding:12px;border-top:1px solid #333;text-align:center">
+            <div style="background:#7dd3fc;color:#000;padding:8px 24px;border-radius:6px;font-weight:bold;cursor:pointer;display:inline-block">▶ Run</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:8px;opacity:0.6;font-size:13px">Before/after toggle shows raw CF code vs workkit. Run button executes on real Worker backend. Each example links to its docs page.</p>
+</div>
+
+<!-- Comparison Design -->
+<div class="section">
+  <h3>Comparison Pages</h3>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">Before/After (per package)</div>
+      <div class="mockup-body" style="font-size:12px;line-height:1.6">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:#1a0a0a;padding:12px;border-radius:4px">
+            <div style="color:#f87171;font-size:11px;margin-bottom:8px">❌ Raw Cloudflare</div>
+            <span style="opacity:0.6">32 lines of boilerplate...</span>
+          </div>
+          <div style="flex:1;background:#0a1a0a;padding:12px;border-radius:4px">
+            <div style="color:#4ade80;font-size:11px;margin-bottom:8px">✅ With workkit</div>
+            <span style="opacity:0.6">8 lines, fully typed...</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:12px;opacity:0.5;font-size:11px">One page per package. Sourced from existing BEFORE/AFTER comments in examples.</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">Feature Matrix</div>
+      <div class="mockup-body" style="font-size:11px">
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="border-bottom:1px solid #333">
+            <th style="text-align:left;padding:6px">Feature</th>
+            <th style="padding:6px;color:#7dd3fc">workkit</th>
+            <th style="padding:6px;opacity:0.5">Raw CF</th>
+            <th style="padding:6px;opacity:0.5">worktop</th>
+          </tr>
+          <tr style="border-bottom:1px solid #222">
+            <td style="padding:6px">Typed KV</td>
+            <td style="padding:6px;color:#4ade80">✓</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222">
+            <td style="padding:6px">Env validation</td>
+            <td style="padding:6px;color:#4ade80">✓</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222">
+            <td style="padding:6px">Error retry</td>
+            <td style="padding:6px;color:#4ade80">✓</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+            <td style="padding:6px;color:#fbbf24">~</td>
+          </tr>
+          <tr>
+            <td style="padding:6px">Testing mocks</td>
+            <td style="padding:6px;color:#4ade80">✓</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+            <td style="padding:6px;color:#f87171">✗</td>
+          </tr>
+        </table>
+        <div style="margin-top:8px;opacity:0.5;font-size:10px">TanStack-style comparison grid. All 18 packages vs alternatives.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dogfooding -->
+<div class="section">
+  <h3>Workkit Packages Used (Dogfooding)</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/astro</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/hono</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/env</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/d1</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/kv</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/r2</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/ai</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/ratelimit</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/errors</span>
+    <span style="background:#2a2a4e;padding:6px 12px;border-radius:16px;font-size:12px">@workkit/cache</span>
+  </div>
+  <p style="margin-top:12px;opacity:0.6;font-size:13px">10 out of 18 packages used in production. Footer badge: "This site is built with workkit"</p>
+</div>
+
+<!-- Monorepo Structure -->
+<div class="section">
+  <h3>Monorepo Structure</h3>
+  <div style="background:#1e1e2e;padding:16px;border-radius:8px;font-family:monospace;font-size:13px;line-height:1.8">
+    workkit/<br>
+    ├── packages/          <span style="opacity:0.4"># existing 18 packages</span><br>
+    ├── integrations/      <span style="opacity:0.4"># existing 3 integrations</span><br>
+    ├── examples/          <span style="opacity:0.4"># existing 8 examples</span><br>
+    ├── apps/<br>
+    │   ├── <strong style="color:#7dd3fc">docs/</strong>          <span style="opacity:0.4"># Astro + Starlight site</span><br>
+    │   │   ├── src/content/docs/  <span style="opacity:0.4"># symlink to ../../docs/</span><br>
+    │   │   ├── src/pages/         <span style="opacity:0.4"># landing, playground, compare</span><br>
+    │   │   └── astro.config.mjs<br>
+    │   └── <strong style="color:#fbbf24">api/</strong>           <span style="opacity:0.4"># Hono Worker backend</span><br>
+    │       ├── src/routes/        <span style="opacity:0.4"># playground, demos, analytics</span><br>
+    │       └── wrangler.toml      <span style="opacity:0.4"># D1, KV, R2, AI bindings</span><br>
+    └── turbo.json         <span style="opacity:0.4"># adds apps/* to pipeline</span>
+  </div>
+</div>

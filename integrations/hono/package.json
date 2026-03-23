@@ -1,7 +1,7 @@
 {
   "name": "@workkit/hono",
-  "version": "0.0.1",
-  "description": "Hono middleware that integrates workkit utilities \u2014 env validation, error handling, rate limiting, caching",
+  "version": "0.1.0",
+  "description": "Hono middleware that integrates workkit utilities — env validation, error handling, rate limiting, caching",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

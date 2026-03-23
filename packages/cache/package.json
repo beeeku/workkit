@@ -1,7 +1,7 @@
 {
   "name": "@workkit/cache",
-  "version": "0.0.1",
-  "description": "Cache API patterns for Cloudflare Workers \u2014 stale-while-revalidate, tagged invalidation, cache-aside",
+  "version": "0.1.0",
+  "description": "Cache API patterns for Cloudflare Workers — stale-while-revalidate, tagged invalidation, cache-aside",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {

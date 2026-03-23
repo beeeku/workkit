@@ -1,7 +1,7 @@
 {
   "name": "@workkit/r2",
-  "version": "0.0.1",
-  "description": "Typed R2 object storage utilities for Cloudflare Workers \u2014 presigned URLs, streaming, metadata helpers",
+  "version": "0.1.0",
+  "description": "Typed R2 object storage utilities for Cloudflare Workers — presigned URLs, streaming, metadata helpers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
