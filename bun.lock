@@ -138,7 +138,7 @@
     },
     "packages/cli": {
       "name": "workkit",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "bin": {
         "workkit": "dist/index.js",
       },
@@ -235,7 +235,7 @@
     },
     "packages/logger": {
       "name": "@workkit/logger",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/node": "^22.0.0",
         "hono": "^4.7.0",

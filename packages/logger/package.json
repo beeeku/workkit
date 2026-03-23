@@ -1,6 +1,6 @@
 {
   "name": "@workkit/logger",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Structured logging for Cloudflare Workers with automatic request context and Hono middleware",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
@@ -20,9 +20,13 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",
@@ -35,7 +39,9 @@
     "hono": ">=4.0.0"
   },
   "peerDependenciesMeta": {
-    "hono": { "optional": true }
+    "hono": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

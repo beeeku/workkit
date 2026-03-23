@@ -1,6 +1,6 @@
 {
   "name": "workkit",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI for the workkit Cloudflare Workers utility suite — scaffolding, validation, migrations, and code generation",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
