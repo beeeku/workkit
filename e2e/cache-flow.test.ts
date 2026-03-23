@@ -48,7 +48,7 @@ describe('Cache patterns E2E', () => {
 
       // Store with a very short TTL so it becomes stale immediately
       const response = new Response(JSON.stringify({ old: true }))
-      await cache.put('/stale-key', response, { ttl: 0 }) // immediate expiry TTL=0
+      await cache.put('/stale-key', response, { ttl: 99999 }) // keep in cache; staleness is determined by metadata
 
       // Store metadata with old timestamp
       const meta = new Response(JSON.stringify({ storedAt: Date.now() - 400_000 })) // 400s ago > 300s TTL

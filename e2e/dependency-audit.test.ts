@@ -37,13 +37,13 @@ describe('P0 dependency audit', () => {
     })
   })
 
-  describe('CLI external deps are in dependencies for runtime resolution', () => {
-    const externalDeps = ['@workkit/types', '@workkit/errors', '@workkit/env', '@workkit/d1']
+  describe('CLI bundles @workkit/* deps (not runtime)', () => {
+    const bundledDeps = ['@workkit/types', '@workkit/errors', '@workkit/env', '@workkit/d1']
 
-    for (const dep of externalDeps) {
-      it(`workkit CLI has ${dep} in dependencies`, () => {
+    for (const dep of bundledDeps) {
+      it(`workkit CLI does not ship ${dep} as a runtime dependency`, () => {
         const pkg = readPkg('packages/cli')
-        expect(pkg.dependencies).toHaveProperty(dep)
+        expect(pkg.dependencies ?? {}).not.toHaveProperty(dep)
       })
     }
   })
