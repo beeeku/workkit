@@ -1,5 +1,5 @@
 import { quota } from "@workkit/ratelimit";
-import type { Context, MiddlewareHandler } from "hono";
+import type { MiddlewareHandler } from "hono";
 import type { QuotaLimitOptions } from "./types";
 
 /**

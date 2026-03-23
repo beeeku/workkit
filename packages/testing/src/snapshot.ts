@@ -6,7 +6,7 @@ interface BindingInfo {
 
 export interface EnvSnapshot {
 	bindings: Record<string, BindingInfo>;
-	summary: Record<string, number>;
+	summary: { kv: number; d1: number; r2: number; queue: number; do: number; var: number };
 }
 
 /**
@@ -16,7 +16,7 @@ export interface EnvSnapshot {
  */
 export function snapshotEnv(env: Record<string, unknown>): EnvSnapshot {
 	const bindings: Record<string, BindingInfo> = {};
-	const summary: Record<string, number> = {
+	const summary = {
 		kv: 0,
 		d1: 0,
 		r2: 0,

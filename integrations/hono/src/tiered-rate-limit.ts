@@ -1,5 +1,5 @@
 import { tiered } from "@workkit/ratelimit";
-import type { Context, MiddlewareHandler } from "hono";
+import type { MiddlewareHandler } from "hono";
 import type { TieredRateLimitOptions } from "./types";
 
 /**
