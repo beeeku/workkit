@@ -23,12 +23,12 @@ describe("tiered", () => {
 		const spy = vi.spyOn(kv, "get");
 		const limiter = tiered({
 			namespace: kv,
-			tiers: { enterprise: { limit: Infinity } },
+			tiers: { enterprise: { limit: Number.POSITIVE_INFINITY } },
 			window: "1h",
 		});
 		const result = await limiter.check("user:1", "enterprise");
 		expect(result.allowed).toBe(true);
-		expect(result.remaining).toBe(Infinity);
+		expect(result.remaining).toBe(Number.POSITIVE_INFINITY);
 		expect(spy).not.toHaveBeenCalled();
 	});
 

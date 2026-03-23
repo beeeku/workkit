@@ -150,9 +150,7 @@ describe("versionedStorage", () => {
 		const raw = createMockStorage();
 
 		const migrateFn = vi.fn();
-		const migrations: Migration[] = [
-			{ from: 1, to: 2, migrate: migrateFn },
-		];
+		const migrations: Migration[] = [{ from: 1, to: 2, migrate: migrateFn }];
 
 		await versionedStorage<TestSchema>(raw, {
 			version: 2,

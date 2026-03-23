@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { withCircuitBreaker } from "../src/circuit-breaker";
 import type { CircuitBreakerState } from "../src/types";
-import { createMockBatch, createMockMessage, resetMessageIdCounter } from "./helpers/mock-queue";
 import { createMockKV } from "./helpers/mock-kv";
+import { createMockBatch, createMockMessage, resetMessageIdCounter } from "./helpers/mock-queue";
 
 type UserEvent = { type: "created" | "updated"; userId: string };
 

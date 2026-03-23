@@ -204,9 +204,26 @@ describe("task dependencies", () => {
 		const order: string[] = [];
 		const handler = createCronHandler({
 			tasks: {
-				fetch: { schedule: "0 * * * *", handler: async () => { order.push("fetch"); } },
-				process: { schedule: "0 * * * *", handler: async () => { order.push("process"); }, after: ["fetch"] },
-				notify: { schedule: "0 * * * *", handler: async () => { order.push("notify"); }, after: ["process"] },
+				fetch: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("fetch");
+					},
+				},
+				process: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("process");
+					},
+					after: ["fetch"],
+				},
+				notify: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("notify");
+					},
+					after: ["process"],
+				},
 			},
 		});
 		await handler(createMockEvent("0 * * * *"), {} as any, createMockCtx());
@@ -217,29 +234,54 @@ describe("task dependencies", () => {
 		const order: string[] = [];
 		const handler = createCronHandler({
 			tasks: {
-				fetch: { schedule: "0 * * * *", handler: async () => { throw new Error("fetch failed"); } },
-				process: { schedule: "0 * * * *", handler: async () => { order.push("process"); }, after: ["fetch"] },
+				fetch: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						throw new Error("fetch failed");
+					},
+				},
+				process: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("process");
+					},
+					after: ["fetch"],
+				},
 			},
 		});
-		await expect(handler(createMockEvent("0 * * * *"), {} as any, createMockCtx())).rejects.toThrow("fetch failed");
+		await expect(handler(createMockEvent("0 * * * *"), {} as any, createMockCtx())).rejects.toThrow(
+			"fetch failed",
+		);
 		expect(order).toEqual([]);
 	});
 
 	it("throws ValidationError for circular dependencies", () => {
-		expect(() => createCronHandler({
-			tasks: {
-				a: { schedule: "0 * * * *", handler: async () => {}, after: ["b"] },
-				b: { schedule: "0 * * * *", handler: async () => {}, after: ["a"] },
-			},
-		})).toThrow();
+		expect(() =>
+			createCronHandler({
+				tasks: {
+					a: { schedule: "0 * * * *", handler: async () => {}, after: ["b"] },
+					b: { schedule: "0 * * * *", handler: async () => {}, after: ["a"] },
+				},
+			}),
+		).toThrow();
 	});
 
 	it("tasks without dependencies preserve sequential behavior by default", async () => {
 		const order: string[] = [];
 		const handler = createCronHandler({
 			tasks: {
-				first: { schedule: "0 * * * *", handler: async () => { order.push("first"); } },
-				second: { schedule: "0 * * * *", handler: async () => { order.push("second"); } },
+				first: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("first");
+					},
+				},
+				second: {
+					schedule: "0 * * * *",
+					handler: async () => {
+						order.push("second");
+					},
+				},
 			},
 		});
 		await handler(createMockEvent("0 * * * *"), {} as any, createMockCtx());

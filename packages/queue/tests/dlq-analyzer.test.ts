@@ -55,7 +55,11 @@ describe("createDLQAnalyzer()", () => {
 		// 3 timeout errors
 		for (let i = 0; i < 3; i++) {
 			const msg = createMockMessage<UserEvent>({ type: "created", userId: `${i}` });
-			await analyzer.record(msg as any, createMetadata({ messageId: msg.id }), new Error("timeout"));
+			await analyzer.record(
+				msg as any,
+				createMetadata({ messageId: msg.id }),
+				new Error("timeout"),
+			);
 		}
 
 		// 2 auth errors
@@ -85,11 +89,7 @@ describe("createDLQAnalyzer()", () => {
 
 		for (let i = 0; i < 5; i++) {
 			const msg = createMockMessage<UserEvent>({ type: "created", userId: `${i}` });
-			await analyzer.record(
-				msg as any,
-				createMetadata({ messageId: msg.id }),
-				new Error("common"),
-			);
+			await analyzer.record(msg as any, createMetadata({ messageId: msg.id }), new Error("common"));
 		}
 
 		const errors = await analyzer.topErrors();

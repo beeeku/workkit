@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { BaseEvent } from "../src/types";
 import { createEventStore } from "../src/event-store";
 import type { EventStore, StoredEvent } from "../src/event-store";
+import type { BaseEvent } from "../src/types";
 import { createMockStorage } from "./helpers";
 
 // Test domain

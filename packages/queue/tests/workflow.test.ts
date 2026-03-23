@@ -38,9 +38,7 @@ describe("createWorkflow()", () => {
 			],
 		});
 
-		const messages = [
-			createMockMessage<OrderEvent>({ orderId: "A", amount: 100 }),
-		];
+		const messages = [createMockMessage<OrderEvent>({ orderId: "A", amount: 100 })];
 		const batch = createMockBatch("test-queue", messages);
 
 		await handler(batch as any, {} as any);
@@ -155,9 +153,7 @@ describe("createWorkflow()", () => {
 			],
 		});
 
-		const messages = [
-			createMockMessage<OrderEvent>({ orderId: "A", amount: 100 }),
-		];
+		const messages = [createMockMessage<OrderEvent>({ orderId: "A", amount: 100 })];
 		const batch = createMockBatch("test-queue", messages);
 
 		await handler(batch as any, {} as any);

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	exportSigningKey,
-	generateSigningKeyPair,
-	importSigningKey,
-	sign,
-} from "../src";
+import { exportSigningKey, generateSigningKeyPair, importSigningKey, sign } from "../src";
 
 describe("sign", () => {
 	it("signs and verifies string data", async () => {

@@ -6,18 +6,14 @@ function serialize(data: unknown): Uint8Array {
 	return encode(str);
 }
 
-function getAlgorithmParams(
-	algorithm: SignAlgorithm,
-): string | SubtleCryptoSignAlgorithm {
+function getAlgorithmParams(algorithm: SignAlgorithm): string | SubtleCryptoSignAlgorithm {
 	if (algorithm === "Ed25519") {
 		return { name: "Ed25519" };
 	}
 	return { name: "ECDSA", hash: "SHA-256" };
 }
 
-function getKeyGenParams(
-	algorithm: SignAlgorithm,
-): string | SubtleCryptoGenerateKeyAlgorithm {
+function getKeyGenParams(algorithm: SignAlgorithm): string | SubtleCryptoGenerateKeyAlgorithm {
 	if (algorithm === "Ed25519") {
 		return { name: "Ed25519" };
 	}

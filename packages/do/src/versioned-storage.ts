@@ -13,7 +13,9 @@ export interface Migration {
 }
 
 /** Options for versioned storage */
-export interface VersionedStorageOptions<_TSchema extends Record<string, unknown> = Record<string, unknown>> {
+export interface VersionedStorageOptions<
+	_TSchema extends Record<string, unknown> = Record<string, unknown>,
+> {
 	version: number;
 	migrations: Migration[];
 }
