@@ -86,3 +86,24 @@ export interface TokenBucketState {
 	tokens: number;
 	lastRefill: number;
 }
+
+/** Options for tiered rate limiter */
+export interface TieredOptions {
+	namespace: KVNamespace;
+	tiers: Record<string, TierConfig>;
+	window: Duration;
+	defaultTier?: string;
+	algorithm?: "fixed" | "sliding";
+	prefix?: string;
+}
+
+/** Configuration for a single tier */
+export interface TierConfig {
+	limit: number;
+}
+
+/** A tiered rate limiter with per-tier checks */
+export interface TieredRateLimiter {
+	check(key: string, tier: string): Promise<RateLimitResult>;
+	forTier(tier: string): RateLimiter;
+}

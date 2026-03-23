@@ -3,6 +3,7 @@ export { fixedWindow } from "./fixed-window";
 export { slidingWindow } from "./sliding-window";
 export { tokenBucket } from "./token-bucket";
 export { composite } from "./composite";
+export { tiered } from "./tiered";
 
 // Utilities
 export { parseDuration } from "./duration";
@@ -18,5 +19,8 @@ export type {
 	RateLimiter,
 	TokenRateLimiter,
 	CompositeRateLimiter,
+	TieredOptions,
+	TierConfig,
+	TieredRateLimiter,
 } from "./types";
 export type { RateLimitHeaders } from "./headers";
