@@ -1,13 +1,13 @@
 {
-  "name": "@workkit/hono",
+  "name": "@workkit/cron",
   "version": "0.2.0",
-  "description": "Hono middleware that integrates workkit utilities — env validation, error handling, rate limiting, caching",
+  "description": "Cron trigger patterns for Cloudflare Workers — declarative scheduled task handlers with distributed locking",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beeeku/workkit.git",
-    "directory": "integrations/hono"
+    "directory": "packages/cron"
   },
   "type": "module",
   "exports": {
@@ -35,28 +35,18 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "^1.0.1",
-    "@workkit/env": "^0.1.1",
-    "@workkit/ratelimit": "^0.2.0"
-  },
-  "peerDependencies": {
-    "hono": ">=4.0.0"
+    "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
-    "@workkit/types": "workspace:*",
-    "hono": "^4.7.0",
-    "zod": "^4.3.6"
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",
     "workers",
-    "hono",
-    "middleware",
-    "env",
-    "validation",
-    "error-handler",
-    "rate-limit",
-    "cache",
+    "cron",
+    "scheduled",
+    "tasks",
+    "distributed-lock",
     "workkit"
   ]
 }

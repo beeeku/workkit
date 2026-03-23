@@ -35,8 +35,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "workspace:*",
-    "@workkit/env": "workspace:*"
+    "@workkit/errors": "^1.0.1",
+    "@workkit/env": "^0.1.1"
   },
   "peerDependencies": {
     "astro": ">=4.0.0"

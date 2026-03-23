@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMockKV } from "../src/kv";
 import { createMockD1 } from "../src/d1";
+import { createMockKV } from "../src/kv";
 
 describe("KV seeding", () => {
 	it("pre-populates KV with seed data", async () => {

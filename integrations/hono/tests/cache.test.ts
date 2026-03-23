@@ -228,9 +228,13 @@ describe("cacheResponse() jitter", () => {
 		for (let i = 0; i < 20; i++) {
 			const localCache = createMockCache();
 			const app = new Hono();
-			app.get("/api/data", cacheResponse({ ttl: 300, jitter: 30, cache: localCache }), async (c) => {
-				return c.json({ data: "test" });
-			});
+			app.get(
+				"/api/data",
+				cacheResponse({ ttl: 300, jitter: 30, cache: localCache }),
+				async (c) => {
+					return c.json({ data: "test" });
+				},
+			);
 
 			const executionCtx = createExecutionCtx();
 			const req = new Request("http://localhost/api/data");

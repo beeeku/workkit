@@ -1,10 +1,10 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { createMockKV } from "../src/kv";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createMockD1 } from "../src/d1";
-import { createMockR2 } from "../src/r2";
-import { createMockQueue } from "../src/queue";
 import { createMockDO } from "../src/do";
+import { createMockKV } from "../src/kv";
 import type { MockOperations } from "../src/observable";
+import { createMockQueue } from "../src/queue";
+import { createMockR2 } from "../src/r2";
 
 describe("Observable Mocks", () => {
 	describe("KV operations tracking", () => {

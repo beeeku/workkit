@@ -1,13 +1,13 @@
 {
-  "name": "@workkit/hono",
-  "version": "0.2.0",
-  "description": "Hono middleware that integrates workkit utilities — env validation, error handling, rate limiting, caching",
+  "name": "@workkit/astro",
+  "version": "0.1.1",
+  "description": "Astro integration for Cloudflare Pages — typed env access, binding helpers, middleware",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beeeku/workkit.git",
-    "directory": "integrations/hono"
+    "directory": "integrations/astro"
   },
   "type": "module",
   "exports": {
@@ -35,28 +35,25 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "^1.0.1",
-    "@workkit/env": "^0.1.1",
-    "@workkit/ratelimit": "^0.2.0"
+    "@workkit/errors": "workspace:*",
+    "@workkit/env": "workspace:*"
   },
   "peerDependencies": {
-    "hono": ">=4.0.0"
+    "astro": ">=4.0.0"
   },
   "devDependencies": {
-    "@workkit/types": "workspace:*",
-    "hono": "^4.7.0",
-    "zod": "^4.3.6"
+    "@standard-schema/spec": "^1.1.0",
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",
     "workers",
-    "hono",
+    "pages",
+    "astro",
     "middleware",
     "env",
     "validation",
-    "error-handler",
-    "rate-limit",
-    "cache",
+    "bindings",
     "workkit"
   ]
 }

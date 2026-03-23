@@ -35,9 +35,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/env": "workspace:*",
-    "@workkit/errors": "workspace:*",
-    "@workkit/types": "workspace:*"
+    "@workkit/env": "^0.1.1",
+    "@workkit/errors": "^1.0.1",
+    "@workkit/types": "^1.0.1"
   },
   "peerDependencies": {
     "@standard-schema/spec": "^1.1.0"

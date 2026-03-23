@@ -31,7 +31,7 @@
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
-    "@workkit/types": "workspace:*"
+    "@workkit/types": "^1.0.1"
   },
   "peerDependenciesMeta": {
     "@workkit/types": {

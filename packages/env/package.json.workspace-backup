@@ -1,13 +1,13 @@
 {
-  "name": "@workkit/kv",
-  "version": "0.2.1",
-  "description": "Typed KV operations with Standard Schema validation for Cloudflare Workers",
+  "name": "@workkit/env",
+  "version": "0.1.1",
+  "description": "Typed environment bindings with Standard Schema validation for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beeeku/workkit.git",
-    "directory": "packages/kv"
+    "directory": "packages/env"
   },
   "type": "module",
   "exports": {
@@ -16,19 +16,19 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./validators": {
+      "import": {
+        "types": "./dist/validators.d.ts",
+        "default": "./dist/validators.js"
+      }
     }
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
-  "sideEffects": false,
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",
@@ -37,13 +37,13 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "^1.0.1"
+    "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
     "@standard-schema/spec": "^1.0.0",
-    "@workkit/types": "workspace:*",
-    "zod": "^4.3.6",
-    "valibot": "^1.0.0"
+    "arktype": "^2.2.0",
+    "valibot": "^1.3.1",
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "@standard-schema/spec": ">=1.0.0"
@@ -56,10 +56,18 @@
   "keywords": [
     "cloudflare",
     "workers",
-    "kv",
-    "key-value",
-    "typed",
+    "env",
+    "environment",
+    "validation",
     "standard-schema",
+    "d1",
+    "kv",
+    "r2",
+    "durable-objects",
     "workkit"
-  ]
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
 }

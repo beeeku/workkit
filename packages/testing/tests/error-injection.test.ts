@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createMockKV } from "../src/kv";
 import { createMockD1 } from "../src/d1";
-import { createMockR2 } from "../src/r2";
-import { createMockQueue } from "../src/queue";
 import { createMockDO } from "../src/do";
 import type { ErrorInjection } from "../src/error-injection";
+import { createMockKV } from "../src/kv";
+import { createMockQueue } from "../src/queue";
+import { createMockR2 } from "../src/r2";
 
 describe("Error Injection", () => {
 	describe("failAfter", () => {

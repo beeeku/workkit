@@ -1,13 +1,13 @@
 {
-  "name": "@workkit/api",
+  "name": "@workkit/d1",
   "version": "0.1.1",
-  "description": "Declarative API definitions with Standard Schema validation for Cloudflare Workers — Encore-inspired typed endpoints",
+  "description": "Type-safe D1 query helpers with query builder, batch operations, and migrations for Cloudflare Workers",
   "license": "MIT",
-  "author": "Bikash Dash <beeeku>",
+  "author": "Bikash Dash",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beeeku/workkit.git",
-    "directory": "packages/api"
+    "directory": "packages/d1"
   },
   "type": "module",
   "exports": {
@@ -17,10 +17,10 @@
         "default": "./dist/index.js"
       }
     },
-    "./client": {
+    "./migrate": {
       "import": {
-        "types": "./dist/client.d.ts",
-        "default": "./dist/client.js"
+        "types": "./dist/migrate.d.ts",
+        "default": "./dist/migrate.js"
       }
     }
   },
@@ -33,28 +33,28 @@
   "publishConfig": {
     "access": "public"
   },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "d1",
+    "database",
+    "sqlite",
+    "typed",
+    "query-builder",
+    "migrations",
+    "workkit"
+  ],
+  "dependencies": {
+    "@workkit/errors": "workspace:*"
+  },
+  "devDependencies": {
+    "@workkit/types": "workspace:*"
+  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@workkit/errors": "^1.0.1"
-  },
-  "devDependencies": {
-    "@workkit/types": "workspace:*",
-    "zod": "^4.3.6"
-  },
-  "keywords": [
-    "cloudflare",
-    "workers",
-    "api",
-    "router",
-    "typed",
-    "validation",
-    "openapi",
-    "workkit"
-  ]
+  }
 }

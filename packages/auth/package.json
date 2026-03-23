@@ -35,7 +35,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "workspace:*"
+    "@workkit/errors": "^1.0.1"
   },
   "devDependencies": {
     "@workkit/types": "workspace:*"

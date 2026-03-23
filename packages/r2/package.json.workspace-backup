@@ -1,13 +1,13 @@
 {
-  "name": "@workkit/hono",
-  "version": "0.2.0",
-  "description": "Hono middleware that integrates workkit utilities — env validation, error handling, rate limiting, caching",
+  "name": "@workkit/r2",
+  "version": "0.1.1",
+  "description": "Typed R2 object storage utilities for Cloudflare Workers — presigned URLs, streaming, metadata helpers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beeeku/workkit.git",
-    "directory": "integrations/hono"
+    "directory": "packages/r2"
   },
   "type": "module",
   "exports": {
@@ -35,28 +35,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "^1.0.1",
-    "@workkit/env": "^0.1.1",
-    "@workkit/ratelimit": "^0.2.0"
-  },
-  "peerDependencies": {
-    "hono": ">=4.0.0"
-  },
-  "devDependencies": {
     "@workkit/types": "workspace:*",
-    "hono": "^4.7.0",
-    "zod": "^4.3.6"
+    "@workkit/errors": "workspace:*"
   },
   "keywords": [
     "cloudflare",
     "workers",
-    "hono",
-    "middleware",
-    "env",
-    "validation",
-    "error-handler",
-    "rate-limit",
-    "cache",
+    "r2",
+    "object-storage",
+    "typed",
+    "presigned",
+    "streaming",
     "workkit"
   ]
 }
