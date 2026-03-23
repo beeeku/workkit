@@ -64,14 +64,16 @@ function makeR2ObjectBody(stored: StoredObject): any {
 	};
 }
 
+import { type ErrorInjection, createErrorInjector } from "./error-injection";
 import { type MockOperations, createOperationTracker } from "./observable";
 
 /**
  * In-memory R2Bucket mock for unit testing.
  */
-export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> } & MockOperations {
+export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> } & MockOperations & ErrorInjection {
 	const store = new Map<string, StoredObject>();
 	const tracker = createOperationTracker();
+	const injector = createErrorInjector();
 	let nextId = 1;
 
 	const bucket = {
@@ -83,8 +85,13 @@ export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> }
 		writes: tracker.writes.bind(tracker),
 		deletes: tracker.deletes.bind(tracker),
 		reset: tracker.reset.bind(tracker),
+		failAfter: injector.failAfter.bind(injector),
+		failOn: injector.failOn.bind(injector),
+		withLatency: injector.withLatency.bind(injector),
+		clearInjections: injector.clearInjections.bind(injector),
 
 		async get(key: string, _options?: any): Promise<any> {
+			await injector._check(key);
 			tracker._record("read", key);
 			const stored = store.get(key);
 			if (!stored) return null;
@@ -92,6 +99,7 @@ export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> }
 		},
 
 		async put(key: string, value: any, options?: any): Promise<any> {
+			await injector._check(key);
 			tracker._record("write", key);
 			const body = toArrayBuffer(value);
 			const stored: StoredObject = {
@@ -111,6 +119,7 @@ export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> }
 		async delete(keys: string | string[]): Promise<void> {
 			const keyList = Array.isArray(keys) ? keys : [keys];
 			for (const key of keyList) {
+				await injector._check(key);
 				tracker._record("delete", key);
 			}
 			for (const key of keyList) {
@@ -119,6 +128,7 @@ export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> }
 		},
 
 		async head(key: string): Promise<any> {
+			await injector._check(key);
 			tracker._record("read", key);
 			const stored = store.get(key);
 			if (!stored) return null;
@@ -126,6 +136,7 @@ export function createMockR2(): R2Bucket & { _store: Map<string, StoredObject> }
 		},
 
 		async list(options?: any): Promise<any> {
+			await injector._check();
 			tracker._record("list");
 			const prefix = options?.prefix ?? "";
 			const limit = options?.limit ?? 1000;

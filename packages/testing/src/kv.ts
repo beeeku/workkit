@@ -1,3 +1,4 @@
+import { type ErrorInjection, createErrorInjector } from "./error-injection";
 import { type MockOperations, createOperationTracker } from "./observable";
 
 interface MockKVEntry {
@@ -12,9 +13,10 @@ interface MockKVEntry {
  */
 export function createMockKV(
 	initialData?: Record<string, unknown>,
-): KVNamespace & { _store: Map<string, MockKVEntry> } & MockOperations {
+): KVNamespace & { _store: Map<string, MockKVEntry> } & MockOperations & ErrorInjection {
 	const store = new Map<string, MockKVEntry>();
 	const tracker = createOperationTracker();
+	const injector = createErrorInjector();
 
 	if (initialData) {
 		for (const [key, value] of Object.entries(initialData)) {
@@ -33,8 +35,13 @@ export function createMockKV(
 		writes: tracker.writes.bind(tracker),
 		deletes: tracker.deletes.bind(tracker),
 		reset: tracker.reset.bind(tracker),
+		failAfter: injector.failAfter.bind(injector),
+		failOn: injector.failOn.bind(injector),
+		withLatency: injector.withLatency.bind(injector),
+		clearInjections: injector.clearInjections.bind(injector),
 
 		async get(key: string, options?: any): Promise<any> {
+			await injector._check(key);
 			tracker._record("read", key);
 			const entry = store.get(key);
 			if (!entry) return null;
@@ -48,6 +55,7 @@ export function createMockKV(
 		},
 
 		async getWithMetadata(key: string, options?: any): Promise<any> {
+			await injector._check(key);
 			tracker._record("read", key);
 			const entry = store.get(key);
 			if (!entry) return { value: null, metadata: null, cacheStatus: null };
@@ -61,6 +69,7 @@ export function createMockKV(
 		},
 
 		async put(key: string, value: any, options?: any): Promise<void> {
+			await injector._check(key);
 			tracker._record("write", key);
 			const entry: MockKVEntry = {
 				value: typeof value === "string" ? value : JSON.stringify(value),
@@ -73,11 +82,13 @@ export function createMockKV(
 		},
 
 		async delete(key: string): Promise<void> {
+			await injector._check(key);
 			tracker._record("delete", key);
 			store.delete(key);
 		},
 
 		async list(options?: any): Promise<any> {
+			await injector._check();
 			tracker._record("list");
 			const prefix = options?.prefix ?? "";
 			const limit = options?.limit ?? 1000;

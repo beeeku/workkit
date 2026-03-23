@@ -1,3 +1,4 @@
+import { type ErrorInjection, createErrorInjector } from "./error-injection";
 import { type MockOperations, createOperationTracker } from "./observable";
 
 interface MockMessage {
@@ -8,9 +9,10 @@ interface MockMessage {
 /**
  * In-memory Queue mock for unit testing.
  */
-export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOperations {
+export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOperations & ErrorInjection {
 	const messages: MockMessage[] = [];
 	const tracker = createOperationTracker();
+	const injector = createErrorInjector();
 
 	return {
 		_messages: messages,
@@ -21,8 +23,13 @@ export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOp
 		writes: tracker.writes.bind(tracker),
 		deletes: tracker.deletes.bind(tracker),
 		reset: tracker.reset.bind(tracker),
+		failAfter: injector.failAfter.bind(injector),
+		failOn: injector.failOn.bind(injector),
+		withLatency: injector.withLatency.bind(injector),
+		clearInjections: injector.clearInjections.bind(injector),
 
 		async send(message: unknown, options?: { contentType?: string }): Promise<void> {
+			await injector._check();
 			tracker._record("write");
 			messages.push({
 				body: message,
@@ -31,6 +38,7 @@ export function createMockQueue(): Queue & { _messages: MockMessage[] } & MockOp
 		},
 
 		async sendBatch(batch: Array<{ body: unknown; contentType?: string }>): Promise<void> {
+			await injector._check();
 			tracker._record("write");
 			for (const item of batch) {
 				messages.push({

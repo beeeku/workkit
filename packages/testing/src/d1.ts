@@ -1,6 +1,7 @@
 // @ts-nocheck — Mock implementation uses loose typing intentionally
 /* eslint-disable */
 
+import { type ErrorInjection, createErrorInjector } from "./error-injection";
 import { type MockOperations, createOperationTracker } from "./observable";
 
 interface MockD1Meta {
@@ -37,9 +38,10 @@ interface TableData {
  */
 export function createMockD1(
 	initialTables?: Record<string, Record<string, unknown>[]>,
-): D1Database & MockOperations {
+): D1Database & MockOperations & ErrorInjection {
 	const tables = new Map<string, TableData>();
 	const tracker = createOperationTracker();
+	const injector = createErrorInjector();
 
 	if (initialTables) {
 		for (const [name, rows] of Object.entries(initialTables)) {
@@ -525,6 +527,7 @@ export function createMockD1(
 				return createStatement(sql, newParams);
 			},
 			async first<T = Record<string, unknown>>(colName?: string): Promise<T | null> {
+				await injector._check();
 				const result = executeSQL(sql, boundParams ?? []);
 				const row = result.results[0] ?? null;
 				if (row && colName) return (row as any)[colName] ?? null;
@@ -535,14 +538,17 @@ export function createMockD1(
 				success: boolean;
 				meta: MockD1Meta;
 			}> {
+				await injector._check();
 				const result = executeSQL(sql, boundParams ?? []);
 				return { results: result.results as T[], success: true, meta: result.meta };
 			},
 			async run(): Promise<{ success: boolean; meta: MockD1Meta }> {
+				await injector._check();
 				const result = executeSQL(sql, boundParams ?? []);
 				return { success: true, meta: result.meta };
 			},
 			async raw<T = unknown[]>(): Promise<T[]> {
+				await injector._check();
 				const result = executeSQL(sql, boundParams ?? []);
 				return result.results.map((r) => Object.values(r)) as T[];
 			},
@@ -559,6 +565,10 @@ export function createMockD1(
 		writes: tracker.writes.bind(tracker),
 		deletes: tracker.deletes.bind(tracker),
 		reset: tracker.reset.bind(tracker),
+		failAfter: injector.failAfter.bind(injector),
+		failOn: injector.failOn.bind(injector),
+		withLatency: injector.withLatency.bind(injector),
+		clearInjections: injector.clearInjections.bind(injector),
 
 		prepare(sql: string) {
 			const stmt = createStatement(sql);
@@ -598,7 +608,7 @@ export function createMockD1(
 		dump: async () => new ArrayBuffer(0),
 	};
 
-	return db as unknown as D1Database & MockOperations;
+	return db as unknown as D1Database & MockOperations & ErrorInjection;
 }
 
 /**
