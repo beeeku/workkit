@@ -7,6 +7,9 @@ export { versionedStorage } from "./versioned-storage";
 // Event Store
 export { createEventStore } from "./event-store";
 
+// Time Series
+export { createTimeSeries } from "./time-series";
+
 // State Machine
 export { createStateMachine } from "./state-machine";
 
@@ -37,3 +40,9 @@ export type {
 	EventStoreOptions,
 	StoredEvent,
 } from "./event-store";
+
+export type {
+	TimeSeries,
+	TimeSeriesEntry,
+	TimeSeriesOptions,
+} from "./time-series";
