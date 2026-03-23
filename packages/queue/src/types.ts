@@ -129,5 +129,37 @@ export interface WorkflowStep<Body, Context> {
 	rollback?: (body: Body, context: Context) => Promise<void>;
 }
 
+// --- DLQ Analyzer types ---
+
+/** Options for createDLQAnalyzer() */
+export interface DLQAnalyzerOptions<Body> {
+	namespace: KVNamespace;
+	prefix?: string;
+	windowSize?: Duration;
+}
+
+/** A DLQ analyzer for tracking failure patterns */
+export interface DLQAnalyzer<Body> {
+	record(message: ConsumerMessage<Body>, metadata: DLQMetadata, error?: unknown): Promise<void>;
+	summary(): Promise<DLQSummary>;
+	topErrors(limit?: number): Promise<ErrorPattern[]>;
+}
+
+/** Summary of DLQ failure patterns */
+export interface DLQSummary {
+	total: number;
+	byQueue: Record<string, number>;
+	byHour: Record<string, number>;
+	topErrors: ErrorPattern[];
+}
+
+/** A grouped error pattern */
+export interface ErrorPattern {
+	message: string;
+	count: number;
+	lastSeen: Date;
+	sampleMessageIds: string[];
+}
+
 // Re-export for convenience
 export type { RetryDelayAction } from "./retry";

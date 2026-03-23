@@ -17,6 +17,9 @@ export { withCircuitBreaker } from "./circuit-breaker";
 // Workflow
 export { createWorkflow } from "./workflow";
 
+// DLQ Analyzer
+export { createDLQAnalyzer } from "./dlq-analyzer";
+
 // Duration
 export { parseDuration } from "./duration";
 
@@ -35,4 +38,8 @@ export type {
 	CircuitBreakerState,
 	WorkflowOptions,
 	WorkflowStep,
+	DLQAnalyzer,
+	DLQAnalyzerOptions,
+	DLQSummary,
+	ErrorPattern,
 } from "./types";
