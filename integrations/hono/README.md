@@ -78,6 +78,44 @@ app.get("/", (c) => {
 
 - **`cacheResponse(options)`** — Cache responses using the Cache API. Options: `ttl`, `vary?`
 
+### Tiered Rate Limiting
+
+- **`tieredRateLimit(options)`** — Apply different rate limits based on user tier. Uses `@workkit/ratelimit` tiered limiter under the hood.
+
+```ts
+app.use("/api/*", tieredRateLimit({
+  namespace: env.RATE_LIMIT_KV,
+  tiers: { free: { limit: 100 }, pro: { limit: 10000 } },
+  window: "1h",
+  keyFn: (c) => c.req.header("CF-Connecting-IP") ?? "unknown",
+  tierFn: (c) => getUserTier(c),
+}))
+```
+
+### Quota Middleware
+
+- **`quotaLimit(options)`** — Enforce multi-window quota limits (e.g. 10/hour + 100/day). Returns 429 with quota breakdown when exceeded.
+
+```ts
+app.use("/api/*", quotaLimit({
+  namespace: env.RATE_LIMIT_KV,
+  limits: [
+    { window: "1h", limit: 10 },
+    { window: "1d", limit: 100 },
+  ],
+  keyFn: (c) => c.req.header("CF-Connecting-IP") ?? "unknown",
+}))
+```
+
+### Cache Jitter
+
+The `cacheResponse` middleware supports a `jitter` option to randomize TTL per response, preventing thundering herd when many cache entries expire simultaneously:
+
+```ts
+app.use("/api/public/*", cacheResponse({ ttl: 300, jitter: 30 }))
+// Actual TTL will be 270-330s (±30s random offset)
+```
+
 ### Helpers
 
 - **`getEnv(c)`** — Get validated env from Hono context (shorthand for `c.get("workkit:env")`)

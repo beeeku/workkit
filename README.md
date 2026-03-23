@@ -28,13 +28,13 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
 | [`@workkit/logger`](packages/logger) | Structured logging with request context and Hono middleware |
 | [`@workkit/auth`](packages/auth) | JWT, session management, and auth middleware |
-| [`@workkit/testing`](packages/testing) | In-memory mocks for all Cloudflare Workers bindings |
+| [`@workkit/testing`](packages/testing) | In-memory mocks with operation tracking, seed builders, error injection, and snapshots |
 
 ### Integrations
 
 | Package | Description |
 |---------|-------------|
-| [`@workkit/hono`](integrations/hono) | Hono middleware for env validation, error handling, and rate limiting |
+| [`@workkit/hono`](integrations/hono) | Hono middleware for env validation, error handling, rate limiting, tiered limits, quotas, and caching |
 | [`@workkit/astro`](integrations/astro) | Astro middleware and helpers for Cloudflare bindings |
 | [`@workkit/remix`](integrations/remix) | Typed Remix loaders and actions with env validation |
 

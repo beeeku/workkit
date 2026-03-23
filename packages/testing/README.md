@@ -76,6 +76,55 @@ const response = await worker.fetch(request, env, ctx)
 - **`createRequest(url, options?)`** — Create a `Request` with JSON body support
 - **`createExecutionContext()`** — Create an `ExecutionContext` with `waitUntil` and `passThroughOnException`
 
+## Observable Mocks
+
+All mocks automatically track operations. Every `createMock*` return value includes operation tracking methods:
+
+```ts
+const kv = createMockKV()
+await kv.put("key", "value")
+await kv.get("key")
+
+kv.operations   // [{ type: "write", key: "key", ... }, { type: "read", key: "key", ... }]
+kv.reads()      // only read operations
+kv.writes()     // only write operations
+kv.deletes()    // only delete operations
+kv.reset()      // clear tracked operations
+```
+
+## Seed Builders
+
+Pass initial data to `createMockKV` and `createMockD1` for one-call fixture setup:
+
+```ts
+const kv = createMockKV({ "user:1": { name: "Alice" }, "user:2": { name: "Bob" } })
+const db = createMockD1({ users: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }] })
+```
+
+## Error Injection
+
+All mocks support error injection for testing failure paths:
+
+```ts
+const kv = createMockKV()
+kv.failAfter(3)                         // fail after 3 successful operations
+kv.failOn(/^admin:/)                    // fail on keys matching a pattern
+kv.withLatency(50, 200)                 // add 50-200ms random latency
+kv.clearInjections()                    // remove all injections
+```
+
+## Environment Snapshots
+
+Capture a summary of all bindings in a test env with `snapshotEnv`:
+
+```ts
+import { snapshotEnv } from "@workkit/testing"
+
+const snap = snapshotEnv(env)
+snap.summary   // { kv: 2, d1: 1, r2: 0, queue: 1, do: 0, var: 3 }
+snap.bindings  // { MY_KV: { type: "kv", count: 5 }, DB: { type: "d1" }, ... }
+```
+
 ## License
 
 MIT
