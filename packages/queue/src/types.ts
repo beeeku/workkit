@@ -132,7 +132,7 @@ export interface WorkflowStep<Body, Context> {
 // --- DLQ Analyzer types ---
 
 /** Options for createDLQAnalyzer() */
-export interface DLQAnalyzerOptions<Body> {
+export interface DLQAnalyzerOptions<_Body = unknown> {
 	namespace: KVNamespace;
 	prefix?: string;
 	windowSize?: Duration;

@@ -44,7 +44,7 @@ export function createDLQAnalyzer<Body>(options: DLQAnalyzerOptions<Body>): DLQA
 
 	return {
 		async record(
-			message: ConsumerMessage<Body>,
+			_message: ConsumerMessage<Body>,
 			metadata: DLQMetadata,
 			error?: unknown,
 		): Promise<void> {

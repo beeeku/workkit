@@ -6,18 +6,22 @@ function serialize(data: unknown): Uint8Array {
 	return encode(str);
 }
 
-function getAlgorithmParams(algorithm: SignAlgorithm): AlgorithmIdentifier | EcdsaParams {
+function getAlgorithmParams(
+	algorithm: SignAlgorithm,
+): string | SubtleCryptoSignAlgorithm {
 	if (algorithm === "Ed25519") {
 		return { name: "Ed25519" };
 	}
-	return { name: "ECDSA", hash: "SHA-256" } as EcdsaParams;
+	return { name: "ECDSA", hash: "SHA-256" };
 }
 
-function getKeyGenParams(algorithm: SignAlgorithm): AlgorithmIdentifier | EcKeyGenParams {
+function getKeyGenParams(
+	algorithm: SignAlgorithm,
+): string | SubtleCryptoGenerateKeyAlgorithm {
 	if (algorithm === "Ed25519") {
 		return { name: "Ed25519" };
 	}
-	return { name: "ECDSA", namedCurve: "P-256" } as EcKeyGenParams;
+	return { name: "ECDSA", namedCurve: "P-256" };
 }
 
 async function signData(privateKey: CryptoKey, data: unknown): Promise<string> {
@@ -54,7 +58,10 @@ export async function generateSigningKeyPair(
 	algorithm: SignAlgorithm = "Ed25519",
 ): Promise<SigningKeyPair> {
 	const params = getKeyGenParams(algorithm);
-	const keyPair = await crypto.subtle.generateKey(params, true, ["sign", "verify"]);
+	const keyPair = (await crypto.subtle.generateKey(params, true, [
+		"sign",
+		"verify",
+	])) as CryptoKeyPair;
 	return {
 		privateKey: keyPair.privateKey,
 		publicKey: keyPair.publicKey,
@@ -65,7 +72,7 @@ export async function generateSigningKeyPair(
 export async function exportSigningKey(key: CryptoKey): Promise<string> {
 	const format = key.type === "public" ? "spki" : "pkcs8";
 	const exported = await crypto.subtle.exportKey(format, key);
-	return toBase64(exported);
+	return toBase64(exported as ArrayBuffer);
 }
 
 /** Import a signing key from a base64 string. */
@@ -78,6 +85,12 @@ export async function importSigningKey(
 	const format = type === "public" ? "spki" : "pkcs8";
 	const keyData = fromBase64(base64);
 	const params = getKeyGenParams(algorithm);
-	const usages: KeyUsage[] = type === "public" ? ["verify"] : ["sign"];
-	return crypto.subtle.importKey(format, keyData, params, true, usages);
+	const usages = type === "public" ? ["verify"] : ["sign"];
+	return crypto.subtle.importKey(
+		format,
+		keyData,
+		params as string | SubtleCryptoImportKeyAlgorithm,
+		true,
+		usages,
+	);
 }
