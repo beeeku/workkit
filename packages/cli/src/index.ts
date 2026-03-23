@@ -6,7 +6,7 @@ import { executeInit, parseFeatures } from "./commands/init";
 import type { Template } from "./commands/init";
 import { buildMigrationPlan, formatMigrationStatus } from "./commands/migrate";
 import { executeSeed } from "./commands/seed";
-import { VERSION, bold, createNodeFs, cyan, dim, error, log, parseArgs } from "./utils";
+import { VERSION, bold, createNodeFs, cyan, dim, error, log, parseArgs, success } from "./utils";
 
 const HELP = `
 ${bold("workkit")} ${dim(`v${VERSION}`)} — Cloudflare Workers utility CLI
@@ -16,6 +16,7 @@ ${bold("USAGE")}
 
 ${bold("COMMANDS")}
   ${cyan("init")}             Scaffold a new Workers project
+  ${cyan("add")}              Add workkit packages to an existing project
   ${cyan("check")}            Validate bindings against env schema
   ${cyan("d1 migrate")}       Run D1 migrations
   ${cyan("d1 seed")}          Seed D1 from fixture files
@@ -29,6 +30,9 @@ ${bold("OPTIONS")}
 
 ${bold("EXAMPLES")}
   workkit init --template hono --features env,d1
+  workkit init  ${dim("(interactive mode)")}
+  workkit add kv auth
+  workkit add  ${dim("(interactive mode)")}
   workkit check
   workkit d1 migrate --dir ./migrations
   workkit d1 seed --file ./seeds/users.json --table users
@@ -58,20 +62,47 @@ export async function run(argv: string[]): Promise<void> {
 	try {
 		switch (command) {
 			case "init": {
-				const template = (flags.template as string) ?? (flags.t as string) ?? "basic";
-				const featuresStr = (flags.features as string) ?? (flags.f as string) ?? "env";
+				const template = (flags.template as string) ?? (flags.t as string);
+				const featuresStr = (flags.features as string) ?? (flags.f as string);
 				const name = (flags.name as string) ?? (flags.n as string);
-				const dir = (flags.dir as string) ?? cwd;
+				const dir = (flags.dir as string) ?? undefined;
 
-				await executeInit(
-					{
-						name,
-						template: template as Template,
-						features: parseFeatures(featuresStr),
-						dir,
-					},
-					fs,
-				);
+				// If all required flags are present, use direct mode (backward compat)
+				if (template && featuresStr) {
+					await executeInit(
+						{
+							name,
+							template: template as Template,
+							features: parseFeatures(featuresStr),
+							dir: dir ?? cwd,
+						},
+						fs,
+					);
+				} else {
+					// Interactive mode — pass flags through so provided ones skip prompts
+					await executeInit(
+						{
+							name,
+							template: template as Template | undefined,
+							features: featuresStr ? parseFeatures(featuresStr) : undefined,
+							dir,
+						},
+						fs,
+						flags,
+					);
+				}
+				break;
+			}
+
+			case "add": {
+				const { executeAdd } = await import("./commands/add");
+				const packages = positionals.slice(1);
+				const nodeFs = await import("node:fs");
+				const result = await executeAdd({ packages, cwd }, nodeFs);
+				if (result.added.length > 0) {
+					success(`Added: ${result.added.join(", ")}`);
+					log("\nRun: bun install");
+				}
 				break;
 			}
 

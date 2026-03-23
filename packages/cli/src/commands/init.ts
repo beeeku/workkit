@@ -1,3 +1,7 @@
+import * as p from "@clack/prompts";
+import { FEATURE_OPTIONS } from "../prompts/feature-select";
+import { validateProjectName } from "../prompts/project-name";
+import { TEMPLATE_OPTIONS } from "../prompts/template-select";
 import { generateApiTemplate } from "../templates/api";
 import { generateBasicTemplate } from "../templates/basic";
 import { generateHonoTemplate } from "../templates/hono";
@@ -220,9 +224,97 @@ export function parseFeatures(input: string): Feature[] {
 }
 
 /**
- * Execute the init command: write project files to disk.
+ * Check if all required flags are provided for non-interactive mode.
  */
-export async function executeInit(options: InitOptions, fs: FileSystem): Promise<GeneratedFile[]> {
+function hasAllFlags(flags: Record<string, unknown>): boolean {
+	return !!(flags.template || flags.t) && !!(flags.features || flags.f);
+}
+
+/**
+ * Run interactive prompts for any missing init options.
+ * Skips prompts for values already provided via flags.
+ */
+async function interactiveInit(flags: Record<string, unknown>): Promise<{
+	name: string;
+	template: string;
+	features: string[];
+	dir: string;
+}> {
+	p.intro("workkit — Create a new Cloudflare Workers project");
+
+	const name =
+		(flags.name as string) ??
+		(flags.n as string) ??
+		((await p.text({
+			message: "What's your project name?",
+			placeholder: "my-worker",
+			validate: validateProjectName,
+		})) as string);
+
+	if (p.isCancel(name)) {
+		p.cancel("Cancelled.");
+		process.exit(0);
+	}
+
+	const template =
+		(flags.template as string) ??
+		(flags.t as string) ??
+		((await p.select({
+			message: "Which template?",
+			options: TEMPLATE_OPTIONS,
+		})) as string);
+
+	if (p.isCancel(template)) {
+		p.cancel("Cancelled.");
+		process.exit(0);
+	}
+
+	const featuresRaw = (flags.features as string) ?? (flags.f as string);
+	const features = featuresRaw
+		? featuresRaw.split(",")
+		: ((await p.multiselect({
+				message: "Which packages do you want?",
+				options: FEATURE_OPTIONS,
+				required: false,
+			})) as string[]);
+
+	if (p.isCancel(features)) {
+		p.cancel("Cancelled.");
+		process.exit(0);
+	}
+
+	const dir = (flags.dir as string) ?? `./${name}`;
+
+	p.outro(`Creating ${name} with ${template} template`);
+
+	return {
+		name: name as string,
+		template: template as string,
+		features: features as string[],
+		dir,
+	};
+}
+
+/**
+ * Execute the init command: write project files to disk.
+ * Supports both flag-based (backward compat) and interactive modes.
+ */
+export async function executeInit(
+	options: InitOptions,
+	fs: FileSystem,
+	flags?: Record<string, unknown>,
+): Promise<GeneratedFile[]> {
+	// If flags are provided and incomplete, run interactive mode
+	if (flags && !hasAllFlags(flags)) {
+		const interactive = await interactiveInit(flags);
+		options = {
+			name: interactive.name,
+			template: interactive.template as Template,
+			features: parseFeatures(interactive.features.join(",")),
+			dir: interactive.dir,
+		};
+	}
+
 	const dir = options.dir ?? process.cwd();
 	const name = resolveProjectName(options, dir);
 	const template = options.template ?? "basic";
