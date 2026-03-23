@@ -1,6 +1,9 @@
 // Typed Storage
 export { typedStorage } from "./storage";
 
+// Versioned Storage
+export { versionedStorage } from "./versioned-storage";
+
 // State Machine
 export { createStateMachine } from "./state-machine";
 
@@ -23,3 +26,5 @@ export type {
 	AlarmHandler,
 	DOClient,
 } from "./types";
+
+export type { Migration, VersionedStorageOptions } from "./versioned-storage";
