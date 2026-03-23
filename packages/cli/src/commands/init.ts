@@ -18,7 +18,13 @@ export type Feature =
 	| "queue"
 	| "cron"
 	| "auth"
-	| "ratelimit";
+	| "ratelimit"
+	| "ai"
+	| "ai-gateway"
+	| "api"
+	| "crypto"
+	| "do"
+	| "logger";
 
 export const VALID_TEMPLATES: Template[] = ["basic", "hono", "api"];
 export const VALID_FEATURES: Feature[] = [
@@ -31,6 +37,12 @@ export const VALID_FEATURES: Feature[] = [
 	"cron",
 	"auth",
 	"ratelimit",
+	"ai",
+	"ai-gateway",
+	"api",
+	"crypto",
+	"do",
+	"logger",
 ];
 
 export interface InitOptions {
@@ -105,16 +117,23 @@ export function buildWranglerToml(name: string, features: Feature[]): string {
 
 	if (features.includes("d1")) {
 		lines.push(
+			`# Create with: wrangler d1 create ${name}-db`,
 			"[[d1_databases]]",
 			`binding = "DB"`,
 			`database_name = "${name}-db"`,
-			`database_id = ""`,
+			`database_id = "TODO"  # Replace with actual ID from wrangler d1 create`,
 			"",
 		);
 	}
 
 	if (features.includes("kv")) {
-		lines.push("[[kv_namespaces]]", `binding = "KV"`, `id = ""`, "");
+		lines.push(
+			"# Create with: wrangler kv namespace create KV",
+			"[[kv_namespaces]]",
+			`binding = "KV"`,
+			`id = "TODO"  # Replace with actual ID from wrangler kv namespace create`,
+			"",
+		);
 	}
 
 	if (features.includes("r2")) {
