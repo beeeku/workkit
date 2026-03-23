@@ -77,6 +77,8 @@ export interface CacheOptions {
 	cache?: Cache;
 	/** HTTP methods to cache (defaults to ['GET']) */
 	methods?: string[];
+	/** Jitter in seconds — actual TTL varies by ±jitter to prevent thundering herd */
+	jitter?: number;
 }
 
 /**

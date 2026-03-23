@@ -15,7 +15,7 @@ import type { CacheOptions } from "./types";
  * ```
  */
 export function cacheResponse(options: CacheOptions): MiddlewareHandler {
-	const { ttl, keyFn, methods = ["GET"] } = options;
+	const { ttl, keyFn, methods = ["GET"], jitter } = options;
 
 	return async (c, next) => {
 		// Only cache specified methods
@@ -54,7 +54,10 @@ export function cacheResponse(options: CacheOptions): MiddlewareHandler {
 				statusText: cloned.statusText,
 				headers: new Headers(cloned.headers),
 			});
-			cachedResponse.headers.set("Cache-Control", `s-maxage=${ttl}`);
+			const actualTtl = jitter
+				? Math.max(1, ttl + Math.floor(Math.random() * jitter * 2) - jitter)
+				: ttl;
+			cachedResponse.headers.set("Cache-Control", `s-maxage=${actualTtl}`);
 
 			// Store in cache — use waitUntil if available, otherwise await directly
 			const putPromise = cache.put(cacheRequest, cachedResponse);

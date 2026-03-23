@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cacheResponse } from "../src/cache";
 
 function createMockCache() {
@@ -192,5 +192,85 @@ describe("cacheResponse() middleware", () => {
 		const req = new Request("http://localhost/old");
 		await app.request(req, undefined, executionCtx);
 		expect(cache.put).not.toHaveBeenCalled();
+	});
+});
+
+describe("cacheResponse() jitter", () => {
+	let cache: ReturnType<typeof createMockCache>;
+
+	beforeEach(() => {
+		cache = createMockCache();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("without jitter, TTL is exact", async () => {
+		const app = new Hono();
+		app.get("/api/data", cacheResponse({ ttl: 300, cache }), async (c) => {
+			return c.json({ data: "test" });
+		});
+
+		const executionCtx = createExecutionCtx();
+		const req = new Request("http://localhost/api/data");
+		await app.request(req, undefined, executionCtx);
+
+		const putCall = (cache.put as any).mock.calls[0];
+		const cachedResponse = putCall[1] as Response;
+		expect(cachedResponse.headers.get("Cache-Control")).toBe("s-maxage=300");
+	});
+
+	it("with jitter, TTL varies within range", async () => {
+		const ttls = new Set<string>();
+
+		// Run multiple requests to collect different TTL values
+		for (let i = 0; i < 20; i++) {
+			const localCache = createMockCache();
+			const app = new Hono();
+			app.get("/api/data", cacheResponse({ ttl: 300, jitter: 30, cache: localCache }), async (c) => {
+				return c.json({ data: "test" });
+			});
+
+			const executionCtx = createExecutionCtx();
+			const req = new Request("http://localhost/api/data");
+			await app.request(req, undefined, executionCtx);
+
+			const putCall = (localCache.put as any).mock.calls[0];
+			const cachedResponse = putCall[1] as Response;
+			const cacheControl = cachedResponse.headers.get("Cache-Control")!;
+			const actualTtl = Number.parseInt(cacheControl.replace("s-maxage=", ""), 10);
+
+			// TTL should be within [270, 330]
+			expect(actualTtl).toBeGreaterThanOrEqual(270);
+			expect(actualTtl).toBeLessThanOrEqual(330);
+			ttls.add(cacheControl);
+		}
+
+		// With 20 iterations, we should see at least 2 different values
+		// (probability of all same is astronomically low with jitter=30)
+		expect(ttls.size).toBeGreaterThanOrEqual(2);
+	});
+
+	it("TTL never goes below 1 even with large jitter", async () => {
+		// Mock Math.random to return 0 (worst case: ttl - jitter)
+		vi.spyOn(Math, "random").mockReturnValue(0);
+
+		const app = new Hono();
+		app.get("/api/data", cacheResponse({ ttl: 5, jitter: 100, cache }), async (c) => {
+			return c.json({ data: "test" });
+		});
+
+		const executionCtx = createExecutionCtx();
+		const req = new Request("http://localhost/api/data");
+		await app.request(req, undefined, executionCtx);
+
+		const putCall = (cache.put as any).mock.calls[0];
+		const cachedResponse = putCall[1] as Response;
+		const cacheControl = cachedResponse.headers.get("Cache-Control")!;
+		const actualTtl = Number.parseInt(cacheControl.replace("s-maxage=", ""), 10);
+
+		// Should be clamped to 1 minimum
+		expect(actualTtl).toBeGreaterThanOrEqual(1);
 	});
 });
