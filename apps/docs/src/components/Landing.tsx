@@ -106,7 +106,7 @@ export default function Landing() {
 
 			{/* Package Grid */}
 			<section className="max-w-6xl mx-auto px-6 py-16">
-				<h2 className="text-2xl font-bold text-white mb-2">18 packages. One ecosystem.</h2>
+				<h2 className="text-2xl font-bold text-white mb-2">19 packages. One ecosystem.</h2>
 				<p className="text-slate-400 mb-8">
 					Install only what you need. Every package works standalone or composes with others.
 				</p>

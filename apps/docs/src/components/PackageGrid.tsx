@@ -14,6 +14,7 @@ const packages = [
 	{ name: "ai", desc: "Workers AI with streaming", icon: "🧠" },
 	{ name: "ai-gateway", desc: "Multi-provider routing", icon: "🌐" },
 	{ name: "api", desc: "OpenAPI generation", icon: "📋" },
+	{ name: "logger", desc: "Structured JSON logging", icon: "📝" },
 	{ name: "auth", desc: "JWT & session management", icon: "🛡️" },
 	{ name: "testing", desc: "In-memory binding mocks", icon: "🧪" },
 	{ name: "cli", desc: "Scaffolding & code generation", icon: "⌨️" },

@@ -26,6 +26,7 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/ai`](packages/ai) | Typed Workers AI client with streaming, fallback chains, and retry |
 | [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway with routing, cost tracking, and caching |
 | [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
+| [`@workkit/logger`](packages/logger) | Structured logging with request context and Hono middleware |
 | [`@workkit/auth`](packages/auth) | JWT, session management, and auth middleware |
 | [`@workkit/testing`](packages/testing) | In-memory mocks for all Cloudflare Workers bindings |
 
@@ -39,7 +40,7 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 
 ## CLI
 
-Scaffold projects, validate bindings, run migrations, and generate code.
+Scaffold projects, validate bindings, run migrations, and generate code. The CLI supports interactive mode -- run any command without arguments for guided prompts.
 
 ```bash
 bunx workkit init --template hono --features env,d1
@@ -48,6 +49,7 @@ bunx workkit init --template hono --features env,d1
 | Command | Description |
 |---------|-------------|
 | `workkit init` | Scaffold a new Workers project |
+| `workkit add` | Add packages to an existing project (interactive multi-select) |
 | `workkit check` | Validate bindings against env schema |
 | `workkit d1 migrate` | Run D1 migrations |
 | `workkit d1 seed` | Seed D1 from fixture files |

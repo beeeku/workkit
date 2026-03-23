@@ -241,6 +241,22 @@ Quick reference of all exported functions, types, and classes per package.
 | `createDOClient<T>(namespace, id)` | function | Typed RPC client for DO stubs |
 | `singleton(namespace, name)` | function | Get named DO instance |
 
+## `@workkit/logger`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createLogger(options?)` | function | Create a standalone structured logger |
+| `logger(options?)` | function | Hono middleware for structured request logging |
+| `getLogger(c)` | function | Get a logger from Hono context with request context |
+| `getRequestContext()` | function | Get current request context from AsyncLocalStorage |
+| `LogLevel` | type | `"debug" \| "info" \| "warn" \| "error"` |
+| `LogFields` | type | `Record<string, unknown>` |
+| `LogEntry` | type | Structured log entry with level, msg, ts, and fields |
+| `Logger` | type | Logger interface with `.debug()`, `.info()`, `.warn()`, `.error()`, `.child()` |
+| `CreateLoggerOptions` | type | Options for `createLogger` |
+| `LoggerMiddlewareOptions` | type | Options for `logger` middleware |
+| `RequestContext` | type | Request context: requestId, method, path, startTime, fields |
+
 ## `@workkit/testing`
 
 | Export | Kind | Description |

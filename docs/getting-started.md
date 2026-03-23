@@ -13,12 +13,20 @@ bun add @workkit/d1 @workkit/kv @workkit/queue @workkit/cache
 bun add @workkit/auth @workkit/ratelimit @workkit/cron
 bun add @workkit/ai @workkit/ai-gateway
 bun add @workkit/do @workkit/r2 @workkit/crypto
+bun add @workkit/logger
 
 # Testing utilities
 bun add -d @workkit/testing
 ```
 
 Each package has `@workkit/errors` and `@workkit/types` as peer dependencies. Install those first.
+
+Or use the interactive CLI to add packages to an existing project:
+
+```bash
+bunx workkit add          # interactive multi-select
+bunx workkit add kv d1    # add specific packages directly
+```
 
 ## Your First Worker
 
