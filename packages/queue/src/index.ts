@@ -11,6 +11,12 @@ export type { RetryDelayAction } from "./retry";
 // Dead letter queue
 export { createDLQProcessor } from "./dlq";
 
+// Circuit breaker
+export { withCircuitBreaker } from "./circuit-breaker";
+
+// Duration
+export { parseDuration } from "./duration";
+
 // Types
 export type {
 	TypedQueueProducer,
@@ -21,4 +27,7 @@ export type {
 	DLQMetadata,
 	DLQProcessorOptions,
 	ProcessResult,
+	Duration,
+	CircuitBreakerOptions,
+	CircuitBreakerState,
 } from "./types";

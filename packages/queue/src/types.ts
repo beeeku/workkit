@@ -90,5 +90,28 @@ export interface DLQProcessorOptions<Body> {
 	onError?: (error: unknown, message: ConsumerMessage<Body>) => void;
 }
 
+// --- Circuit breaker types ---
+
+/** Duration string for circuit breaker */
+export type Duration = `${number}${"s" | "m" | "h" | "d"}`;
+
+/** Options for circuit breaker */
+export interface CircuitBreakerOptions {
+	namespace: KVNamespace;
+	key: string;
+	failureThreshold: number;
+	resetTimeout: Duration;
+	halfOpenMax?: number;
+}
+
+/** Internal circuit breaker state */
+export interface CircuitBreakerState {
+	state: "closed" | "open" | "half-open";
+	failures: number;
+	lastFailure: number;
+	openedAt: number;
+	halfOpenAttempts: number;
+}
+
 // Re-export for convenience
 export type { RetryDelayAction } from "./retry";
