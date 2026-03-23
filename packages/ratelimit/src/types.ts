@@ -86,3 +86,65 @@ export interface TokenBucketState {
 	tokens: number;
 	lastRefill: number;
 }
+
+/** Options for tiered rate limiter */
+export interface TieredOptions {
+	namespace: KVNamespace;
+	tiers: Record<string, TierConfig>;
+	window: Duration;
+	defaultTier?: string;
+	algorithm?: "fixed" | "sliding";
+	prefix?: string;
+}
+
+/** Configuration for a single tier */
+export interface TierConfig {
+	limit: number;
+}
+
+/** A tiered rate limiter with per-tier checks */
+export interface TieredRateLimiter {
+	check(key: string, tier: string): Promise<RateLimitResult>;
+	forTier(tier: string): RateLimiter;
+}
+
+/** Options for quota bucket limiter */
+export interface QuotaOptions {
+	namespace: KVNamespace;
+	limits: QuotaLimit[];
+	prefix?: string;
+}
+
+/** A single quota window limit */
+export interface QuotaLimit {
+	window: Duration;
+	limit: number;
+}
+
+/** Result from a quota check, includes per-window breakdown */
+export interface QuotaResult extends RateLimitResult {
+	quotas: QuotaWindowResult[];
+}
+
+/** Per-window result within a quota check */
+export interface QuotaWindowResult {
+	window: Duration;
+	used: number;
+	limit: number;
+	remaining: number;
+}
+
+/** Usage information for a single quota window */
+export interface QuotaUsage {
+	window: Duration;
+	used: number;
+	limit: number;
+	remaining: number;
+	resetsAt: Date;
+}
+
+/** A quota limiter that supports cost-based checks and usage queries */
+export interface QuotaLimiter extends RateLimiter {
+	check(key: string, cost?: number): Promise<QuotaResult>;
+	usage(key: string): Promise<QuotaUsage[]>;
+}
