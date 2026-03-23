@@ -7,6 +7,9 @@ export { generateKey, exportKey, importKey } from "./keys";
 // Key derivation (also available via '@workkit/crypto/derive')
 export { deriveKey } from "./derive";
 
+// Envelope encryption
+export { envelope } from "./envelope";
+
 // Hashing
 export { hash, hmac } from "./hash";
 
