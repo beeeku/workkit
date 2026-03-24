@@ -224,7 +224,7 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 
 		require(options?: RequireMiddlewareOptions) {
 			const gate = this;
-			return async function approvalMiddleware(c: any, next: () => Promise<void>) {
+			return async function approvalMiddleware(c: any, next: () => Promise<void>): Promise<any> {
 				const extractAction =
 					options?.extractAction ??
 					((c: any) => ({
