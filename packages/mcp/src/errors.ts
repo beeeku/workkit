@@ -1,11 +1,5 @@
 // src/errors.ts
-import {
-	WorkkitError,
-	ValidationError,
-	TimeoutError,
-	isWorkkitError,
-	errorToResponse,
-} from "@workkit/errors";
+import { TimeoutError, errorToResponse, isWorkkitError } from "@workkit/errors";
 import type { JsonRpcError, MCPToolResult } from "./types";
 
 // ─── JSON-RPC Error Codes ─────────────────────────────────────
@@ -43,7 +37,11 @@ export class MCPProtocolError extends Error {
 	}
 
 	static methodNotFound(method: string, data?: unknown): MCPProtocolError {
-		return new MCPProtocolError(JSON_RPC_CODES.METHOD_NOT_FOUND, `Method not found: ${method}`, data);
+		return new MCPProtocolError(
+			JSON_RPC_CODES.METHOD_NOT_FOUND,
+			`Method not found: ${method}`,
+			data,
+		);
 	}
 
 	static invalidParams(message: string, data?: unknown): MCPProtocolError {
@@ -86,7 +84,7 @@ export function toMCPToolError(error: unknown): MCPToolResult {
 		const label = WORKKIT_ERROR_LABELS[error.code] ?? "Error";
 		text = `${label}: ${error.message}`;
 	} else if (error instanceof Error) {
-		const isDev = typeof process !== "undefined" && process.env?.NODE_ENV === "development";
+		const isDev = typeof globalThis !== "undefined" && (globalThis as any).process?.env?.NODE_ENV === "development";
 		text = isDev ? error.message : "Internal error";
 	} else {
 		text = "Internal error";
