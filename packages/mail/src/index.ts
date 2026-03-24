@@ -1,3 +1,6 @@
+// Validation
+export { validateAddress, isValidAddress } from "./validation";
+
 // Errors
 export { MailError, InvalidAddressError, DeliveryError } from "./errors";
 
