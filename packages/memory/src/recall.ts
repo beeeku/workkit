@@ -70,6 +70,17 @@ export function createRecall(db: D1Database, factoryOptions: RecallFactoryOption
 			const now = Date.now();
 			const terms = extractSearchTerms(query);
 
+			// If no meaningful search terms AND no metadata filters, return empty
+			// to avoid returning an unrelated recency-based sample of all facts.
+			const hasMetadataFilters =
+				subject !== undefined ||
+				(tags && tags.length > 0) ||
+				timeRange?.from !== undefined ||
+				timeRange?.to !== undefined;
+			if (terms.length === 0 && !hasMetadataFilters) {
+				return { ok: true, value: [] };
+			}
+
 			// ── Build candidate query (same temporal filters as search) ──────────
 			const conditions: string[] = [];
 			const binds: any[] = [];

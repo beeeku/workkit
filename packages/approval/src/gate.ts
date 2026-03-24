@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { createAuditProjection } from "./audit";
 import { createGuard } from "./guard";
-import { generateApprovalToken } from "./token";
+import { generateApprovalToken, verifyApprovalToken } from "./token";
 import type {
 	ActionDescriptor,
 	ApprovalDecision,
@@ -64,14 +64,56 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 
 		async decide(
 			requestId: string,
-			decision: Omit<ApprovalDecision, "token">,
+			decision: Pick<ApprovalDecision, "token" | "action" | "reason">,
 		): Promise<DecisionResult> {
+			// 1. Fetch the request from the DO to know the expected approvers
 			const doId = config.storage.idFromName(requestId);
 			const stub = config.storage.get(doId);
+			const statusResponse = await stub.fetch(new Request("https://internal/status"));
+			if (!statusResponse.ok) {
+				throw new Error("Request not found");
+			}
+			const request = (await statusResponse.json()) as any;
+
+			// 2. Get the public key for verification
+			const publicKey = config.signingKey.publicKey;
+			if (!(publicKey instanceof CryptoKey)) {
+				throw new Error(
+					"Approval gate requires CryptoKey signing keys. Import string keys with @workkit/crypto importSigningKey() before creating the gate.",
+				);
+			}
+
+			// 3. Verify the token (skip approver check — we extract approverId from the payload)
+			const consumedTokens = new Set<string>(request.consumedTokens ?? []);
+			const verification = await verifyApprovalToken(
+				decision.token,
+				requestId,
+				undefined,
+				publicKey,
+				consumedTokens,
+				decision.action,
+			);
+
+			if (!verification.ok) {
+				throw new Error(`Token verification failed: ${verification.error.message}`);
+			}
+			const payload = verification.value;
+
+			// 4. Verify the approver from the token is in the request's approver list
+			if (!request.approvers?.includes(payload.sub)) {
+				throw new Error(`Approver '${payload.sub}' is not authorized for this request`);
+			}
+
+			// 6. Forward to the DO with verified identity
 			const response = await stub.fetch(
 				new Request("https://internal/decide", {
 					method: "POST",
-					body: JSON.stringify(decision),
+					body: JSON.stringify({
+						approverId: payload.sub,
+						action: decision.action,
+						reason: decision.reason,
+						tokenId: payload.tid,
+					}),
 				}),
 			);
 			if (!response.ok) {
@@ -147,7 +189,7 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 			});
 
 			// GET handler for email/Telegram approval links (?token=...&action=approve|deny)
-			// The DO validates the token and extracts the approverId.
+			// Routes through this.decide() which performs full token verification.
 			app.get("/approvals/:requestId/decide", async (c) => {
 				const requestId = c.req.param("requestId");
 				const token = c.req.query("token");
@@ -156,29 +198,7 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 					return c.json({ error: "Missing token or action query parameter" }, 400);
 				}
 				try {
-					const doId = config.storage.idFromName(requestId);
-					const stub = config.storage.get(doId);
-					const response = await stub.fetch(
-						new Request("https://internal/decide", {
-							method: "POST",
-							body: JSON.stringify({ token, action }),
-						}),
-					);
-					if (!response.ok) {
-						const err = (await response.json()) as any;
-						return c.json({ error: err.error ?? "Decision failed" }, 400);
-					}
-					const result: DecisionResult = await response.json();
-					// Sync audit projection with the decision outcome
-					await audit.updateStatus(requestId, result.newStatus, result.decidedAt);
-					await audit.recordDecision(requestId, {
-						by: result.decidedBy,
-						action,
-						at: result.decidedAt,
-					});
-					if (typeof result.currentApprovals === "number") {
-						await audit.updateCurrentApprovals(requestId, result.currentApprovals);
-					}
+					const result = await this.decide(requestId, { token, action });
 					return c.json(result);
 				} catch (error: any) {
 					return c.json({ error: error.message }, 400);
@@ -187,9 +207,17 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 
 			app.post("/approvals/:requestId/decide", async (c) => {
 				const requestId = c.req.param("requestId");
-				const body = await c.req.json();
+				const body = (await c.req.json()) as {
+					token: string;
+					action: "approve" | "deny";
+					reason?: string;
+				};
 				try {
-					const result = await this.decide(requestId, body);
+					const result = await this.decide(requestId, {
+						token: body.token,
+						action: body.action,
+						reason: body.reason,
+					});
 					return c.json(result);
 				} catch (error: any) {
 					return c.json({ error: error.message }, 400);

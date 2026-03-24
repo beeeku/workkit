@@ -210,9 +210,7 @@ export interface NotificationTemplate {
 // ─── Query Types ──────────────────────────────────────────────
 export interface ListPendingOptions {
 	requestedBy?: string;
-	approverId?: string;
 	actionPattern?: string;
-	tags?: string[];
 	cursor?: string;
 	limit?: number;
 }

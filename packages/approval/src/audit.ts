@@ -140,12 +140,16 @@ export function createAuditProjection(db: D1Database) {
 				.first<{ count: number }>();
 			const total = countResult?.count ?? 0;
 
-			let query = `SELECT * FROM approval_requests ${where} ORDER BY requested_at DESC LIMIT ?`;
+			let query = `SELECT * FROM approval_requests ${where} ORDER BY requested_at DESC, id DESC LIMIT ?`;
 			binds.push(limit + 1);
 
 			if (options.cursor) {
-				query = query.replace("ORDER BY", "AND requested_at < ? ORDER BY");
-				binds.splice(binds.length - 1, 0, Number(options.cursor));
+				const [cursorTs, cursorId] = parseCursor(options.cursor);
+				query = query.replace(
+					"ORDER BY",
+					"AND (requested_at < ? OR (requested_at = ? AND id < ?)) ORDER BY",
+				);
+				binds.splice(binds.length - 1, 0, cursorTs, cursorTs, cursorId);
 			}
 
 			const { results } = await db
@@ -154,10 +158,11 @@ export function createAuditProjection(db: D1Database) {
 				.all();
 			const hasMore = results.length > limit;
 			const items = (hasMore ? results.slice(0, limit) : results).map(parseRequestRow);
+			const lastItem = items[items.length - 1];
 
 			return {
 				items,
-				cursor: hasMore ? String(items[items.length - 1]?.requestedAt) : undefined,
+				cursor: hasMore && lastItem ? `${lastItem.requestedAt}:${lastItem.id}` : undefined,
 				hasMore,
 				total,
 			};
@@ -195,12 +200,16 @@ export function createAuditProjection(db: D1Database) {
 				.first<{ count: number }>();
 			const total = countResult?.count ?? 0;
 
-			let query = `SELECT * FROM approval_requests ${where} ORDER BY completed_at DESC LIMIT ?`;
+			let query = `SELECT * FROM approval_requests ${where} ORDER BY completed_at DESC, id DESC LIMIT ?`;
 			binds.push(limit + 1);
 
 			if (options.cursor) {
-				query = query.replace("ORDER BY", "AND completed_at < ? ORDER BY");
-				binds.splice(binds.length - 1, 0, Number(options.cursor));
+				const [cursorTs, cursorId] = parseCursor(options.cursor);
+				query = query.replace(
+					"ORDER BY",
+					"AND (completed_at < ? OR (completed_at = ? AND id < ?)) ORDER BY",
+				);
+				binds.splice(binds.length - 1, 0, cursorTs, cursorTs, cursorId);
 			}
 
 			const { results } = await db
@@ -213,7 +222,10 @@ export function createAuditProjection(db: D1Database) {
 
 			return {
 				items,
-				cursor: hasMore ? String(lastItem?.completedAt ?? lastItem?.requestedAt) : undefined,
+				cursor:
+					hasMore && lastItem
+						? `${lastItem.completedAt ?? lastItem.requestedAt}:${lastItem.id}`
+						: undefined,
 				hasMore,
 				total,
 			};
@@ -235,6 +247,15 @@ export function createAuditProjection(db: D1Database) {
 			}));
 		},
 	};
+}
+
+function parseCursor(cursor: string): [number, string] {
+	const sep = cursor.indexOf(":");
+	if (sep === -1) {
+		// Backwards-compatible: treat plain number as timestamp with empty id
+		return [Number(cursor), ""];
+	}
+	return [Number(cursor.slice(0, sep)), cursor.slice(sep + 1)];
 }
 
 function parseRequestRow(row: any): ApprovalRequestSummary {

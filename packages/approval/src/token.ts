@@ -67,13 +67,19 @@ export async function generateApprovalToken(
 /**
  * Verify an approval token.
  * Returns Ok(payload) or Err({ code, message }).
+ *
+ * @param expectedApproverId  Pass `undefined` to skip the approver check (e.g. when the caller
+ *                            extracts the approver from the verified payload).
+ * @param expectedAction      When provided, checks that `payload.act` matches the requested
+ *                            action or is `"both"`.
  */
 export async function verifyApprovalToken(
 	token: string,
 	expectedRequestId: string,
-	expectedApproverId: string,
+	expectedApproverId: string | undefined,
 	publicKey: CryptoKey,
 	consumedTokens: Set<string>,
+	expectedAction?: "approve" | "deny",
 ): Promise<VerifyResult> {
 	// 1. Split and decode
 	const parts = token.split(".");
@@ -134,8 +140,8 @@ export async function verifyApprovalToken(
 		};
 	}
 
-	// 5. Check approver
-	if (payload.sub !== expectedApproverId) {
+	// 5. Check approver (skip if expectedApproverId is undefined)
+	if (expectedApproverId !== undefined && payload.sub !== expectedApproverId) {
 		return {
 			ok: false,
 			error: {
@@ -145,7 +151,18 @@ export async function verifyApprovalToken(
 		};
 	}
 
-	// 6. Check consumed
+	// 6. Check action (skip if expectedAction is undefined)
+	if (expectedAction !== undefined && payload.act !== expectedAction && payload.act !== "both") {
+		return {
+			ok: false,
+			error: {
+				code: "ACTION_MISMATCH",
+				message: `Token action '${payload.act}' does not permit '${expectedAction}'`,
+			},
+		};
+	}
+
+	// 7. Check consumed
 	if (consumedTokens.has(payload.tid)) {
 		return {
 			ok: false,

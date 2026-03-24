@@ -80,16 +80,18 @@ function createMockD1() {
 describe("Integration: Full Approval Flow", () => {
 	async function createTestGate() {
 		const signingKey = await generateApprovalKeys();
-		return createApprovalGate({
+		const notificationQueue = { send: vi.fn() } as any;
+		const gate = createApprovalGate({
 			storage: createMockDONamespace(),
 			audit: createMockD1(),
-			notificationQueue: { send: vi.fn() } as any,
+			notificationQueue,
 			signingKey,
 		});
+		return { gate, notificationQueue };
 	}
 
 	it("guard → no policy → allowed", async () => {
-		const gate = await createTestGate();
+		const { gate } = await createTestGate();
 		const result = await gate.guard(
 			{ name: "harmless-action", requestedBy: "alice" },
 			{ identity: "alice" },
@@ -98,7 +100,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("guard → policy match → pending → decide → approved", async () => {
-		const gate = await createTestGate();
+		const { gate, notificationQueue } = await createTestGate();
 		gate.policy("require-approval", {
 			match: { type: "name", pattern: "deploy:*" },
 			approvers: ["bob"],
@@ -114,17 +116,20 @@ describe("Integration: Full Approval Flow", () => {
 		expect(result.status).toBe("pending");
 
 		if (result.status === "pending") {
-			// Decide
+			// Extract the token from the notification queue
+			const notification = notificationQueue.send.mock.calls[0][0];
+			const token = notification.token;
+			// Decide using token (approverId comes from the verified token)
 			const decision = await gate.decide(result.requestId, {
+				token,
 				action: "approve",
-				approverId: "bob",
 			});
 			expect(decision.newStatus).toBe("approved");
 		}
 	});
 
 	it("guard → policy match → pending → deny → denied", async () => {
-		const gate = await createTestGate();
+		const { gate, notificationQueue } = await createTestGate();
 		gate.policy("require-approval", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -138,9 +143,11 @@ describe("Integration: Full Approval Flow", () => {
 		expect(result.status).toBe("pending");
 
 		if (result.status === "pending") {
+			const notification = notificationQueue.send.mock.calls[0][0];
+			const token = notification.token;
 			const decision = await gate.decide(result.requestId, {
+				token,
 				action: "deny",
-				approverId: "bob",
 				reason: "Too risky",
 			});
 			expect(decision.newStatus).toBe("denied");
@@ -148,7 +155,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("gate.getRequest returns request status", async () => {
-		const gate = await createTestGate();
+		const { gate } = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -165,7 +172,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("createRouter returns functional Hono app", async () => {
-		const gate = await createTestGate();
+		const { gate } = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -180,7 +187,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("require() middleware returns 202 for pending", async () => {
-		const gate = await createTestGate();
+		const { gate } = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],

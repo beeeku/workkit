@@ -153,7 +153,7 @@ describe("createConversation", () => {
 			}
 		});
 
-		it("respects custom tokenBudget in options", async () => {
+		it("respects custom tokenBudget but always includes latest message", async () => {
 			const now = Date.now();
 			const rows = [
 				makeRow({
@@ -173,12 +173,13 @@ describe("createConversation", () => {
 			const db = createMockD1([...rows].reverse(), { count: 2 });
 			const conv = createConversation("conv_1", db);
 
-			// Override budget in get()
+			// Override budget in get() — even though budget is 50, the most recent message is always included
 			const result = await conv.get({ tokenBudget: 50 });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.value.messages).toHaveLength(0);
+				expect(result.value.messages).toHaveLength(1);
+				expect(result.value.messages[0].id).toBe("msg_2");
 			}
 		});
 

@@ -95,11 +95,12 @@ export function createConversation(
 				const messages = results.map(parseMessage).reverse();
 
 				// Trim to token budget from the end (keep most recent within budget)
+				// Always include at least the most recent message even if it exceeds budget
 				let totalTokens = 0;
 				const inBudget: StoredMessage[] = [];
 				for (let i = messages.length - 1; i >= 0; i--) {
 					const msg = messages[i]!;
-					if (totalTokens + msg.tokenCount > budget) break;
+					if (totalTokens + msg.tokenCount > budget && inBudget.length > 0) break;
 					totalTokens += msg.tokenCount;
 					inBudget.unshift(msg);
 				}
