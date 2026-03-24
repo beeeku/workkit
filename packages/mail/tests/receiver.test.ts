@@ -48,6 +48,26 @@ describe("createEmailHandler()", () => {
 		expect(mockEmail._forwardedTo).toBe("admin@example.com");
 	});
 
+	it("exposes reply() on InboundEmail", async () => {
+		const mockEmail = createMockForwardableEmail({
+			from: "sender@test.com",
+			to: "recipient@test.com",
+			subject: "Original",
+		});
+
+		const handler = createEmailHandler({
+			handler: async (email) => {
+				await email.reply({
+					from: "recipient@test.com",
+					text: "Got it, thanks!",
+				});
+			},
+		});
+
+		await handler(mockEmail as any, {}, ctx);
+		expect(mockEmail._replied).toBe(true);
+	});
+
 	it("exposes setReject() on InboundEmail", async () => {
 		const mockEmail = createMockForwardableEmail();
 

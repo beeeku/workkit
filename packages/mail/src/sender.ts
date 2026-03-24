@@ -1,13 +1,8 @@
 import { BindingNotFoundError } from "@workkit/errors";
-import { composeMessage } from "./compose";
+import { composeMessage, toArray } from "./compose";
 import { DeliveryError, InvalidAddressError } from "./errors";
 import type { MailMessage, MailOptions, SendResult, TypedMailClient } from "./types";
 import { validateAddress } from "./validation";
-
-function toArray(value: string | string[] | undefined): string[] {
-	if (!value) return [];
-	return Array.isArray(value) ? value : [value];
-}
 
 function resolveFrom(message: MailMessage, options?: MailOptions): string {
 	const from = message.from ?? options?.defaultFrom;
@@ -61,10 +56,19 @@ export function mail(binding: SendEmail, options?: MailOptions): TypedMailClient
 				headers: message.headers,
 			});
 
-			// Send via binding — in real CF Workers this uses EmailMessage from cloudflare:email
-			// but that module only exists in the CF runtime, so we call binding.send() directly
+			// Send via binding — wraps composed MIME as a ReadableStream matching CF's EmailMessage shape
 			try {
-				await binding.send({ from: composed.from, to: composed.to, raw: composed.raw } as any);
+				const rawStream = new ReadableStream({
+					start(controller) {
+						controller.enqueue(new TextEncoder().encode(composed.raw));
+						controller.close();
+					},
+				});
+				await binding.send({
+					from: composed.from,
+					to: composed.to,
+					raw: rawStream,
+				} as EmailMessage);
 			} catch (error) {
 				throw new DeliveryError(error instanceof Error ? error.message : "Email delivery failed", {
 					cause: error,

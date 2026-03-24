@@ -22,7 +22,7 @@ function toMailboxInput(addr: string | MailAddress): string | MailboxAddrObject 
 	return { addr: addr.email, name: addr.name };
 }
 
-function toArray<T>(value: T | T[] | undefined): T[] {
+export function toArray<T>(value: T | T[] | undefined): T[] {
 	if (!value) return [];
 	return Array.isArray(value) ? value : [value];
 }
@@ -80,7 +80,13 @@ export function composeMessage(options: ComposeOptions): ComposedMessage {
 			const data =
 				att.content instanceof ArrayBuffer || att.content instanceof Uint8Array
 					? uint8ArrayToBase64(
-							new Uint8Array(att.content instanceof ArrayBuffer ? att.content : att.content.buffer),
+							att.content instanceof ArrayBuffer
+								? new Uint8Array(att.content)
+								: new Uint8Array(
+										att.content.buffer,
+										att.content.byteOffset,
+										att.content.byteLength,
+									),
 						)
 					: att.content;
 
