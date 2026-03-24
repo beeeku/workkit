@@ -1,3 +1,10 @@
+// Compose
+export { composeMessage } from "./compose";
+
+// Parser
+export { parseEmail } from "./parser";
+export type { ParsedEmail } from "./parser";
+
 // Validation
 export { validateAddress, isValidAddress } from "./validation";
 
