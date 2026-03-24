@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { createGuard } from "./guard";
 import { createAuditProjection } from "./audit";
+import { generateApprovalToken } from "./token";
 import type {
   ApprovalGateConfig,
   PolicyDefinition,
@@ -33,7 +34,12 @@ export function createApprovalGate(config: ApprovalGateConfig) {
         notificationQueue: config.notificationQueue,
         auditProjection: audit,
         generateToken: async (requestId, approverId, action, expiresIn) => {
-          // For now, generate a simple token. Full crypto integration comes with key import.
+          const key = config.signingKey;
+          if (key.privateKey instanceof CryptoKey) {
+            return generateApprovalToken(requestId, approverId, action, expiresIn, key.privateKey);
+          }
+          // TODO: Import string keys to CryptoKey. For now, fall back to simple token format.
+          console.warn("Approval gate: string signing keys not yet supported, using simple token format");
           const tokenId = crypto.randomUUID();
           return { token: `${requestId}:${approverId}:${tokenId}`, tokenId };
         },

@@ -107,11 +107,18 @@ export function createTransportHandler(config: TransportHandlerConfig): Transpor
         }),
       );
 
-      // Collect non-null responses (filter out notifications)
+      // Collect non-null responses (filter out notifications), convert rejected to error responses
       const responses: JsonRpcResponse[] = [];
-      for (const result of results) {
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
         if (result.status === "fulfilled" && result.value !== null) {
           responses.push(result.value);
+        } else if (result.status === "rejected") {
+          responses.push({
+            jsonrpc: "2.0",
+            id: (raw[i] as any)?.id ?? null,
+            error: { code: -32603, message: "Internal error" },
+          } as JsonRpcResponse);
         }
       }
 

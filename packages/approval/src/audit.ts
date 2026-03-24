@@ -89,13 +89,13 @@ export function createAuditProjection(db: D1Database) {
       let query = `SELECT * FROM approval_requests ${where} ORDER BY requested_at DESC LIMIT ?`;
       binds.push(limit + 1);
 
-      if (options.cursor) { query = query.replace("ORDER BY", "AND id < ? ORDER BY"); binds.splice(binds.length - 1, 0, options.cursor); }
+      if (options.cursor) { query = query.replace("ORDER BY", "AND requested_at < ? ORDER BY"); binds.splice(binds.length - 1, 0, Number(options.cursor)); }
 
       const { results } = await db.prepare(query).bind(...binds).all();
       const hasMore = results.length > limit;
       const items = (hasMore ? results.slice(0, limit) : results).map(parseRequestRow);
 
-      return { items, cursor: hasMore ? items[items.length - 1]?.id : undefined, hasMore, total };
+      return { items, cursor: hasMore ? String(items[items.length - 1]?.requestedAt) : undefined, hasMore, total };
     },
 
     async listCompleted(options: ListCompletedOptions = {}): Promise<PaginatedResult<ApprovalRequestSummary>> {
@@ -112,12 +112,16 @@ export function createAuditProjection(db: D1Database) {
       const countResult = await db.prepare(`SELECT COUNT(*) as count FROM approval_requests ${where}`).bind(...binds).first<{ count: number }>();
       const total = countResult?.count ?? 0;
 
+      let query = `SELECT * FROM approval_requests ${where} ORDER BY completed_at DESC LIMIT ?`;
       binds.push(limit + 1);
-      const { results } = await db.prepare(`SELECT * FROM approval_requests ${where} ORDER BY completed_at DESC LIMIT ?`).bind(...binds).all();
+
+      if (options.cursor) { query = query.replace("ORDER BY", "AND completed_at < ? ORDER BY"); binds.splice(binds.length - 1, 0, Number(options.cursor)); }
+
+      const { results } = await db.prepare(query).bind(...binds).all();
       const hasMore = results.length > limit;
       const items = (hasMore ? results.slice(0, limit) : results).map(parseRequestRow);
 
-      return { items, cursor: hasMore ? items[items.length - 1]?.id : undefined, hasMore, total };
+      return { items, cursor: hasMore ? String(items[items.length - 1]?.requestedAt) : undefined, hasMore, total };
     },
 
     async getAuditTrail(requestId: string): Promise<AuditEntry[]> {

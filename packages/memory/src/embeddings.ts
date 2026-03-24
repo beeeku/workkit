@@ -69,6 +69,9 @@ export function createEmbeddingPipeline(options?: EmbeddingPipelineOptions) {
           await this.storeEmbedding(row.id as string, vector, db);
           await db.prepare("UPDATE facts SET embedding_status = 'complete' WHERE id = ?").bind(row.id).run();
           count++;
+        } else {
+          // Mark as failed to prevent infinite retry loop
+          await db.prepare("UPDATE facts SET embedding_status = 'failed' WHERE id = ?").bind(row.id).run();
         }
       }
       return count;

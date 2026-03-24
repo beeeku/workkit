@@ -64,7 +64,17 @@ export function createMemory(options: MemoryOptions): Memory {
 
     async rememberBatch(items: Array<{ fact: string; metadata?: FactMetadata }>): Promise<MemoryResult<Fact[]>> {
       const result = await facts.rememberBatch(items);
-      if (result.ok) await cache.invalidate();
+      if (result.ok) {
+        if (embeddings.enabled) {
+          for (const fact of result.value) {
+            const vector = await embeddings.embed(fact.text);
+            if (vector) {
+              await embeddings.storeEmbedding(fact.id, vector, db);
+            }
+          }
+        }
+        await cache.invalidate();
+      }
       return result;
     },
 

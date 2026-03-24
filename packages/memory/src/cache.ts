@@ -36,8 +36,10 @@ export function createCache(kv?: KVNamespace) {
 
     async invalidateKey(key: string): Promise<void> {
       if (!kv) return;
+      await loadGeneration();
+      const oldKey = cacheKey(key);
       await this.invalidate();
-      await kv.delete(cacheKey(key));
+      await kv.delete(oldKey);
     },
 
     get enabled() { return !!kv; },

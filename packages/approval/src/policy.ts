@@ -10,10 +10,14 @@ import type {
 // ─── Glob Matching ────────────────────────────────────────────
 
 export function globMatch(pattern: string, value: string): boolean {
-  // Escape regex special chars except *, then replace * with .*
-  const regexStr = pattern
+  // Normalize consecutive wildcards to prevent ReDoS
+  const normalized = pattern.replace(/\*{2,}/g, "*");
+  if ((normalized.match(/\*/g) || []).length > 5) {
+    throw new Error("Glob pattern too complex (max 5 wildcards)");
+  }
+  const regexStr = normalized
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*");
+    .replace(/\*/g, ".*?");
   return new RegExp(`^${regexStr}$`).test(value);
 }
 

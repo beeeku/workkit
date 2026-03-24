@@ -15,6 +15,7 @@ export async function executeWithTimeout<T>(
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
+        signal.removeEventListener("abort", onAbort);
         reject(new TimeoutError(`Tool execution exceeded ${timeoutMs}ms`));
       }
     }, timeoutMs);
