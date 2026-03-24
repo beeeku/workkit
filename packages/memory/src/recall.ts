@@ -82,15 +82,18 @@ export function createRecall(db: D1Database, factoryOptions: RecallFactoryOption
 			}
 
 			// ── Build candidate query (same temporal filters as search) ──────────
+			// Use timeRange.to as the effective timestamp for historical queries
+			const effectiveTs = timeRange?.to ?? now;
 			const conditions: string[] = [];
 			const binds: any[] = [];
 
 			if (!includeForgotten) {
-				conditions.push("forgotten_at IS NULL");
+				conditions.push("(forgotten_at IS NULL OR forgotten_at > ?)");
+				binds.push(effectiveTs);
 				conditions.push("(valid_until IS NULL OR valid_until > ?)");
-				binds.push(now);
+				binds.push(effectiveTs);
 				conditions.push("(ttl IS NULL OR created_at + ttl * 1000 > ?)");
-				binds.push(now);
+				binds.push(effectiveTs);
 			}
 
 			if (!includeSuperseded) {

@@ -46,16 +46,18 @@ export function createSearch(db: D1Database) {
 			} = options;
 
 			const now = Date.now();
+			const effectiveTs = timeRange?.to ?? now;
 			const conditions: string[] = [];
 			const binds: any[] = [];
 
-			// Temporal filter
+			// Temporal filter — use effectiveTs for historical queries
 			if (!includeForgotten) {
-				conditions.push("forgotten_at IS NULL");
+				conditions.push("(forgotten_at IS NULL OR forgotten_at > ?)");
+				binds.push(effectiveTs);
 				conditions.push("(valid_until IS NULL OR valid_until > ?)");
-				binds.push(now);
+				binds.push(effectiveTs);
 				conditions.push("(ttl IS NULL OR created_at + ttl * 1000 > ?)");
-				binds.push(now);
+				binds.push(effectiveTs);
 			}
 
 			// Superseded filter
