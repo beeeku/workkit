@@ -10,6 +10,18 @@ describe("MailError", () => {
 	});
 });
 
+describe("error hierarchy", () => {
+	it("InvalidAddressError is instanceof MailError", () => {
+		const err = new InvalidAddressError("bad@");
+		expect(err).toBeInstanceOf(MailError);
+	});
+
+	it("DeliveryError is instanceof MailError", () => {
+		const err = new DeliveryError("failed");
+		expect(err).toBeInstanceOf(MailError);
+	});
+});
+
 describe("InvalidAddressError", () => {
 	it("stores the invalid address", () => {
 		const err = new InvalidAddressError("bad@");

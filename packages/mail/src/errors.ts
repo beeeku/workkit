@@ -1,16 +1,16 @@
 import { WorkkitError } from "@workkit/errors";
-import type { RetryStrategy, WorkkitErrorOptions } from "@workkit/errors";
+import type { RetryStrategy, WorkkitErrorCode, WorkkitErrorOptions } from "@workkit/errors";
 
 /** Base error for all mail operations */
 export class MailError extends WorkkitError {
-	readonly code = "WORKKIT_MAIL_ERROR" as const;
-	readonly statusCode = 500;
-	readonly retryable = false;
+	readonly code: WorkkitErrorCode = "WORKKIT_MAIL_ERROR";
+	readonly statusCode: number = 500;
+	readonly retryable: boolean = false;
 	readonly defaultRetryStrategy: RetryStrategy = { kind: "none" };
 }
 
 /** Thrown when an email address fails validation */
-export class InvalidAddressError extends WorkkitError {
+export class InvalidAddressError extends MailError {
 	readonly code = "WORKKIT_MAIL_INVALID_ADDRESS" as const;
 	readonly statusCode = 400;
 	readonly retryable = false;
@@ -28,7 +28,7 @@ export class InvalidAddressError extends WorkkitError {
 }
 
 /** Thrown when email delivery fails */
-export class DeliveryError extends WorkkitError {
+export class DeliveryError extends MailError {
 	readonly code = "WORKKIT_MAIL_DELIVERY_FAILED" as const;
 	readonly statusCode = 502;
 	readonly retryable = true;

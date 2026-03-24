@@ -28,7 +28,7 @@ export async function parseEmail(
 		const response = new Response(raw);
 		input = await response.arrayBuffer();
 	} else if (raw instanceof Uint8Array) {
-		input = raw.buffer as ArrayBuffer;
+		input = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer;
 	} else {
 		input = raw;
 	}
@@ -53,7 +53,12 @@ export async function parseEmail(
 			filename: att.filename ?? undefined,
 			contentType: att.mimeType,
 			content:
-				att.content instanceof Uint8Array ? (att.content.buffer as ArrayBuffer) : att.content,
+				att.content instanceof Uint8Array
+					? (att.content.buffer.slice(
+							att.content.byteOffset,
+							att.content.byteOffset + att.content.byteLength,
+						) as ArrayBuffer)
+					: att.content,
 			contentId: att.contentId ?? undefined,
 			disposition: att.disposition as "attachment" | "inline" | undefined,
 		})),

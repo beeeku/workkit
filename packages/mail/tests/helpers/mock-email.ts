@@ -41,7 +41,6 @@ export interface MockEmailOptions {
 	to?: string;
 	subject?: string;
 	text?: string;
-	html?: string;
 	headers?: Record<string, string>;
 }
 

@@ -2,6 +2,15 @@ import { Mailbox, createMimeMessage } from "mimetext";
 import type { MailboxAddrObject } from "mimetext";
 import type { ComposeOptions, ComposedMessage, MailAddress } from "./types";
 
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+	let binary = "";
+	const chunkSize = 0x8000; // 32KB chunks to avoid stack overflow
+	for (let i = 0; i < bytes.length; i += chunkSize) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+	}
+	return btoa(binary);
+}
+
 function toEmailString(addr: string | MailAddress): string {
 	return typeof addr === "string" ? addr : addr.email;
 }
@@ -70,12 +79,8 @@ export function composeMessage(options: ComposeOptions): ComposedMessage {
 		for (const att of options.attachments) {
 			const data =
 				att.content instanceof ArrayBuffer || att.content instanceof Uint8Array
-					? btoa(
-							String.fromCharCode(
-								...new Uint8Array(
-									att.content instanceof ArrayBuffer ? att.content : att.content.buffer,
-								),
-							),
+					? uint8ArrayToBase64(
+							new Uint8Array(att.content instanceof ArrayBuffer ? att.content : att.content.buffer),
 						)
 					: att.content;
 

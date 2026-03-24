@@ -67,6 +67,20 @@ describe("parseEmail()", () => {
 		expect(parsed.subject).toBe("Test Subject");
 	});
 
+	it("accepts Uint8Array subarray input", async () => {
+		const prefix = new TextEncoder().encode("GARBAGE");
+		const email = new TextEncoder().encode(SIMPLE_EMAIL);
+		const suffix = new TextEncoder().encode("GARBAGE");
+		const full = new Uint8Array(prefix.length + email.length + suffix.length);
+		full.set(prefix, 0);
+		full.set(email, prefix.length);
+		full.set(suffix, prefix.length + email.length);
+		const slice = full.subarray(prefix.length, prefix.length + email.length);
+		const parsed = await parseEmail(slice);
+
+		expect(parsed.subject).toBe("Test Subject");
+	});
+
 	it("accepts ReadableStream input", async () => {
 		const bytes = new TextEncoder().encode(SIMPLE_EMAIL);
 		const stream = new ReadableStream({
