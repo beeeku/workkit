@@ -1,3 +1,6 @@
+// Errors
+export { MailError, InvalidAddressError, DeliveryError } from "./errors";
+
 // Types
 export type {
 	MailAddress,
