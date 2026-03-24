@@ -71,7 +71,10 @@ async function handleToolRequest<TEnv>(
 	try {
 		rawInput = await request.json();
 	} catch {
-		rawInput = {};
+		return jsonResponse(
+			{ error: { code: "PARSE_ERROR", message: "Request body must be valid JSON" } },
+			400,
+		);
 	}
 
 	// Validate input
@@ -91,6 +94,9 @@ async function handleToolRequest<TEnv>(
 	}
 
 	// Build handler context
+	// AbortController is a placeholder for future timeout/cancellation support.
+	// Currently nothing triggers abort — no timeout is set, and Cloudflare Workers
+	// do not expose a per-request disconnect signal at this layer (v0.1.0).
 	const abortController = new AbortController();
 	const handlerCtx = {
 		input: validation.value,

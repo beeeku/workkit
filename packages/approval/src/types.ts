@@ -144,6 +144,7 @@ export interface DecisionResult {
 	decidedBy: string;
 	decidedAt: number;
 	remainingApprovals?: number;
+	currentApprovals?: number;
 }
 
 // ─── Token ────────────────────────────────────────────────────

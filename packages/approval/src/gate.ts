@@ -38,12 +38,9 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 					if (key.privateKey instanceof CryptoKey) {
 						return generateApprovalToken(requestId, approverId, action, expiresIn, key.privateKey);
 					}
-					// TODO: Import string keys to CryptoKey. For now, fall back to simple token format.
-					console.warn(
-						"Approval gate: string signing keys not yet supported, using simple token format",
+					throw new Error(
+						"Approval gate requires CryptoKey signing keys. Import string keys with @workkit/crypto importSigningKey() before creating the gate.",
 					);
-					const tokenId = crypto.randomUUID();
-					return { token: `${requestId}:${approverId}:${tokenId}`, tokenId };
 				},
 				baseUrl: config.baseUrl,
 			});
@@ -90,6 +87,10 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 				reason: decision.reason,
 				at: result.decidedAt,
 			});
+			// Update current_approvals count so audit reflects progress
+			if (typeof result.currentApprovals === "number") {
+				await audit.updateCurrentApprovals(requestId, result.currentApprovals);
+			}
 			return result;
 		},
 
@@ -167,7 +168,18 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 						const err = (await response.json()) as any;
 						return c.json({ error: err.error ?? "Decision failed" }, 400);
 					}
-					return c.json(await response.json());
+					const result: DecisionResult = await response.json();
+					// Sync audit projection with the decision outcome
+					await audit.updateStatus(requestId, result.newStatus, result.decidedAt);
+					await audit.recordDecision(requestId, {
+						by: result.decidedBy,
+						action,
+						at: result.decidedAt,
+					});
+					if (typeof result.currentApprovals === "number") {
+						await audit.updateCurrentApprovals(requestId, result.currentApprovals);
+					}
+					return c.json(result);
 				} catch (error: any) {
 					return c.json({ error: error.message }, 400);
 				}
@@ -212,6 +224,8 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 					const err = (await response.json()) as any;
 					return c.json({ error: err.error }, 400);
 				}
+				// Sync audit projection to reflect cancellation
+				await audit.updateStatus(requestId, "cancelled");
 				return c.json({ ok: true });
 			});
 

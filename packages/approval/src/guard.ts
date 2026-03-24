@@ -57,21 +57,33 @@ export function createGuard(config: GuardConfig) {
 
 		// 4. Generate tokens and enqueue notifications
 		const expiresAt = Date.now() + resolved.timeout;
+		const notificationFailures: Array<{ approverId: string; error: unknown }> = [];
 		for (const approverId of resolved.approvers) {
 			const { token } = await config.generateToken(requestId, approverId, "both", resolved.timeout);
 			const baseUrl = config.baseUrl ?? "";
 
-			await config.notificationQueue.send({
-				type: "approval_requested",
-				requestId,
-				approverId,
-				token,
-				action: action.name,
-				requestedBy: action.requestedBy,
-				decisionUrl: `${baseUrl}/approvals/${requestId}/decide`,
-				approveUrl: `${baseUrl}/approvals/${requestId}/decide?token=${token}&action=approve`,
-				denyUrl: `${baseUrl}/approvals/${requestId}/decide?token=${token}&action=deny`,
-			});
+			try {
+				await config.notificationQueue.send({
+					type: "approval_requested",
+					requestId,
+					approverId,
+					token,
+					action: action.name,
+					requestedBy: action.requestedBy,
+					decisionUrl: `${baseUrl}/approvals/${requestId}/decide`,
+					approveUrl: `${baseUrl}/approvals/${requestId}/decide?token=${token}&action=approve`,
+					denyUrl: `${baseUrl}/approvals/${requestId}/decide?token=${token}&action=deny`,
+				});
+			} catch (err) {
+				// Log partial failure but continue notifying remaining approvers
+				notificationFailures.push({ approverId, error: err });
+				console.error(`[approval] Failed to notify approver ${approverId} for ${requestId}:`, err);
+			}
+		}
+		if (notificationFailures.length > 0) {
+			console.warn(
+				`[approval] ${notificationFailures.length}/${resolved.approvers.length} notifications failed for request ${requestId}`,
+			);
 		}
 
 		// 5. Record in audit if available

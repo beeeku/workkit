@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApprovalGate } from "../src/gate";
+import { generateApprovalKeys } from "../src/token";
 import type { ChannelAdapter, PolicyDefinition } from "../src/types";
 
 function createMockDONamespace() {
@@ -36,25 +37,26 @@ function createMockD1() {
 }
 
 describe("createApprovalGate", () => {
-	function createTestGate() {
+	async function createTestGate() {
+		const signingKey = await generateApprovalKeys();
 		return createApprovalGate({
 			storage: createMockDONamespace(),
 			audit: createMockD1(),
 			notificationQueue: { send: vi.fn() } as any,
-			signingKey: { privateKey: "test", publicKey: "test" },
+			signingKey,
 		});
 	}
 
-	it("creates a gate with config", () => {
-		const gate = createTestGate();
+	it("creates a gate with config", async () => {
+		const gate = await createTestGate();
 		expect(gate).toBeDefined();
 		expect(gate.policy).toBeDefined();
 		expect(gate.guard).toBeDefined();
 		expect(gate.channel).toBeDefined();
 	});
 
-	it("registers policies", () => {
-		const gate = createTestGate();
+	it("registers policies", async () => {
+		const gate = await createTestGate();
 		gate.policy("test", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -63,8 +65,8 @@ describe("createApprovalGate", () => {
 		// No error = success
 	});
 
-	it("registers channels", () => {
-		const gate = createTestGate();
+	it("registers channels", async () => {
+		const gate = await createTestGate();
 		const webhook: ChannelAdapter = {
 			name: "webhook",
 			send: async () => ({ ok: true as const }),
@@ -73,13 +75,13 @@ describe("createApprovalGate", () => {
 	});
 
 	it("guard returns allowed when no policies", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		const result = await gate.guard({ name: "test", requestedBy: "alice" }, { identity: "alice" });
 		expect(result.status).toBe("allowed");
 	});
 
 	it("guard returns pending when policy matches", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -93,8 +95,8 @@ describe("createApprovalGate", () => {
 		expect(result.status).toBe("pending");
 	});
 
-	it("createRouter returns a Hono router", () => {
-		const gate = createTestGate();
+	it("createRouter returns a Hono router", async () => {
+		const gate = await createTestGate();
 		const router = gate.createRouter();
 		expect(router).toBeDefined();
 		// Hono instance has fetch method

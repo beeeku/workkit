@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createWebhookChannel } from "../src/channels/webhook";
 import { createApprovalGate } from "../src/gate";
+import { generateApprovalKeys } from "../src/token";
 
 function createMockDONamespace() {
 	const stores = new Map<string, Map<string, any>>();
@@ -77,17 +78,18 @@ function createMockD1() {
 }
 
 describe("Integration: Full Approval Flow", () => {
-	function createTestGate() {
+	async function createTestGate() {
+		const signingKey = await generateApprovalKeys();
 		return createApprovalGate({
 			storage: createMockDONamespace(),
 			audit: createMockD1(),
 			notificationQueue: { send: vi.fn() } as any,
-			signingKey: { privateKey: "test-key", publicKey: "test-pub" },
+			signingKey,
 		});
 	}
 
 	it("guard → no policy → allowed", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		const result = await gate.guard(
 			{ name: "harmless-action", requestedBy: "alice" },
 			{ identity: "alice" },
@@ -96,7 +98,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("guard → policy match → pending → decide → approved", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("require-approval", {
 			match: { type: "name", pattern: "deploy:*" },
 			approvers: ["bob"],
@@ -122,7 +124,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("guard → policy match → pending → deny → denied", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("require-approval", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -146,7 +148,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("gate.getRequest returns request status", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -163,7 +165,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("createRouter returns functional Hono app", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],
@@ -178,7 +180,7 @@ describe("Integration: Full Approval Flow", () => {
 	});
 
 	it("require() middleware returns 202 for pending", async () => {
-		const gate = createTestGate();
+		const gate = await createTestGate();
 		gate.policy("all", {
 			match: { type: "name", pattern: "*" },
 			approvers: ["bob"],

@@ -83,6 +83,13 @@ export function createAuditProjection(db: D1Database) {
 				.run();
 		},
 
+		async updateCurrentApprovals(requestId: string, currentApprovals: number): Promise<void> {
+			await db
+				.prepare("UPDATE approval_requests SET current_approvals = ? WHERE id = ?")
+				.bind(currentApprovals, requestId)
+				.run();
+		},
+
 		async recordNotification(requestId: string, channel: string, status: string): Promise<void> {
 			await db
 				.prepare(
@@ -168,6 +175,10 @@ export function createAuditProjection(db: D1Database) {
 			if (options.requestedBy) {
 				where += " AND requested_by = ?";
 				binds.push(options.requestedBy);
+			}
+			if (options.actionPattern) {
+				where += " AND action LIKE ?";
+				binds.push(options.actionPattern.replace("*", "%"));
 			}
 			if (options.after) {
 				where += " AND completed_at >= ?";

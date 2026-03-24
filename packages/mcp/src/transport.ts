@@ -49,6 +49,13 @@ function validateRpcMessage(
 	if (typeof obj.method !== "string") {
 		return { ok: false, error: 'Missing or invalid "method" field' };
 	}
+	// Validate id field type: must be string, number, null, or absent — not object or array
+	if ("id" in obj) {
+		const idType = typeof obj.id;
+		if (obj.id !== null && idType !== "string" && idType !== "number") {
+			return { ok: false, error: '"id" field must be a string, number, or null' };
+		}
+	}
 	return { ok: true, message: obj as unknown as JsonRpcRequest };
 }
 
