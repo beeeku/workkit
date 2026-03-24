@@ -136,7 +136,8 @@ export function toRestError(error: unknown): Response {
 		return errorToResponse(error);
 	}
 
-	const message = error instanceof Error ? error.message : "Internal server error";
+	const isDev = typeof globalThis !== "undefined" && (globalThis as any).__DEV__ === true;
+	const message = isDev && error instanceof Error ? error.message : "Internal server error";
 	return new Response(
 		JSON.stringify({ error: { code: "INTERNAL_ERROR", message, statusCode: 500 } }),
 		{ status: 500, headers: { "Content-Type": "application/json" } },

@@ -133,7 +133,17 @@ export function createTransportHandler(config: TransportHandlerConfig): Transpor
 			return rpcErrorResponse(null, -32600, `Invalid Request: ${validation.error}`);
 		}
 
-		const response = await protocol.dispatch(validation.message, { env, ctx, request });
+		let response: JsonRpcResponse | null;
+		try {
+			response = await protocol.dispatch(validation.message, { env, ctx, request });
+		} catch {
+			return rpcErrorResponse(
+				(validation.message as any).id ?? null,
+				-32603,
+				"Internal error",
+				500,
+			);
+		}
 
 		// Notification — no response body needed, but return 200 for HTTP conformance
 		if (response === null) {
