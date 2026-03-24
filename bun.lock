@@ -66,7 +66,7 @@
     },
     "integrations/hono": {
       "name": "@workkit/hono",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/env": "^0.1.1",
         "@workkit/errors": "^1.0.1",
@@ -123,6 +123,22 @@
         "zod": "^4.3.6",
       },
     },
+    "packages/approval": {
+      "name": "@workkit/approval",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workkit/crypto": "workspace:*",
+        "@workkit/errors": "workspace:*",
+        "hono": "^4.7.10",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^4.20250214.0",
+        "@workkit/d1": "workspace:*",
+        "@workkit/do": "workspace:*",
+        "@workkit/queue": "workspace:*",
+        "@workkit/types": "workspace:*",
+      },
+    },
     "packages/auth": {
       "name": "@workkit/auth",
       "version": "0.1.1",
@@ -167,7 +183,7 @@
       "name": "@workkit/d1",
       "version": "0.1.1",
       "dependencies": {
-        "@workkit/errors": "workspace:*",
+        "@workkit/errors": "^1.0.1",
       },
       "devDependencies": {
         "@workkit/types": "workspace:*",
@@ -177,7 +193,7 @@
       "name": "@workkit/do",
       "version": "0.2.0",
       "dependencies": {
-        "@workkit/errors": "workspace:*",
+        "@workkit/errors": "^1.0.1",
       },
       "devDependencies": {
         "@workkit/types": "workspace:*",
@@ -248,12 +264,37 @@
         "hono",
       ],
     },
+    "packages/mcp": {
+      "name": "@workkit/mcp",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workkit/errors": "workspace:*",
+        "hono": "^4.7.10",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^4.20250214.0",
+        "@workkit/types": "workspace:*",
+        "zod": "^4.3.6",
+      },
+    },
+    "packages/memory": {
+      "name": "@workkit/memory",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workkit/errors": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^4.20250214.0",
+        "@workkit/crypto": "workspace:*",
+        "@workkit/types": "workspace:*",
+      },
+    },
     "packages/queue": {
       "name": "@workkit/queue",
       "version": "0.2.0",
       "dependencies": {
-        "@workkit/errors": "workspace:*",
-        "@workkit/types": "workspace:*",
+        "@workkit/errors": "^1.0.1",
+        "@workkit/types": "^1.0.1",
       },
     },
     "packages/r2": {
@@ -274,7 +315,7 @@
     },
     "packages/testing": {
       "name": "@workkit/testing",
-      "version": "0.1.1",
+      "version": "0.2.0",
     },
     "packages/types": {
       "name": "@workkit/types",
@@ -289,6 +330,18 @@
       "optionalPeers": [
         "@cloudflare/workers-types",
       ],
+    },
+    "packages/workflow": {
+      "name": "@workkit/workflow",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workkit/errors": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^4.20250214.0",
+        "@workkit/do": "workspace:*",
+        "@workkit/types": "workspace:*",
+      },
     },
     "tooling/tsconfig": {
       "name": "@workkit/tsconfig",
@@ -900,6 +953,8 @@
 
     "@workkit/api": ["@workkit/api@workspace:packages/api"],
 
+    "@workkit/approval": ["@workkit/approval@workspace:packages/approval"],
+
     "@workkit/astro": ["@workkit/astro@workspace:integrations/astro"],
 
     "@workkit/auth": ["@workkit/auth@workspace:packages/auth"],
@@ -926,6 +981,10 @@
 
     "@workkit/logger": ["@workkit/logger@workspace:packages/logger"],
 
+    "@workkit/mcp": ["@workkit/mcp@workspace:packages/mcp"],
+
+    "@workkit/memory": ["@workkit/memory@workspace:packages/memory"],
+
     "@workkit/queue": ["@workkit/queue@workspace:packages/queue"],
 
     "@workkit/r2": ["@workkit/r2@workspace:packages/r2"],
@@ -939,6 +998,8 @@
     "@workkit/tsconfig": ["@workkit/tsconfig@workspace:tooling/tsconfig"],
 
     "@workkit/types": ["@workkit/types@workspace:packages/types"],
+
+    "@workkit/workflow": ["@workkit/workflow@workspace:packages/workflow"],
 
     "acorn": ["acorn@8.16.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
 
