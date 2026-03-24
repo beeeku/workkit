@@ -86,8 +86,6 @@ describe("createEmailHandler()", () => {
 		});
 		const mockEmail = createMockForwardableEmail();
 
-		await expect(
-			handler(mockEmail as any, {}, ctx),
-		).rejects.toThrow("Handler failed");
+		await expect(handler(mockEmail as any, {}, ctx)).rejects.toThrow("Handler failed");
 	});
 });

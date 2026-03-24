@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isValidAddress, validateAddress } from "../src/validation";
 import { InvalidAddressError } from "../src/errors";
+import { isValidAddress, validateAddress } from "../src/validation";
 
 describe("isValidAddress()", () => {
 	it("returns true for a simple valid address", () => {

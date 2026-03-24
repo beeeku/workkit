@@ -1,8 +1,8 @@
+import { BindingNotFoundError } from "@workkit/errors";
 import { beforeEach, describe, expect, it } from "vitest";
+import { DeliveryError, InvalidAddressError } from "../src/errors";
 import { mail } from "../src/sender";
 import { createMockSendEmail } from "./helpers/mock-email";
-import { BindingNotFoundError } from "@workkit/errors";
-import { InvalidAddressError, DeliveryError } from "../src/errors";
 
 describe("mail() factory", () => {
 	it("throws BindingNotFoundError for null binding", () => {

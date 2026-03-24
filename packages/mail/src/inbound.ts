@@ -1,14 +1,12 @@
-import { parseEmail } from "./parser";
 import { composeMessage } from "./compose";
+import { parseEmail } from "./parser";
 import type { InboundEmail, ReplyMessage } from "./types";
 
 /**
  * Build a typed InboundEmail from a CF ForwardableEmailMessage.
  * Shared between createEmailHandler() and createEmailRouter().
  */
-export async function buildInboundEmail(
-	message: ForwardableEmailMessage,
-): Promise<InboundEmail> {
+export async function buildInboundEmail(message: ForwardableEmailMessage): Promise<InboundEmail> {
 	const parsed = await parseEmail(message.raw);
 
 	return {
@@ -36,9 +34,7 @@ export async function buildInboundEmail(
 				subject: replyMsg.subject ?? `Re: ${parsed.subject}`,
 				text: replyMsg.text,
 				html: replyMsg.html,
-				headers: parsed.messageId
-					? { "In-Reply-To": parsed.messageId }
-					: undefined,
+				headers: parsed.messageId ? { "In-Reply-To": parsed.messageId } : undefined,
 			});
 
 			await message.reply({

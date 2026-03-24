@@ -9,10 +9,7 @@ function toArray(value: string | string[] | undefined): string[] {
 	return Array.isArray(value) ? value : [value];
 }
 
-function resolveFrom(
-	message: MailMessage,
-	options?: MailOptions,
-): string {
+function resolveFrom(message: MailMessage, options?: MailOptions): string {
 	const from = message.from ?? options?.defaultFrom;
 	if (!from) {
 		throw new InvalidAddressError("(empty)", {
@@ -67,12 +64,11 @@ export function mail(binding: SendEmail, options?: MailOptions): TypedMailClient
 			// Send via binding — in real CF Workers this uses EmailMessage from cloudflare:email
 			// but that module only exists in the CF runtime, so we call binding.send() directly
 			try {
-				await binding.send({ from: composed.from, to: composed.to, raw: composed.raw });
+				await binding.send({ from: composed.from, to: composed.to, raw: composed.raw } as any);
 			} catch (error) {
-				throw new DeliveryError(
-					error instanceof Error ? error.message : "Email delivery failed",
-					{ cause: error },
-				);
+				throw new DeliveryError(error instanceof Error ? error.message : "Email delivery failed", {
+					cause: error,
+				});
 			}
 
 			// Extract message-id from composed raw

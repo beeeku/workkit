@@ -13,9 +13,7 @@ export function createMockSendEmail(): MockSendEmail {
 		_sent: [],
 		async send(message) {
 			const raw =
-				typeof message.raw === "string"
-					? message.raw
-					: await new Response(message.raw).text();
+				typeof message.raw === "string" ? message.raw : await new Response(message.raw).text();
 			mock._sent.push({ from: message.from, to: message.to, raw });
 		},
 	};
@@ -51,9 +49,7 @@ export interface MockEmailOptions {
  * Create a mock ForwardableEmailMessage for testing inbound handlers.
  * Constructs a minimal valid MIME message from the provided options.
  */
-export function createMockForwardableEmail(
-	options: MockEmailOptions = {},
-): MockForwardableEmail {
+export function createMockForwardableEmail(options: MockEmailOptions = {}): MockForwardableEmail {
 	const from = options.from ?? "sender@example.com";
 	const to = options.to ?? "recipient@example.com";
 	const subject = options.subject ?? "Test Subject";

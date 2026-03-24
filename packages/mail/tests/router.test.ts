@@ -14,8 +14,10 @@ describe("createEmailRouter()", () => {
 
 	it("routes to matching handler", async () => {
 		const supportHandler = vi.fn();
-		const router = createEmailRouter()
-			.match((email) => email.to.startsWith("support"), supportHandler);
+		const router = createEmailRouter().match(
+			(email) => email.to.startsWith("support"),
+			supportHandler,
+		);
 
 		const mockEmail = createMockForwardableEmail({
 			to: "support@example.com",
@@ -54,8 +56,7 @@ describe("createEmailRouter()", () => {
 	});
 
 	it("rejects email when no match and no default", async () => {
-		const router = createEmailRouter()
-			.match((email) => email.to.startsWith("vip"), vi.fn());
+		const router = createEmailRouter().match((email) => email.to.startsWith("vip"), vi.fn());
 
 		const mockEmail = createMockForwardableEmail({
 			to: "random@example.com",
@@ -76,8 +77,7 @@ describe("createEmailRouter()", () => {
 
 	it("passes env and ctx to handler", async () => {
 		const handler = vi.fn();
-		const router = createEmailRouter()
-			.match(() => true, handler);
+		const router = createEmailRouter().match(() => true, handler);
 
 		const mockEmail = createMockForwardableEmail();
 		const env = { DB: "test" };

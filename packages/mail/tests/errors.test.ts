@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MailError, InvalidAddressError, DeliveryError } from "../src/errors";
+import { DeliveryError, InvalidAddressError, MailError } from "../src/errors";
 
 describe("MailError", () => {
 	it("has correct code and statusCode", () => {

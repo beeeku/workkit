@@ -1,10 +1,5 @@
 import { buildInboundEmail } from "./inbound";
-import type {
-	EmailHandlerFn,
-	EmailRoute,
-	EmailRouteMatcher,
-	EmailRouter,
-} from "./types";
+import type { EmailHandlerFn, EmailRoute, EmailRouteMatcher, EmailRouter } from "./types";
 
 /**
  * Create a pattern-matching email router for inbound emails.
@@ -25,11 +20,7 @@ export function createEmailRouter<Env = unknown>(): EmailRouter<Env> {
 			return router;
 		},
 
-		async handle(
-			message: ForwardableEmailMessage,
-			env: Env,
-			ctx: ExecutionContext,
-		): Promise<void> {
+		async handle(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
 			const inbound = await buildInboundEmail(message);
 
 			// Check routes in order

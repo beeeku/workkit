@@ -38,8 +38,4 @@ export class DeliveryError extends WorkkitError {
 		maxMs: 30000,
 		maxAttempts: 3,
 	};
-
-	constructor(message: string, options?: WorkkitErrorOptions) {
-		super(message, options);
-	}
 }

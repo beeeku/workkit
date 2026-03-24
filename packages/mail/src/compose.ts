@@ -1,5 +1,5 @@
-import { createMimeMessage, Mailbox } from "mimetext";
-import type { MailboxAddrObject } from "mimetext/dist/Mailbox";
+import { Mailbox, createMimeMessage } from "mimetext";
+import type { MailboxAddrObject } from "mimetext";
 import type { ComposeOptions, ComposedMessage, MailAddress } from "./types";
 
 function toEmailString(addr: string | MailAddress): string {

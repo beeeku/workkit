@@ -35,8 +35,7 @@ export async function parseEmail(
 
 	const parsed = await PostalMime.parse(input);
 
-	const fromAddr =
-		parsed.from?.address ?? (parsed.from as unknown as string) ?? "";
+	const fromAddr = parsed.from?.address ?? (parsed.from as unknown as string) ?? "";
 	const toAddrs = parsed.to ?? [];
 	const toStr = toAddrs.map((a: { address?: string }) => a.address ?? "").join(", ");
 
@@ -53,7 +52,8 @@ export async function parseEmail(
 		attachments: (parsed.attachments ?? []).map((att) => ({
 			filename: att.filename ?? undefined,
 			contentType: att.mimeType,
-			content: att.content,
+			content:
+				att.content instanceof Uint8Array ? (att.content.buffer as ArrayBuffer) : att.content,
 			contentId: att.contentId ?? undefined,
 			disposition: att.disposition as "attachment" | "inline" | undefined,
 		})),
