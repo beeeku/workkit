@@ -1,18 +1,18 @@
 import type {
-  ScopedMemory,
-  Fact,
-  RecallResult,
-  RecallOptions,
-  SearchOptions,
-  MemoryResult,
-  MemoryStats,
+	Fact,
+	MemoryResult,
+	MemoryStats,
+	RecallOptions,
+	RecallResult,
+	ScopedMemory,
+	SearchOptions,
 } from "./types";
 
 export interface TemporalDeps {
-  recall: (query: string, options?: RecallOptions) => Promise<MemoryResult<RecallResult[]>>;
-  search: (query: string, options?: SearchOptions) => Promise<MemoryResult<Fact[]>>;
-  get: (factId: string) => Promise<MemoryResult<Fact | null>>;
-  stats: () => Promise<MemoryResult<MemoryStats>>;
+	recall: (query: string, options?: RecallOptions) => Promise<MemoryResult<RecallResult[]>>;
+	search: (query: string, options?: SearchOptions) => Promise<MemoryResult<Fact[]>>;
+	get: (factId: string) => Promise<MemoryResult<Fact | null>>;
+	stats: () => Promise<MemoryResult<MemoryStats>>;
 }
 
 /**
@@ -24,43 +24,43 @@ export interface TemporalDeps {
  * { includeSuperseded: false } applied automatically.
  */
 export function createScopedMemory(timestamp: number, deps: TemporalDeps): ScopedMemory {
-  return {
-    async recall(query: string, options?: RecallOptions): Promise<MemoryResult<RecallResult[]>> {
-      return deps.recall(query, {
-        ...options,
-        timeRange: {
-          ...(options?.timeRange ?? {}),
-          to: timestamp,
-        },
-        includeSuperseded: options?.includeSuperseded ?? false,
-      });
-    },
+	return {
+		async recall(query: string, options?: RecallOptions): Promise<MemoryResult<RecallResult[]>> {
+			return deps.recall(query, {
+				...options,
+				timeRange: {
+					...(options?.timeRange ?? {}),
+					to: timestamp,
+				},
+				includeSuperseded: options?.includeSuperseded ?? false,
+			});
+		},
 
-    async search(query: string, options?: SearchOptions): Promise<MemoryResult<Fact[]>> {
-      return deps.search(query, {
-        ...options,
-        timeRange: {
-          ...(options?.timeRange ?? {}),
-          to: timestamp,
-        },
-        includeSuperseded: options?.includeSuperseded ?? false,
-      });
-    },
+		async search(query: string, options?: SearchOptions): Promise<MemoryResult<Fact[]>> {
+			return deps.search(query, {
+				...options,
+				timeRange: {
+					...(options?.timeRange ?? {}),
+					to: timestamp,
+				},
+				includeSuperseded: options?.includeSuperseded ?? false,
+			});
+		},
 
-    async get(factId: string): Promise<MemoryResult<Fact | null>> {
-      const result = await deps.get(factId);
-      if (!result.ok) return result;
+		async get(factId: string): Promise<MemoryResult<Fact | null>> {
+			const result = await deps.get(factId);
+			if (!result.ok) return result;
 
-      // If the fact exists but was created after the scoped timestamp, hide it
-      if (result.value !== null && result.value.validFrom > timestamp) {
-        return { ok: true, value: null };
-      }
+			// If the fact exists but was created after the scoped timestamp, hide it
+			if (result.value !== null && result.value.validFrom > timestamp) {
+				return { ok: true, value: null };
+			}
 
-      return result;
-    },
+			return result;
+		},
 
-    async stats(): Promise<MemoryResult<MemoryStats>> {
-      return deps.stats();
-    },
-  };
+		async stats(): Promise<MemoryResult<MemoryStats>> {
+			return deps.stats();
+		},
+	};
 }

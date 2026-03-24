@@ -83,11 +83,7 @@ export function createApprovalGate(config: ApprovalGateConfig) {
 			}
 			const result: DecisionResult = await response.json();
 			// Keep audit projection in sync with the new status
-			await audit.updateStatus(
-				requestId,
-				result.newStatus,
-				result.decidedAt,
-			);
+			await audit.updateStatus(requestId, result.newStatus, result.decidedAt);
 			await audit.recordDecision(requestId, {
 				by: result.decidedBy,
 				action: decision.action,

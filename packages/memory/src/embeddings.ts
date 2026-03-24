@@ -48,9 +48,11 @@ export function createEmbeddingPipeline(options?: EmbeddingPipelineOptions) {
 			if (
 				!Array.isArray(vector) ||
 				vector.length === 0 ||
-				!vector.every((v) => typeof v === "number" && isFinite(v))
+				!vector.every((v) => typeof v === "number" && Number.isFinite(v))
 			) {
-				throw new Error(`Invalid embedding vector for fact ${factId}: must be a non-empty array of finite numbers`);
+				throw new Error(
+					`Invalid embedding vector for fact ${factId}: must be a non-empty array of finite numbers`,
+				);
 			}
 			await db
 				.prepare(
@@ -74,7 +76,7 @@ export function createEmbeddingPipeline(options?: EmbeddingPipelineOptions) {
 					if (
 						Array.isArray(parsed) &&
 						parsed.length > 0 &&
-						parsed.every((v: unknown) => typeof v === "number" && isFinite(v))
+						parsed.every((v: unknown) => typeof v === "number" && Number.isFinite(v))
 					) {
 						map.set(row.fact_id as string, parsed);
 					}

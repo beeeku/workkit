@@ -1,10 +1,5 @@
 import { evaluatePolicies } from "./policy";
-import type {
-	ActionDescriptor,
-	GuardContext,
-	GuardResult,
-	PolicyDefinition,
-} from "./types";
+import type { ActionDescriptor, GuardContext, GuardResult, PolicyDefinition } from "./types";
 
 interface GuardConfig {
 	policies: Map<string, PolicyDefinition>;

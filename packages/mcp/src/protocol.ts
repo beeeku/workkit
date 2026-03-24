@@ -190,15 +190,17 @@ export function createProtocolHandler(config: ProtocolHandlerConfig): ProtocolHa
 		try {
 			const output = await executeWithTimeout(
 				() =>
-					Promise.resolve(tool.handler({
-						input: validation.value,
-						env,
-						ctx,
-						request,
-						log,
-						reportProgress: async () => {},
-						signal: abortController.signal,
-					})),
+					Promise.resolve(
+						tool.handler({
+							input: validation.value,
+							env,
+							ctx,
+							request,
+							log,
+							reportProgress: async () => {},
+							signal: abortController.signal,
+						}),
+					),
 				tool.timeout,
 				abortController.signal,
 			);
@@ -316,7 +318,9 @@ export function createProtocolHandler(config: ProtocolHandlerConfig): ProtocolHa
 			({ waitUntil: () => {}, passThroughOnException: () => {} } as unknown as ExecutionContext);
 
 		const result = await prompt.handler({
-			args: prompt.args ? ((await validateInput(prompt.args, args)) as { ok: true; value: unknown }).value : undefined,
+			args: prompt.args
+				? ((await validateInput(prompt.args, args)) as { ok: true; value: unknown }).value
+				: undefined,
 			env,
 			ctx,
 			log,

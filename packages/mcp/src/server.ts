@@ -20,7 +20,9 @@ import type {
 
 // ─── createMCPServer ─────────────────────────────────────────
 
-export function createMCPServer<TEnv extends Record<string, unknown> | undefined = Record<string, unknown>>(config: MCPServerConfig<TEnv>): MCPServer<TEnv> {
+export function createMCPServer<
+	TEnv extends Record<string, unknown> | undefined = Record<string, unknown>,
+>(config: MCPServerConfig<TEnv>): MCPServer<TEnv> {
 	const toolRegistry = createToolRegistry<TEnv>();
 	const resourceRegistry = createResourceRegistry<TEnv>();
 	const promptRegistry = createPromptRegistry<TEnv>();

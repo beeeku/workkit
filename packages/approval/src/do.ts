@@ -120,19 +120,22 @@ export class ApprovalRequestDO implements DurableObject {
 
 		try {
 			if (request.method === "POST" && path === "/create") {
-				const body = await request.json() as Omit<ApprovalRequestData, "decisions" | "consumedTokens" | "currentEscalationLevel" | "createdAt">;
+				const body = (await request.json()) as Omit<
+					ApprovalRequestData,
+					"decisions" | "consumedTokens" | "currentEscalationLevel" | "createdAt"
+				>;
 				await this.logic.create(body);
 				return Response.json({ ok: true });
 			}
 
 			if (request.method === "POST" && path === "/decide") {
-				const body = await request.json() as DecisionInput;
+				const body = (await request.json()) as DecisionInput;
 				const result = await this.logic.decide(body);
 				return Response.json(result);
 			}
 
 			if (request.method === "POST" && path === "/cancel") {
-				const body = await request.json() as { cancelledBy: string; reason?: string };
+				const body = (await request.json()) as { cancelledBy: string; reason?: string };
 				await this.logic.cancel(body.cancelledBy, body.reason);
 				return Response.json({ ok: true });
 			}

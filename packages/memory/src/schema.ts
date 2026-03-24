@@ -1,5 +1,5 @@
 export function getSchema(): string {
-  return `
+	return `
     CREATE TABLE IF NOT EXISTS facts (
       id TEXT PRIMARY KEY,
       text TEXT NOT NULL,

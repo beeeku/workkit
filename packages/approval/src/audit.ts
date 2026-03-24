@@ -202,9 +202,7 @@ export function createAuditProjection(db: D1Database) {
 
 			return {
 				items,
-				cursor: hasMore
-					? String(lastItem?.completedAt ?? lastItem?.requestedAt)
-					: undefined,
+				cursor: hasMore ? String(lastItem?.completedAt ?? lastItem?.requestedAt) : undefined,
 				hasMore,
 				total,
 			};
@@ -241,5 +239,6 @@ function parseRequestRow(row: any): ApprovalRequestSummary {
 		expiresAt: row.expires_at,
 		policyName: row.policy_name,
 		metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+		completedAt: row.completed_at ?? undefined,
 	};
 }

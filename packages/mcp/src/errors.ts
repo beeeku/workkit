@@ -84,7 +84,9 @@ export function toMCPToolError(error: unknown): MCPToolResult {
 		const label = WORKKIT_ERROR_LABELS[error.code] ?? "Error";
 		text = `${label}: ${error.message}`;
 	} else if (error instanceof Error) {
-		const isDev = typeof globalThis !== "undefined" && (globalThis as any).process?.env?.NODE_ENV === "development";
+		const isDev =
+			typeof globalThis !== "undefined" &&
+			(globalThis as any).process?.env?.NODE_ENV === "development";
 		text = isDev ? error.message : "Internal error";
 	} else {
 		text = "Internal error";
