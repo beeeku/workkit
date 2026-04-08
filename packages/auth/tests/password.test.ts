@@ -16,9 +16,8 @@ describe("hashPassword", () => {
 	});
 
 	it("defaults to 600 000 iterations", async () => {
-		const result = await hashPassword("my-password", { iterations: TEST_ITERATIONS });
-		// Verify the field is always stored so that verifyPassword can use it
-		expect(typeof result.iterations).toBe("number");
+		const result = await hashPassword("my-password");
+		expect(result.iterations).toBe(600_000);
 	});
 
 	it("generates different salts for same password", async () => {
