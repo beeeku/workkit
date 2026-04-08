@@ -82,7 +82,7 @@ export function createConsumer<Body>(options: ConsumerOptions<Body>): ConsumerHa
 				}
 			} catch (error) {
 				if (onError) {
-					onError(error, message);
+					await onError(error, message);
 				}
 
 				// Check if we've exceeded maxRetries on error

@@ -85,10 +85,7 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 
 		async invalidate(model: string, input: AiInput): Promise<void> {
 			const cacheKey = getCacheKey(model, input);
-			// KV put with TTL of 0 effectively deletes — but standard approach is
-			// to write empty/expired. Since KV doesn't have a delete on the minimal
-			// interface, we write an expired entry.
-			await config.storage.put(cacheKey, "", { expirationTtl: 1 });
+			await config.storage.delete(cacheKey);
 		},
 
 		providers(): string[] {

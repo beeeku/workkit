@@ -1,8 +1,6 @@
 import { createMemoryCache } from "./memory";
 import type { CacheAsideOptions } from "./types";
 
-const DEFAULT_CACHE = createMemoryCache();
-
 /**
  * Cache-aside pattern with typed return values.
  *
@@ -28,7 +26,10 @@ export function cacheAside<T, A extends unknown[] = [string]>(
 	options: CacheAsideOptions<T, A>,
 ): (...args: A) => Promise<T> {
 	const { key: keyFn, ttl, fetch: fetchFn, cache: cacheInstance } = options;
-	const c = cacheInstance ?? DEFAULT_CACHE;
+	// Each cacheAside() call gets its own isolated in-memory cache when no
+	// explicit cache is provided, preventing key-space collisions between
+	// unrelated cacheAside instances.
+	const c = cacheInstance ?? createMemoryCache();
 
 	return async (...args: A): Promise<T> => {
 		const cacheKey = keyFn(...args);

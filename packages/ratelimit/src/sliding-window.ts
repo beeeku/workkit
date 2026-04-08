@@ -64,17 +64,20 @@ export function slidingWindow(options: SlidingWindowOptions): RateLimiter {
 			// Reset at end of current window
 			const resetAt = new Date(currentWindowStart + windowMs);
 
-			// Store updated current window count
-			const state: SlidingWindowState = {
-				count: newCurrentCount,
-				windowStart: currentWindowStart,
-			};
+			// Only write back to KV when the request is allowed — denied requests
+			// must not inflate the counter beyond the limit.
+			if (allowed) {
+				const state: SlidingWindowState = {
+					count: newCurrentCount,
+					windowStart: currentWindowStart,
+				};
 
-			const ttlSeconds = Math.ceil((currentWindowStart + windowMs * 2 - now) / 1000);
+				const ttlSeconds = Math.ceil((currentWindowStart + windowMs * 2 - now) / 1000);
 
-			await options.namespace.put(currentKey, JSON.stringify(state), {
-				expirationTtl: Math.max(ttlSeconds, 1),
-			});
+				await options.namespace.put(currentKey, JSON.stringify(state), {
+					expirationTtl: Math.max(ttlSeconds, 1),
+				});
+			}
 
 			return { allowed, remaining, resetAt, limit: options.limit };
 		},

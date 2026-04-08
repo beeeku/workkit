@@ -134,12 +134,19 @@ export function parseCron(expression: string): ParsedCron {
 		parsed.push(result);
 	}
 
+	// A field is a "pure wildcard" when the original token is exactly `*`
+	// (no step, no list).  We use this to implement POSIX semantics in nextRun.
+	const domWildcard = fields[2]!.trim() === "*";
+	const dowWildcard = fields[4]!.trim() === "*";
+
 	return {
 		minute: parsed[0]!,
 		hour: parsed[1]!,
 		dayOfMonth: parsed[2]!,
 		month: parsed[3]!,
 		dayOfWeek: parsed[4]!,
+		domWildcard,
+		dowWildcard,
 	};
 }
 
@@ -293,13 +300,19 @@ export function nextRun(expression: string, from?: Date): Date {
 			continue;
 		}
 
-		if (!parsed.dayOfMonth.has(date.getUTCDate())) {
-			date.setUTCDate(date.getUTCDate() + 1);
-			date.setUTCHours(0, 0, 0, 0);
-			continue;
-		}
+		// POSIX semantics: when both dayOfMonth and dayOfWeek are explicitly
+		// restricted (neither is a plain `*`), trigger if EITHER matches.
+		// When only one is restricted, apply only that constraint.
+		const domOk = parsed.dayOfMonth.has(date.getUTCDate());
+		const dowOk = parsed.dayOfWeek.has(date.getUTCDay());
+		const dayMatches =
+			!parsed.domWildcard && !parsed.dowWildcard
+				? domOk || dowOk // POSIX OR
+				: parsed.domWildcard
+					? dowOk
+					: domOk;
 
-		if (!parsed.dayOfWeek.has(date.getUTCDay())) {
+		if (!dayMatches) {
 			date.setUTCDate(date.getUTCDate() + 1);
 			date.setUTCHours(0, 0, 0, 0);
 			continue;

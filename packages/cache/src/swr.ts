@@ -2,6 +2,11 @@ import { createMemoryCache } from "./memory";
 import type { SWROptions, SWRResult, TypedCache } from "./types";
 
 const SWR_METADATA_PREFIX = "__swr_meta__";
+// Module-level default cache — shared across all swr() calls that do not
+// supply an explicit `cache` option.  This is intentional for single-isolate
+// use (the cache persists for the lifetime of the Worker isolate), but callers
+// with overlapping keys should always provide a dedicated cache instance to
+// avoid unintended sharing.
 const DEFAULT_CACHE = createMemoryCache();
 
 /**

@@ -305,7 +305,7 @@ function resolveOrigin(
 ): string {
 	if (typeof config === "string") return config;
 	if (Array.isArray(config)) {
-		return config.includes(requestOrigin) ? requestOrigin : config[0]!;
+		return config.includes(requestOrigin) ? requestOrigin : "";
 	}
 	return config(requestOrigin) ? requestOrigin : "";
 }

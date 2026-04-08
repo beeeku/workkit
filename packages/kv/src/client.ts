@@ -262,9 +262,7 @@ export function kv<T = unknown>(namespace: KVNamespace, options?: KVOptions<T>):
 				}),
 			);
 			for (const [key, value] of entries) {
-				if (value !== null) {
-					results.set(key, value);
-				}
+				results.set(key, value);
 			}
 			return results;
 		},

@@ -52,6 +52,10 @@ export interface ParsedCron {
 	dayOfMonth: CronField;
 	month: CronField;
 	dayOfWeek: CronField;
+	/** True when the dayOfMonth field was an unrestricted wildcard (`*`) */
+	domWildcard: boolean;
+	/** True when the dayOfWeek field was an unrestricted wildcard (`*`) */
+	dowWildcard: boolean;
 }
 
 /** A single cron field — set of allowed values */

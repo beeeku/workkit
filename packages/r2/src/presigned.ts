@@ -95,12 +95,13 @@ export async function createPresignedUrl(
 	const expires = Math.floor(Date.now() / 1000) + expiresIn;
 	const payload = `${options.method}:${options.key}:${expires}`;
 
-	// Generate HMAC-SHA256 signature using the Web Crypto API
+	// Generate HMAC-SHA256 signature using the Web Crypto API.
+	// The key material is the caller-supplied signingSecret so that the
+	// secret is never embedded in or derivable from the public URL.
 	const encoder = new TextEncoder();
-	const keyData = encoder.encode(payload);
 	const cryptoKey = await crypto.subtle.importKey(
 		"raw",
-		keyData,
+		encoder.encode(options.signingSecret),
 		{ name: "HMAC", hash: "SHA-256" },
 		false,
 		["sign"],
