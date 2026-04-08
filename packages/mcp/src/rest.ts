@@ -98,7 +98,7 @@ async function handleToolRequest<TEnv>(
 	// handler finishes so any in-flight cancellable work is cleaned up promptly.
 	const abortController = new AbortController();
 	// Forward upstream abort (client disconnect) into our controller.
-	const upstreamSignal = (request as any).signal as AbortSignal | undefined;
+	const upstreamSignal = (request as Request & { signal?: AbortSignal }).signal;
 	const forwardAbort = () => abortController.abort(upstreamSignal?.reason);
 	if (upstreamSignal) {
 		if (upstreamSignal.aborted) {
