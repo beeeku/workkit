@@ -93,11 +93,21 @@ async function handleToolRequest<TEnv>(
 		);
 	}
 
-	// Build handler context
-	// AbortController is a placeholder for future timeout/cancellation support.
-	// Currently nothing triggers abort — no timeout is set, and Cloudflare Workers
-	// do not expose a per-request disconnect signal at this layer (v0.1.0).
+	// Build handler context. Forward the request's own abort signal when available
+	// (e.g. client disconnect in Cloudflare Workers) and always abort after the
+	// handler finishes so any in-flight cancellable work is cleaned up promptly.
 	const abortController = new AbortController();
+	// Forward upstream abort (client disconnect) into our controller.
+	const upstreamSignal = (request as any).signal as AbortSignal | undefined;
+	const forwardAbort = () => abortController.abort(upstreamSignal?.reason);
+	if (upstreamSignal) {
+		if (upstreamSignal.aborted) {
+			abortController.abort(upstreamSignal.reason);
+		} else {
+			upstreamSignal.addEventListener("abort", forwardAbort, { once: true });
+		}
+	}
+
 	const handlerCtx = {
 		input: validation.value,
 		env,
@@ -120,6 +130,13 @@ async function handleToolRequest<TEnv>(
 			return jsonResponse({ result }, 200);
 		} catch (err) {
 			return toRestError(err);
+		} finally {
+			// Signal cancellation once the request lifecycle ends so any
+			// downstream work that checks handlerCtx.signal can stop promptly.
+			abortController.abort();
+			if (upstreamSignal) {
+				upstreamSignal.removeEventListener("abort", forwardAbort);
+			}
 		}
 	};
 
