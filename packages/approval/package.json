@@ -1,0 +1,52 @@
+{
+  "name": "@workkit/approval",
+  "version": "0.1.0",
+  "description": "Approval-as-Infrastructure — declarative approval policies, audit trails, and token-gated decisions for Cloudflare Workers",
+  "license": "MIT",
+  "author": "Bikash Dash <beeeku>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beeeku/workkit.git",
+    "directory": "packages/approval"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./channels": {
+      "import": {
+        "types": "./dist/channels/index.d.ts",
+        "default": "./dist/channels/index.js"
+      }
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build": "bunup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@workkit/crypto": "workspace:*",
+    "@workkit/errors": "workspace:*",
+    "hono": "^4.7.10"
+  },
+  "devDependencies": {
+    "@workkit/do": "workspace:*",
+    "@workkit/d1": "workspace:*",
+    "@workkit/queue": "workspace:*",
+    "@workkit/types": "workspace:*",
+    "@cloudflare/workers-types": "^4.20250214.0"
+  },
+  "keywords": ["cloudflare", "workers", "approval", "hitl", "human-in-the-loop", "policy", "audit", "workkit"]
+}
