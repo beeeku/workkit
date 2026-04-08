@@ -35,21 +35,26 @@ export function fixedWindow(options: FixedWindowOptions): RateLimiter {
 
 			const existing = (await options.namespace.get(kvKey, "json")) as FixedWindowState | null;
 
-			const currentCount = existing ? existing.count + 1 : 1;
-			const allowed = currentCount <= options.limit;
-			const remaining = Math.max(0, options.limit - currentCount);
+			const currentCount = existing ? existing.count : 0;
+			const newCount = currentCount + 1;
+			const allowed = newCount <= options.limit;
+			const remaining = Math.max(0, options.limit - (allowed ? newCount : currentCount));
 			const resetAt = new Date(windowStart + windowMs);
 
-			const state: FixedWindowState = {
-				count: currentCount,
-				windowStart,
-			};
+			// Only write back to KV when the request is allowed — denied requests
+			// must not inflate the counter beyond the limit.
+			if (allowed) {
+				const state: FixedWindowState = {
+					count: newCount,
+					windowStart,
+				};
 
-			const ttlSeconds = Math.ceil((windowStart + windowMs - now) / 1000);
+				const ttlSeconds = Math.ceil((windowStart + windowMs - now) / 1000);
 
-			await options.namespace.put(kvKey, JSON.stringify(state), {
-				expirationTtl: Math.max(ttlSeconds, 1),
-			});
+				await options.namespace.put(kvKey, JSON.stringify(state), {
+					expirationTtl: Math.max(ttlSeconds, 1),
+				});
+			}
 
 			return { allowed, remaining, resetAt, limit: options.limit };
 		},

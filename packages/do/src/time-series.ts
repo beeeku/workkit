@@ -8,6 +8,13 @@ export interface TimeSeriesEntry<TValue> {
 	count: number;
 }
 
+/** Internal representation used for DO storage reads/writes */
+interface StoredTimeSeriesEntry<TValue> {
+	bucket: string;
+	value: TValue;
+	count: number;
+}
+
 /** Options for creating a time series */
 export interface TimeSeriesOptions<TValue> {
 	prefix: string;
@@ -75,7 +82,7 @@ export function createTimeSeries<TValue = number>(
 			const bucket = truncateToBucket(at ?? new Date(), granularity);
 			const key = storageKey(prefix, granularity, bucket);
 
-			const existing = await storage.get<TimeSeriesEntry<TValue>>(key);
+			const existing = await storage.get<StoredTimeSeriesEntry<TValue>>(key);
 			if (existing) {
 				existing.value = reducer(existing.value, value);
 				existing.count += 1;
@@ -86,7 +93,7 @@ export function createTimeSeries<TValue = number>(
 		},
 
 		async query(from: Date, to: Date): Promise<TimeSeriesEntry<TValue>[]> {
-			const entries = await storage.list<{ bucket: string; value: TValue; count: number }>({
+			const entries = await storage.list<StoredTimeSeriesEntry<TValue>>({
 				prefix: keyPrefix,
 			});
 
@@ -111,7 +118,7 @@ export function createTimeSeries<TValue = number>(
 		},
 
 		async rollup(targetGranularity: "hour" | "day"): Promise<TimeSeriesEntry<TValue>[]> {
-			const entries = await storage.list<{ bucket: string; value: TValue; count: number }>({
+			const entries = await storage.list<StoredTimeSeriesEntry<TValue>>({
 				prefix: keyPrefix,
 			});
 
@@ -144,7 +151,7 @@ export function createTimeSeries<TValue = number>(
 			const retentionMs = parseDuration(retention);
 			const cutoff = Date.now() - retentionMs;
 
-			const entries = await storage.list<{ bucket: string }>({ prefix: keyPrefix });
+			const entries = await storage.list<StoredTimeSeriesEntry<TValue>>({ prefix: keyPrefix });
 			const keysToDelete: string[] = [];
 
 			for (const [key, entry] of entries) {

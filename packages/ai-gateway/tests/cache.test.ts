@@ -10,12 +10,11 @@ function createMockStorage(): CacheStorage & { _store: Map<string, string> } {
 	return {
 		_store: store,
 		get: vi.fn(async (key: string) => store.get(key) ?? null),
-		put: vi.fn(async (key: string, value: string, options?: { expirationTtl?: number }) => {
-			if (options?.expirationTtl === 1) {
-				store.delete(key);
-			} else {
-				store.set(key, value);
-			}
+		put: vi.fn(async (key: string, value: string, _options?: { expirationTtl?: number }) => {
+			store.set(key, value);
+		}),
+		delete: vi.fn(async (key: string) => {
+			store.delete(key);
 		}),
 	};
 }

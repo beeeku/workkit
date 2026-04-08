@@ -1,7 +1,7 @@
 import { ValidationError } from "@workkit/errors";
 import type { PasswordHash } from "./types";
 
-const DEFAULT_ITERATIONS = 100_000;
+const DEFAULT_ITERATIONS = 600_000;
 const HASH_ALGORITHM = "SHA-256";
 const KEY_LENGTH_BITS = 256;
 const SALT_LENGTH_BYTES = 16;

@@ -69,8 +69,13 @@ export function createEventStore<TState, TEvent extends BaseEvent>(
 				timestamp: Date.now(),
 			};
 
-			await storage.put(eventKey(nextSeq), stored);
-			await storage.put(SEQUENCE_KEY, nextSeq);
+			// Write the event and update the sequence counter atomically so that
+			// a crash between the two operations cannot leave a dangling event key
+			// that state materialisation would silently skip.
+			await storage.transaction(async (txn) => {
+				await txn.put(eventKey(nextSeq), stored);
+				await txn.put(SEQUENCE_KEY, nextSeq);
+			});
 
 			// Materialize state
 			const state = await materializeState(storage, initialState, reducer);

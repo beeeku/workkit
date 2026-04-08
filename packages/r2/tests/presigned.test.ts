@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createPresignedUrl } from "../src/presigned";
 import { createMockR2 } from "./helpers/mock-r2";
 
+const SECRET = "test-signing-secret";
+
 describe("createPresignedUrl()", () => {
 	let mock: ReturnType<typeof createMockR2>;
 
@@ -14,6 +16,7 @@ describe("createPresignedUrl()", () => {
 		const url = await createPresignedUrl(mock, {
 			key: "files/report.pdf",
 			method: "GET",
+			signingSecret: SECRET,
 		});
 		expect(url).toContain("/_r2/presigned?");
 		expect(url).toContain("key=files%2Freport.pdf");
@@ -27,6 +30,7 @@ describe("createPresignedUrl()", () => {
 			key: "uploads/file.pdf",
 			method: "PUT",
 			expiresIn: 3600,
+			signingSecret: SECRET,
 		});
 		expect(url).toContain("method=PUT");
 		expect(url).toContain("key=uploads%2Ffile.pdf");
@@ -37,6 +41,7 @@ describe("createPresignedUrl()", () => {
 			key: "uploads/file.pdf",
 			method: "PUT",
 			maxSize: 10 * 1024 * 1024,
+			signingSecret: SECRET,
 		});
 		expect(url).toContain("maxSize=10485760");
 	});
@@ -46,6 +51,7 @@ describe("createPresignedUrl()", () => {
 		const url = await createPresignedUrl(mock, {
 			key: "file.txt",
 			method: "GET",
+			signingSecret: SECRET,
 		});
 		const params = new URLSearchParams(url.split("?")[1]);
 		const expires = Number.parseInt(params.get("expires")!, 10);
@@ -60,6 +66,7 @@ describe("createPresignedUrl()", () => {
 			key: "file.txt",
 			method: "GET",
 			expiresIn: 300,
+			signingSecret: SECRET,
 		});
 		const params = new URLSearchParams(url.split("?")[1]);
 		const expires = Number.parseInt(params.get("expires")!, 10);
@@ -71,6 +78,7 @@ describe("createPresignedUrl()", () => {
 		const url = await createPresignedUrl(mock, {
 			key: "file.txt",
 			method: "GET",
+			signingSecret: SECRET,
 		});
 		const params = new URLSearchParams(url.split("?")[1]);
 		const sig = params.get("signature")!;
@@ -83,11 +91,13 @@ describe("createPresignedUrl()", () => {
 			key: "file1.txt",
 			method: "GET",
 			expiresIn: 3600,
+			signingSecret: SECRET,
 		});
 		const url2 = await createPresignedUrl(mock, {
 			key: "file2.txt",
 			method: "GET",
 			expiresIn: 3600,
+			signingSecret: SECRET,
 		});
 		const sig1 = new URLSearchParams(url1.split("?")[1]).get("signature");
 		const sig2 = new URLSearchParams(url2.split("?")[1]).get("signature");
@@ -99,11 +109,31 @@ describe("createPresignedUrl()", () => {
 			key: "file.txt",
 			method: "GET",
 			expiresIn: 3600,
+			signingSecret: SECRET,
 		});
 		const url2 = await createPresignedUrl(mock, {
 			key: "file.txt",
 			method: "PUT",
 			expiresIn: 3600,
+			signingSecret: SECRET,
+		});
+		const sig1 = new URLSearchParams(url1.split("?")[1]).get("signature");
+		const sig2 = new URLSearchParams(url2.split("?")[1]).get("signature");
+		expect(sig1).not.toBe(sig2);
+	});
+
+	it("generates different signatures for different secrets", async () => {
+		const url1 = await createPresignedUrl(mock, {
+			key: "file.txt",
+			method: "GET",
+			expiresIn: 3600,
+			signingSecret: "secret-a",
+		});
+		const url2 = await createPresignedUrl(mock, {
+			key: "file.txt",
+			method: "GET",
+			expiresIn: 3600,
+			signingSecret: "secret-b",
 		});
 		const sig1 = new URLSearchParams(url1.split("?")[1]).get("signature");
 		const sig2 = new URLSearchParams(url2.split("?")[1]).get("signature");
@@ -113,20 +143,20 @@ describe("createPresignedUrl()", () => {
 	// Validation errors
 
 	it("throws ValidationError for empty key", async () => {
-		await expect(createPresignedUrl(mock, { key: "", method: "GET" })).rejects.toThrow(
-			ValidationError,
-		);
+		await expect(
+			createPresignedUrl(mock, { key: "", method: "GET", signingSecret: SECRET }),
+		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for negative expiresIn", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "GET", expiresIn: -1 }),
+			createPresignedUrl(mock, { key: "f.txt", method: "GET", expiresIn: -1, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for zero expiresIn", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "GET", expiresIn: 0 }),
+			createPresignedUrl(mock, { key: "f.txt", method: "GET", expiresIn: 0, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
@@ -136,37 +166,38 @@ describe("createPresignedUrl()", () => {
 				key: "f.txt",
 				method: "GET",
 				expiresIn: 8 * 24 * 60 * 60,
+				signingSecret: SECRET,
 			}),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for invalid method", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "DELETE" as any }),
+			createPresignedUrl(mock, { key: "f.txt", method: "DELETE" as any, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for maxSize on GET", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "GET", maxSize: 1000 }),
+			createPresignedUrl(mock, { key: "f.txt", method: "GET", maxSize: 1000, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for negative maxSize", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: -1 }),
+			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: -1, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for zero maxSize", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: 0 }),
+			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: 0, signingSecret: SECRET }),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws BindingNotFoundError for null bucket", async () => {
-		await expect(createPresignedUrl(null as any, { key: "f.txt", method: "GET" })).rejects.toThrow(
-			BindingNotFoundError,
-		);
+		await expect(
+			createPresignedUrl(null as any, { key: "f.txt", method: "GET", signingSecret: SECRET }),
+		).rejects.toThrow(BindingNotFoundError);
 	});
 });

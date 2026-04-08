@@ -83,6 +83,13 @@ export interface PresignedUrlOptions {
 	expiresIn?: number;
 	/** Maximum upload size in bytes (PUT only) */
 	maxSize?: number;
+	/**
+	 * Secret used to sign the URL. Must be provided by the caller and kept
+	 * server-side; the verifying Worker route must use the same secret.
+	 * Without a secret the HMAC key cannot be kept private, making the
+	 * signature trivially forgeable.
+	 */
+	signingSecret: string;
 }
 
 /** Multipart upload options */
