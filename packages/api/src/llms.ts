@@ -314,11 +314,15 @@ function globMatches(value: string, pattern: string): boolean {
 }
 
 function compileGlob(pattern: string): RegExp {
-	const escaped = pattern
+	// Handle trailing /** — should match the prefix path itself (zero segments) as well as deeper paths.
+	// Replace the leading slash + ** together so the slash is included in the optional group.
+	const normalized = pattern.replace(/\/\*\*$/, "__TAIL_WILDCARD__");
+	const escaped = normalized
 		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
 		.replace(/\*\*/g, "__DOUBLE_WILDCARD__")
 		.replace(/\*/g, "[^/]*")
-		.replace(/__DOUBLE_WILDCARD__/g, ".*");
+		.replace(/__DOUBLE_WILDCARD__/g, ".*")
+		.replace(/__TAIL_WILDCARD__/g, "(\\/.*)?");
 	return new RegExp(`^${escaped}$`);
 }
 
