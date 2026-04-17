@@ -26,9 +26,13 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunup",
     "test": "vitest run",
@@ -48,5 +52,14 @@
     "@workkit/types": "workspace:*",
     "@cloudflare/workers-types": "^4.20250214.0"
   },
-  "keywords": ["cloudflare", "workers", "approval", "hitl", "human-in-the-loop", "policy", "audit", "workkit"]
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "approval",
+    "hitl",
+    "human-in-the-loop",
+    "policy",
+    "audit",
+    "workkit"
+  ]
 }

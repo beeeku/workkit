@@ -1,5 +1,13 @@
 # @workkit/queue
 
+## 0.2.1
+
+### Patch Changes
+
+- 9a52478: Fix `onError` callback not being awaited in `createConsumer`. If `onError`
+  returned a `Promise`, errors thrown inside it were silently swallowed and
+  execution could proceed in an unexpected order.
+
 ## 0.2.0
 
 ### Minor Changes
