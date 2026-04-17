@@ -430,13 +430,12 @@ describe("getMany", () => {
 		expect(results.get("a")).toEqual({ name: "Alice", email: "a@x.com" });
 	});
 
-	it("returns Map with null for missing keys", async () => {
+	it("omits missing keys from result", async () => {
 		await store.put("a", { name: "Alice", email: "a@x.com" });
 
 		const results = await store.getMany(["a", "missing"]);
-		// Missing key is present in the map with a null value
-		expect(results.has("missing")).toBe(true);
-		expect(results.get("missing")).toBeNull();
+		expect(results.size).toBe(1);
+		expect(results.has("missing")).toBe(false);
 	});
 
 	it("applies prefix to all keys", async () => {

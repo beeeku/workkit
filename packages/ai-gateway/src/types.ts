@@ -65,6 +65,36 @@ export interface ChatMessage {
 	content: string;
 }
 
+// --- Tool use types ---
+
+/** Definition of a tool that a model can call */
+export interface GatewayToolDefinition {
+	/** Unique name for the tool */
+	name: string;
+	/** Human-readable description of what the tool does */
+	description: string;
+	/** JSON Schema describing the tool's parameters */
+	parameters: Record<string, unknown>;
+}
+
+/** A normalized tool call from any provider */
+export interface GatewayToolCall {
+	/** Unique identifier for this tool call */
+	id: string;
+	/** Name of the tool to invoke */
+	name: string;
+	/** Parsed arguments for the tool */
+	arguments: Record<string, unknown>;
+}
+
+/** Tool use options for gateway requests */
+export interface GatewayToolOptions {
+	/** Tool definitions to make available to the model */
+	tools: GatewayToolDefinition[];
+	/** How the model should choose tools */
+	toolChoice?: "auto" | "none" | "required" | { name: string };
+}
+
 /** Input to a model run — chat messages or raw prompt */
 export type AiInput = { messages: ChatMessage[] } | { prompt: string } | Record<string, unknown>;
 
@@ -80,6 +110,8 @@ export interface AiOutput {
 	provider: string;
 	/** Model used */
 	model: string;
+	/** Tool calls from the model, if any */
+	toolCalls?: GatewayToolCall[];
 }
 
 /** Token usage stats */
@@ -107,6 +139,16 @@ export interface RunOptions {
 	timeout?: number;
 	/** Abort signal */
 	signal?: AbortSignal;
+	/**
+	 * Request structured JSON output from the model.
+	 *
+	 * - `"json"` — ask the model to return valid JSON (provider-specific format hint)
+	 * - `{ jsonSchema: ... }` — provide a JSON Schema; providers that support strict
+	 *   schema enforcement (e.g. OpenAI) will use it, others fall back to instruction-based
+	 */
+	responseFormat?: "json" | { jsonSchema: Record<string, unknown> };
+	/** Tool use options — pass tools for the model to call */
+	toolOptions?: GatewayToolOptions;
 }
 
 // --- Router types ---

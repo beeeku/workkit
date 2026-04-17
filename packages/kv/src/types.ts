@@ -137,7 +137,7 @@ export interface TypedKV<T> {
 	exists(key: string): Promise<boolean>;
 	list(options?: KVListOptions): AsyncIterable<KVEntry<T>>;
 	keys(options?: KVListOptions): AsyncIterable<KVKeyEntry>;
-	getMany(keys: string[], options?: GetOptions): Promise<Map<string, T | null>>;
+	getMany(keys: string[], options?: GetOptions): Promise<Map<string, T>>;
 	deleteMany(keys: string[]): Promise<void>;
 	readonly raw: KVNamespace;
 

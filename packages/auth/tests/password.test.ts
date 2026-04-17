@@ -55,7 +55,9 @@ describe("hashPassword", () => {
 
 describe("verifyPassword", () => {
 	it("verifies correct password", async () => {
-		const hashed = await hashPassword("correct-horse-battery-staple", { iterations: TEST_ITERATIONS });
+		const hashed = await hashPassword("correct-horse-battery-staple", {
+			iterations: TEST_ITERATIONS,
+		});
 		const valid = await verifyPassword("correct-horse-battery-staple", hashed);
 
 		expect(valid).toBe(true);

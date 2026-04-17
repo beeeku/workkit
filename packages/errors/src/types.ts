@@ -21,7 +21,8 @@ export type WorkkitErrorCode =
 	| "WORKKIT_D1_MIGRATION"
 	| "WORKKIT_MAIL_ERROR"
 	| "WORKKIT_MAIL_INVALID_ADDRESS"
-	| "WORKKIT_MAIL_DELIVERY_FAILED";
+	| "WORKKIT_MAIL_DELIVERY_FAILED"
+	| "WORKKIT_TURNSTILE";
 
 /**
  * Retry strategy classification.

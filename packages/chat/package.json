@@ -1,0 +1,48 @@
+{
+	"name": "@workkit/chat",
+	"version": "0.0.0",
+	"description": "Real-time chat transport with typed WebSocket messaging and Durable Object sessions for Cloudflare Workers",
+	"license": "MIT",
+	"author": "Bikash Dash <beeeku>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/beeeku/workkit.git",
+		"directory": "packages/chat"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		}
+	},
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": ["dist"],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "bunup",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@workkit/errors": "^1.0.1",
+		"@workkit/types": "^1.0.1"
+	},
+	"keywords": [
+		"cloudflare",
+		"workers",
+		"chat",
+		"websocket",
+		"durable-objects",
+		"real-time",
+		"workkit"
+	]
+}
