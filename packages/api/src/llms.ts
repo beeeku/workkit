@@ -1,10 +1,5 @@
 import { api } from "./define";
-import type {
-	LlmsGenerationOptions,
-	LlmsGroupBy,
-	LlmsRoutePair,
-	LlmsRoutesConfig,
-} from "./types";
+import type { LlmsGenerationOptions, LlmsGroupBy, LlmsRoutePair, LlmsRoutesConfig } from "./types";
 
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "head", "options"]);
 const globRegexCache = new Map<string, RegExp>();
@@ -120,7 +115,9 @@ export function generateLlmsFullTxt(
 						inlineSchemas,
 						options.schemaRefBaseUrl,
 					);
-					lines.push(`- ${location}.${name} (${required ? "required" : "optional"}): ${schemaText}`);
+					lines.push(
+						`- ${location}.${name} (${required ? "required" : "optional"}): ${schemaText}`,
+					);
 				}
 			}
 			lines.push("");
@@ -176,9 +173,7 @@ export function generateLlmsFullTxt(
 /**
  * Create API route definitions for serving /llms.txt and /llms-full.txt.
  */
-export function createLlmsRoutes<TEnv = unknown>(
-	config: LlmsRoutesConfig,
-): LlmsRoutePair<TEnv> {
+export function createLlmsRoutes<TEnv = unknown>(config: LlmsRoutesConfig): LlmsRoutePair<TEnv> {
 	const llmsPath = config.llmsPath ?? "/llms.txt";
 	const llmsFullPath = config.llmsFullPath ?? "/llms-full.txt";
 
@@ -226,13 +221,25 @@ function collectOperations(
 	for (const [path, pathItem] of Object.entries(paths)) {
 		if (!shouldIncludePath(path, options)) continue;
 		const pathObject = asObject(pathItem);
+		const pathItemParams = asArray(pathObject.parameters);
 
 		for (const [method, operationValue] of Object.entries(pathObject)) {
 			if (!HTTP_METHODS.has(method.toLowerCase())) continue;
 			const operation = asObject(operationValue);
-			const summary = asString(operation.summary) || asString(operation.operationId) || "No summary";
+			const summary =
+				asString(operation.summary) || asString(operation.operationId) || "No summary";
 			const description = asString(operation.description) || "";
 			const tags = asStringArray(operation.tags);
+
+			// Merge path-item-level parameters with operation-level parameters.
+			// Operation-level params take precedence when in+name match.
+			const mergedOperation =
+				pathItemParams.length > 0
+					? {
+							...operation,
+							parameters: mergeParameters(pathItemParams, asArray(operation.parameters)),
+						}
+					: operation;
 
 			operations.push({
 				method: method.toUpperCase(),
@@ -241,7 +248,7 @@ function collectOperations(
 				description,
 				group: pickGroup(tags, path, options.groupBy ?? "tag"),
 				tags,
-				operation,
+				operation: mergedOperation,
 			});
 		}
 	}
@@ -280,7 +287,7 @@ function pickGroup(tags: string[], path: string, groupBy: LlmsGroupBy): string {
 		return "Endpoints";
 	}
 	if (tags.length > 0) {
-		return tags[0];
+		return tags[0] ?? resourceFromPath(path);
 	}
 	return resourceFromPath(path);
 }
@@ -326,20 +333,33 @@ function compileGlob(pattern: string): RegExp {
 	return new RegExp(`^${escaped}$`);
 }
 
-function describeAuth(openapiSpec: Record<string, unknown>, operation: Record<string, unknown>): string {
+function describeAuth(
+	openapiSpec: Record<string, unknown>,
+	operation: Record<string, unknown>,
+): string {
+	const hasOperationSecurity = Object.prototype.hasOwnProperty.call(operation, "security");
 	const operationSecurity = asArray(operation.security);
 	const rootSecurity = asArray(asObject(openapiSpec).security);
-	const activeSecurity = operationSecurity.length > 0 ? operationSecurity : rootSecurity;
+	const activeSecurity = hasOperationSecurity ? operationSecurity : rootSecurity;
 
 	if (activeSecurity.length === 0) {
 		return "none";
 	}
 
 	const schemes: string[] = [];
+	let allowsAnonymous = false;
 	for (const requirement of activeSecurity) {
-		for (const schemeName of Object.keys(asObject(requirement))) {
-			schemes.push(schemeName);
+		const requirementObject = asObject(requirement);
+		const schemeNames = Object.keys(requirementObject);
+		if (schemeNames.length === 0) {
+			allowsAnonymous = true;
+			continue;
 		}
+		schemes.push(...schemeNames);
+	}
+
+	if (allowsAnonymous) {
+		return "none";
 	}
 
 	if (schemes.length === 0) {
@@ -347,6 +367,24 @@ function describeAuth(openapiSpec: Record<string, unknown>, operation: Record<st
 	}
 
 	return [...new Set(schemes)].join(", ");
+}
+
+/**
+ * Merge path-item-level parameters with operation-level parameters.
+ * Operation-level params win when `in` + `name` match (OpenAPI 3.x precedence rule).
+ */
+function mergeParameters(pathItemParams: unknown[], operationParams: unknown[]): unknown[] {
+	const opParamKeys = new Set(
+		operationParams.map((p) => {
+			const param = asObject(p);
+			return `${asString(param.in)}:${asString(param.name)}`;
+		}),
+	);
+	const inherited = pathItemParams.filter((p) => {
+		const param = asObject(p);
+		return !opParamKeys.has(`${asString(param.in)}:${asString(param.name)}`);
+	});
+	return [...inherited, ...operationParams];
 }
 
 function formatSchema(

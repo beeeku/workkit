@@ -11,6 +11,7 @@ const openapiSpec = {
 	security: [{ bearerAuth: [] }],
 	paths: {
 		"/users": {
+			parameters: [{ name: "x-tenant", in: "header", required: false, schema: { type: "string" } }],
 			get: {
 				summary: "List users",
 				tags: ["users"],
@@ -20,7 +21,10 @@ const openapiSpec = {
 						description: "OK",
 						content: {
 							"application/json": {
-								schema: { type: "array", items: { type: "object", properties: { id: { type: "string" } } } },
+								schema: {
+									type: "array",
+									items: { type: "object", properties: { id: { type: "string" } } },
+								},
 							},
 						},
 					},
@@ -69,6 +73,8 @@ const openapiSpec = {
 			delete: {
 				summary: "Delete user",
 				tags: ["admin"],
+				// Explicitly disable auth for this operation (overrides root security)
+				security: [],
 				responses: { "204": { description: "Deleted" } },
 			},
 		},
@@ -118,9 +124,34 @@ describe("llms generation", () => {
 		expect(output).toContain("Parameters:");
 		expect(output).toContain("Request Body:");
 		expect(output).toContain("### POST /users");
-		expect(output).toContain("- application/json: {\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}");
+		expect(output).toContain(
+			'- application/json: {"type":"object","properties":{"name":{"type":"string"}}}',
+		);
 		expect(output).toContain("Responses:");
-		expect(output).toContain("\"type\":\"object\"");
+		expect(output).toContain('"type":"object"');
+	});
+
+	it("treats operation security: [] as none, overriding root security", () => {
+		const output = generateLlmsFullTxt(openapiRecord, { groupBy: "none" });
+
+		// DELETE /users/{id} has security: [] — should be "none", not inherited "bearerAuth"
+		const deleteSection = output.slice(output.indexOf("### DELETE /users/{id}"));
+		const authLine = deleteSection.split("\n").find((l) => l.startsWith("Auth:"));
+		expect(authLine).toBe("Auth: none");
+
+		// GET /users has no operation-level security — should inherit root bearerAuth
+		const getUsersSection = output.slice(output.indexOf("### GET /users\n"));
+		const getUsersAuth = getUsersSection.split("\n").find((l) => l.startsWith("Auth:"));
+		expect(getUsersAuth).toBe("Auth: bearerAuth");
+	});
+
+	it("includes path-item-level parameters in operation output", () => {
+		const output = generateLlmsFullTxt(openapiRecord, { groupBy: "none" });
+
+		// GET /users has a path-item-level parameter x-tenant plus its own limit param
+		const getUsersSection = output.slice(output.indexOf("### GET /users\n"));
+		expect(getUsersSection).toContain("header.x-tenant");
+		expect(getUsersSection).toContain("query.limit");
 	});
 });
 
