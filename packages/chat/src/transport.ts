@@ -27,7 +27,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 	return {
 		handleUpgrade(_request: Request, sessionId: string): Response {
 			const pair = new WebSocketPair();
-			const [client, server] = Object.values(pair);
+			const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
 
 			server.accept();
 

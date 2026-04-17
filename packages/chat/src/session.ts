@@ -50,7 +50,7 @@ export class ChatSessionDO implements DurableObject {
 		const lastMessageId = url.searchParams.get("lastMessageId") ?? undefined;
 
 		const pair = new WebSocketPair();
-		const [client, server] = Object.values(pair);
+		const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
 
 		const sessionState: SessionState = {
 			sessionId,
@@ -183,7 +183,7 @@ export class ChatSessionDO implements DurableObject {
 		// Find the index of the last known message
 		let startIndex = -1;
 		for (let i = 0; i < messages.length; i++) {
-			if (messages[i].id === lastMessageId) {
+			if (messages[i]!.id === lastMessageId) {
 				startIndex = i;
 				break;
 			}
