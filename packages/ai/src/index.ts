@@ -13,6 +13,16 @@ export type { FallbackOptions } from "./fallback";
 // Retry
 export { withRetry, calculateDelay, defaultIsRetryable } from "./retry";
 
+// Structured output / JSON mode
+export { structuredAI } from "./structured";
+export type { StructuredOptions, StructuredResult } from "./structured";
+
+// Schema conversion
+export { standardSchemaToJsonSchema } from "./schema";
+
+// Errors
+export { StructuredOutputError } from "./errors";
+
 // Token estimation
 export { estimateTokens } from "./tokens";
 

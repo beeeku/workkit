@@ -28,10 +28,13 @@ async function executeProvider(
 ): Promise<AiOutput> {
 	const signal = options?.signal;
 
+	const responseFormat = options?.responseFormat;
+
 	switch (providerConfig.type) {
 		case "workers-ai": {
 			try {
-				const raw = await providerConfig.binding.run(model, input);
+				const workersInput = applyWorkersAiResponseFormat(input, responseFormat);
+				const raw = await providerConfig.binding.run(model, workersInput);
 				return {
 					text: typeof raw === "string" ? raw : extractText(raw),
 					raw,
@@ -49,7 +52,7 @@ async function executeProvider(
 
 		case "openai": {
 			const baseUrl = providerConfig.baseUrl ?? "https://api.openai.com/v1";
-			const body = buildOpenAiBody(model, input);
+			const body = buildOpenAiBody(model, input, responseFormat);
 
 			try {
 				const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -94,7 +97,7 @@ async function executeProvider(
 
 		case "anthropic": {
 			const baseUrl = providerConfig.baseUrl ?? "https://api.anthropic.com/v1";
-			const body = buildAnthropicBody(model, input);
+			const body = buildAnthropicBody(model, input, responseFormat);
 
 			try {
 				const response = await fetch(`${baseUrl}/messages`, {
@@ -151,19 +154,66 @@ async function executeProvider(
 	}
 }
 
-// --- Helpers for building request bodies ---
+// --- Helpers for response format ---
 
-function buildOpenAiBody(model: string, input: AiInput): Record<string, unknown> {
-	if ("messages" in input) {
-		return { model, messages: input.messages };
-	}
-	if ("prompt" in input) {
-		return { model, messages: [{ role: "user", content: input.prompt }] };
-	}
-	return { model, ...input };
+function applyWorkersAiResponseFormat(
+	input: AiInput,
+	responseFormat?: "json" | { jsonSchema: Record<string, unknown> },
+): AiInput {
+	if (!responseFormat) return input;
+	// Workers AI uses response_format: { type: "json_object" }
+	return { ...input, response_format: { type: "json_object" } } as AiInput;
 }
 
-function buildAnthropicBody(model: string, input: AiInput): Record<string, unknown> {
+// --- Helpers for building request bodies ---
+
+function buildOpenAiBody(
+	model: string,
+	input: AiInput,
+	responseFormat?: "json" | { jsonSchema: Record<string, unknown> },
+): Record<string, unknown> {
+	let body: Record<string, unknown>;
+	if ("messages" in input) {
+		body = { model, messages: input.messages };
+	} else if ("prompt" in input) {
+		body = { model, messages: [{ role: "user", content: input.prompt }] };
+	} else {
+		body = { model, ...input };
+	}
+
+	if (responseFormat) {
+		if (responseFormat === "json") {
+			body.response_format = { type: "json_object" };
+		} else {
+			body.response_format = {
+				type: "json_schema",
+				json_schema: { name: "response", schema: responseFormat.jsonSchema, strict: true },
+			};
+		}
+	}
+
+	return body;
+}
+
+function buildAnthropicBody(
+	model: string,
+	input: AiInput,
+	responseFormat?: "json" | { jsonSchema: Record<string, unknown> },
+): Record<string, unknown> {
+	// Build the JSON instruction to prepend to the system message
+	let jsonInstruction = "";
+	if (responseFormat) {
+		if (responseFormat === "json") {
+			jsonInstruction = "You must respond with valid JSON only, no other text.";
+		} else {
+			jsonInstruction = [
+				"You must respond with valid JSON only, no other text.",
+				"Your response must conform to this JSON Schema:",
+				JSON.stringify(responseFormat.jsonSchema),
+			].join("\n");
+		}
+	}
+
 	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
 		const msgs = (input as { messages: ChatMessage[] }).messages;
 		// Anthropic requires system messages to be separate
@@ -174,19 +224,34 @@ function buildAnthropicBody(model: string, input: AiInput): Record<string, unkno
 			messages: nonSystem.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
 			max_tokens: 1024,
 		};
-		if (systemMsg) {
-			body.system = systemMsg.content;
+
+		// Combine existing system message with JSON instruction
+		const systemParts: string[] = [];
+		if (jsonInstruction) systemParts.push(jsonInstruction);
+		if (systemMsg) systemParts.push(systemMsg.content);
+		if (systemParts.length > 0) {
+			body.system = systemParts.join("\n\n");
 		}
+
 		return body;
 	}
 	if ("prompt" in input) {
-		return {
+		const body: Record<string, unknown> = {
 			model,
 			messages: [{ role: "user", content: input.prompt }],
 			max_tokens: 1024,
 		};
+		if (jsonInstruction) {
+			body.system = jsonInstruction;
+		}
+		return body;
 	}
-	return { model, max_tokens: 1024, ...input };
+
+	const body: Record<string, unknown> = { model, max_tokens: 1024, ...input };
+	if (jsonInstruction) {
+		body.system = jsonInstruction;
+	}
+	return body;
 }
 
 // --- Helpers for extracting response data ---

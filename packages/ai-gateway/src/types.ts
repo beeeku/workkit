@@ -107,6 +107,14 @@ export interface RunOptions {
 	timeout?: number;
 	/** Abort signal */
 	signal?: AbortSignal;
+	/**
+	 * Request structured JSON output from the model.
+	 *
+	 * - `"json"` — ask the model to return valid JSON (provider-specific format hint)
+	 * - `{ jsonSchema: ... }` — provide a JSON Schema; providers that support strict
+	 *   schema enforcement (e.g. OpenAI) will use it, others fall back to instruction-based
+	 */
+	responseFormat?: "json" | { jsonSchema: Record<string, unknown> };
 }
 
 // --- Router types ---
