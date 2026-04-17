@@ -139,15 +139,15 @@ describe("evaluateVariant", () => {
 		expect(evaluateVariant(flag, { userId: "user-1" }, 0)).toBe("treatment");
 	});
 
-	it("ignores override that is not a valid variant", () => {
+	it("returns null for override that is not a valid variant", () => {
 		const flag: FlagDefinition = {
 			key: "test",
 			enabled: true,
 			variants: { control: 50, treatment: 50 },
 			overrides: { "user-1": "nonexistent" },
 		};
-		// Should fall through to hash-based assignment
-		expect(evaluateVariant(flag, { userId: "user-1" }, 25)).toBe("control");
+		// Invalid override surfaces as null to flag misconfiguration
+		expect(evaluateVariant(flag, { userId: "user-1" }, 25)).toBeNull();
 	});
 });
 

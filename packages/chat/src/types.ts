@@ -23,7 +23,7 @@ export interface ChatTransportOptions {
 	onMessage: (
 		sessionId: string,
 		message: ChatMessage,
-	) => Promise<ChatMessage | ChatMessage[] | void>;
+	) => Promise<ChatMessage | ChatMessage[] | undefined>;
 	/** Called when a new WebSocket connection is established */
 	onConnect?: (sessionId: string) => Promise<void>;
 	/** Called when a WebSocket connection closes */

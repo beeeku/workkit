@@ -130,10 +130,7 @@ describe("turnstile middleware", () => {
 		});
 
 		const app = new Hono();
-		app.use(
-			"/api/*",
-			turnstile({ secretKey: "test-secret", headerName: "x-turnstile-token" }),
-		);
+		app.use("/api/*", turnstile({ secretKey: "test-secret", headerName: "x-turnstile-token" }));
 		app.post("/api/submit", (c) => c.json({ ok: true }));
 
 		const res = await app.request("/api/submit", {

@@ -121,7 +121,7 @@ describe("ChatSessionDO", () => {
 	});
 
 	afterEach(() => {
-		delete (globalThis as any).WebSocketPair;
+		(globalThis as any).WebSocketPair = undefined;
 		(globalThis as any).Response = OriginalResponse;
 	});
 
@@ -236,10 +236,14 @@ describe("ChatSessionDO", () => {
 		});
 
 		it("should send error for messages exceeding maxMessageSize", async () => {
-			const dobj = new ChatSessionDO(mockState as any, {}, {
-				onMessage: async () => {},
-				maxMessageSize: 20,
-			});
+			const dobj = new ChatSessionDO(
+				mockState as any,
+				{},
+				{
+					onMessage: async () => {},
+					maxMessageSize: 20,
+				},
+			);
 			const ws = new MockWebSocket();
 
 			await dobj.webSocketMessage(
@@ -293,10 +297,14 @@ describe("ChatSessionDO", () => {
 
 	describe("message storage and replay", () => {
 		it("should prune old messages when exceeding maxStoredMessages", async () => {
-			const dobj = new ChatSessionDO(mockState as any, {}, {
-				onMessage: async () => {},
-				maxStoredMessages: 3,
-			});
+			const dobj = new ChatSessionDO(
+				mockState as any,
+				{},
+				{
+					onMessage: async () => {},
+					maxStoredMessages: 3,
+				},
+			);
 			const ws = new MockWebSocket();
 
 			// Send 5 messages
@@ -343,10 +351,9 @@ describe("ChatSessionDO", () => {
 			await mockState.storage.put(`msg:${msg3.timestamp}:${msg3.id}`, msg3);
 
 			// Reconnect with lastMessageId=m1 — should replay m2 and m3
-			const request = new OriginalRequest(
-				"http://localhost/chat?sessionId=s1&lastMessageId=m1",
-				{ headers: { Upgrade: "websocket" } },
-			);
+			const request = new OriginalRequest("http://localhost/chat?sessionId=s1&lastMessageId=m1", {
+				headers: { Upgrade: "websocket" },
+			});
 			await dobj.fetch(request);
 
 			const [, server] = wsHelper.getLastPair();

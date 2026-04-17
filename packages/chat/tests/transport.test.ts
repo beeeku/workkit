@@ -73,7 +73,7 @@ function installMocks(): { getLastPair: () => [MockWebSocket, MockWebSocket] } {
 }
 
 function cleanupMocks() {
-	delete (globalThis as any).WebSocketPair;
+	(globalThis as any).WebSocketPair = undefined;
 	(globalThis as any).Response = OriginalResponse;
 }
 

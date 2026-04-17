@@ -183,7 +183,11 @@ describe("createPresignedUrl()", () => {
 
 	it("throws ValidationError for invalid method", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "DELETE" as any, signingSecret: TEST_SIGNING_SECRET }),
+			createPresignedUrl(mock, {
+				key: "f.txt",
+				method: "DELETE" as any,
+				signingSecret: TEST_SIGNING_SECRET,
+			}),
 		).rejects.toThrow(ValidationError);
 	});
 
@@ -200,19 +204,33 @@ describe("createPresignedUrl()", () => {
 
 	it("throws ValidationError for negative maxSize", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: -1, signingSecret: TEST_SIGNING_SECRET }),
+			createPresignedUrl(mock, {
+				key: "f.txt",
+				method: "PUT",
+				maxSize: -1,
+				signingSecret: TEST_SIGNING_SECRET,
+			}),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws ValidationError for zero maxSize", async () => {
 		await expect(
-			createPresignedUrl(mock, { key: "f.txt", method: "PUT", maxSize: 0, signingSecret: TEST_SIGNING_SECRET }),
+			createPresignedUrl(mock, {
+				key: "f.txt",
+				method: "PUT",
+				maxSize: 0,
+				signingSecret: TEST_SIGNING_SECRET,
+			}),
 		).rejects.toThrow(ValidationError);
 	});
 
 	it("throws BindingNotFoundError for null bucket", async () => {
 		await expect(
-			createPresignedUrl(null as any, { key: "f.txt", method: "GET", signingSecret: TEST_SIGNING_SECRET }),
+			createPresignedUrl(null as any, {
+				key: "f.txt",
+				method: "GET",
+				signingSecret: TEST_SIGNING_SECRET,
+			}),
 		).rejects.toThrow(BindingNotFoundError);
 	});
 });

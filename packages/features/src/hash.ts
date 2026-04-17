@@ -14,5 +14,5 @@ export function deterministicHash(input: string): number {
 		hash = Math.imul(hash, 0x01000193);
 	}
 	// Convert to unsigned 32-bit integer and map to 0-99
-	return ((hash >>> 0) % 100);
+	return (hash >>> 0) % 100;
 }

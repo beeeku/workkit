@@ -61,10 +61,7 @@ export function turnstile(options: TurnstileMiddlewareOptions): MiddlewareHandle
 		});
 
 		if (!result.success) {
-			return c.json(
-				{ error: "Turnstile verification failed", codes: result.errorCodes },
-				403,
-			);
+			return c.json({ error: "Turnstile verification failed", codes: result.errorCodes }, 403);
 		}
 
 		c.set("turnstile" as never, result);

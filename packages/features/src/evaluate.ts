@@ -10,18 +10,18 @@ import type { FlagContext, FlagDefinition, TargetingRule } from "./types";
  * 4. Check percentage rollout using the deterministic hash
  * 5. If enabled with no percentage constraint, return true
  */
-export function evaluateFlag(
-	flag: FlagDefinition,
-	context: FlagContext,
-	hash: number,
-): boolean {
+export function evaluateFlag(flag: FlagDefinition, context: FlagContext, hash: number): boolean {
 	if (!flag.enabled) return false;
 
-	// Check user-level overrides
+	// Check user-level overrides (boolean only — string overrides are for variant selection)
 	if (context.userId && flag.overrides) {
 		const override = flag.overrides[context.userId];
-		if (override !== undefined) {
-			return typeof override === "boolean" ? override : override !== "";
+		if (typeof override === "boolean") {
+			return override;
+		}
+		// String overrides are handled by evaluateVariant, treat as enabled here
+		if (typeof override === "string") {
+			return true;
 		}
 	}
 
@@ -56,8 +56,10 @@ export function evaluateVariant(
 	// Check overrides for variant assignment
 	if (context.userId && flag.overrides) {
 		const override = flag.overrides[context.userId];
-		if (typeof override === "string" && override in flag.variants) {
-			return override;
+		if (typeof override === "string") {
+			// Return override only if it matches a defined variant; otherwise return null
+			// to surface misconfiguration (typo, removed variant) rather than silently bucketing
+			return override in flag.variants ? override : null;
 		}
 	}
 
@@ -100,10 +102,7 @@ export function matchesRule(rule: TargetingRule, context: FlagContext): boolean 
 		case "lt":
 			return typeof value === "number" && rule.values.some((v) => value < Number(v));
 		case "contains":
-			return (
-				typeof value === "string" &&
-				rule.values.some((v) => value.includes(String(v)))
-			);
+			return typeof value === "string" && rule.values.some((v) => value.includes(String(v)));
 		default:
 			return false;
 	}

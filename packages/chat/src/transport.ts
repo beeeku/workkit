@@ -75,7 +75,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 						return;
 					}
 
-					let wire;
+					let wire: ReturnType<typeof decodeMessage> | undefined;
 					try {
 						wire = decodeMessage(raw);
 					} catch (err) {
@@ -83,10 +83,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 							id: createMessageId(),
 							type: "error",
 							role: "system",
-							content:
-								err instanceof ChatError
-									? err.message
-									: "Failed to decode message",
+							content: err instanceof ChatError ? err.message : "Failed to decode message",
 							timestamp: Date.now(),
 						};
 						server.send(encodeMessage(errorMsg));
@@ -116,10 +113,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 							id: createMessageId(),
 							type: "error",
 							role: "system",
-							content:
-								err instanceof Error
-									? err.message
-									: "Internal error processing message",
+							content: err instanceof Error ? err.message : "Internal error processing message",
 							timestamp: Date.now(),
 						};
 						server.send(encodeMessage(errorMsg));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aiProbe, d1Probe, doProbe, kvProbe, queueProbe, r2Probe } from "../src/probes";
 import { createHealthCheck } from "../src/health";
+import { aiProbe, d1Probe, doProbe, kvProbe, queueProbe, r2Probe } from "../src/probes";
 
 // --- Lightweight inline mocks (avoid importing @workkit/testing at test-time) ---
 
@@ -310,11 +310,7 @@ describe("mixed probes integration", () => {
 	});
 
 	it("returns unhealthy when a critical probe fails among healthy ones", async () => {
-		const probes = [
-			kvProbe(createMockKV()),
-			d1Probe(createFailingD1()),
-			r2Probe(createMockR2()),
-		];
+		const probes = [kvProbe(createMockKV()), d1Probe(createFailingD1()), r2Probe(createMockR2())];
 		const hc = createHealthCheck(probes);
 		const result = await hc.check();
 

@@ -179,8 +179,6 @@ describe("verifyTurnstile", () => {
 		await expect(verifyTurnstile("token", "secret", { timeout: 10 })).rejects.toThrow(
 			TurnstileError,
 		);
-		await expect(verifyTurnstile("token", "secret", { timeout: 10 })).rejects.toThrow(
-			"timed out",
-		);
+		await expect(verifyTurnstile("token", "secret", { timeout: 10 })).rejects.toThrow("timed out");
 	});
 });

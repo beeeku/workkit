@@ -27,16 +27,16 @@ export class ChatSessionDO implements DurableObject {
 		options?: ChatSessionDOOptions,
 	) {
 		this.options = options ?? {
-			onMessage: async () => {},
+			onMessage: async () => undefined,
 		};
 
 		// Restore hibernated WebSocket sessions
-		this.state.getWebSockets().forEach((ws) => {
+		for (const ws of this.state.getWebSockets()) {
 			const attachment = ws.deserializeAttachment() as SessionState | null;
 			if (attachment) {
 				this.sessions.set(ws, attachment);
 			}
-		});
+		}
 	}
 
 	async fetch(request: Request): Promise<Response> {
@@ -90,7 +90,7 @@ export class ChatSessionDO implements DurableObject {
 			return;
 		}
 
-		let wire;
+		let wire: ReturnType<typeof decodeMessage> | undefined;
 		try {
 			wire = decodeMessage(raw);
 		} catch (err) {

@@ -11,11 +11,7 @@ function healthyProbe(name: string, opts?: Partial<ProbeConfig>): ProbeConfig {
 	};
 }
 
-function failingProbe(
-	name: string,
-	message: string,
-	opts?: Partial<ProbeConfig>,
-): ProbeConfig {
+function failingProbe(name: string, message: string, opts?: Partial<ProbeConfig>): ProbeConfig {
 	return {
 		name,
 		check: async () => {
@@ -156,10 +152,7 @@ describe("createHealthCheck", () => {
 	});
 
 	it("isHealthy returns false for an unhealthy probe", async () => {
-		const hc = createHealthCheck([
-			healthyProbe("kv"),
-			failingProbe("d1", "down"),
-		]);
+		const hc = createHealthCheck([healthyProbe("kv"), failingProbe("d1", "down")]);
 		const healthy = await hc.isHealthy("d1");
 		expect(healthy).toBe(false);
 	});

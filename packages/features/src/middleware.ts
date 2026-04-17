@@ -19,9 +19,7 @@ import type { FlagOptions } from "./types";
  * });
  * ```
  */
-export function featureFlags(
-	options: { kv: KVNamespace } & FlagOptions,
-): MiddlewareHandler {
+export function featureFlags(options: { kv: KVNamespace } & FlagOptions): MiddlewareHandler {
 	const { kv, ...flagOptions } = options;
 	const client = createFlags(kv, flagOptions);
 

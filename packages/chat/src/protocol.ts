@@ -61,8 +61,7 @@ export function decodeMessage(data: string): WireMessage {
 			typeof obj.metadata === "object" && obj.metadata !== null && !Array.isArray(obj.metadata)
 				? (obj.metadata as Record<string, unknown>)
 				: undefined,
-		lastMessageId:
-			typeof obj.lastMessageId === "string" ? obj.lastMessageId : undefined,
+		lastMessageId: typeof obj.lastMessageId === "string" ? obj.lastMessageId : undefined,
 	};
 }
 
