@@ -32,6 +32,10 @@ export type {
 	ChatMessage,
 	TokenUsage,
 	RunOptions,
+	// Tool use types
+	GatewayToolDefinition,
+	GatewayToolCall,
+	GatewayToolOptions,
 	// Router types
 	Route,
 	Router,

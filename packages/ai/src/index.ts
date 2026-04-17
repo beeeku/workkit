@@ -26,6 +26,19 @@ export { StructuredOutputError } from "./errors";
 // Token estimation
 export { estimateTokens } from "./tokens";
 
+// Tool use
+export { aiWithTools } from "./tool-use";
+export type { ToolMessage } from "./tool-use";
+export { createToolRegistry } from "./tool-registry";
+export type { ToolHandler, ToolRegistry } from "./tool-registry";
+export type {
+	ToolDefinition,
+	ToolCall,
+	ToolResult,
+	ToolUseOptions,
+	ToolUseResult,
+} from "./tools";
+
 // Types
 export type {
 	AiModel,

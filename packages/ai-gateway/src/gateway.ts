@@ -10,6 +10,8 @@ import type {
 	ChatMessage,
 	Gateway,
 	GatewayConfig,
+	GatewayToolCall,
+	GatewayToolOptions,
 	ProviderConfig,
 	ProviderMap,
 	RunOptions,
@@ -33,14 +35,16 @@ async function executeProvider(
 	switch (providerConfig.type) {
 		case "workers-ai": {
 			try {
-				const workersInput = applyWorkersAiResponseFormat(input, responseFormat);
-				const raw = await providerConfig.binding.run(model, workersInput);
+				const aiInput = applyWorkersAiResponseFormat(input, responseFormat);
+				const finalInput = applyToolsWorkersAi(aiInput, options?.toolOptions);
+				const raw = await providerConfig.binding.run(model, finalInput);
 				return {
 					text: typeof raw === "string" ? raw : extractText(raw),
 					raw,
 					usage: extractUsage(raw),
 					provider: providerName,
 					model,
+					toolCalls: extractWorkersAiToolCalls(raw),
 				};
 			} catch (err) {
 				throw new ServiceUnavailableError("workers-ai", {
@@ -52,7 +56,7 @@ async function executeProvider(
 
 		case "openai": {
 			const baseUrl = providerConfig.baseUrl ?? "https://api.openai.com/v1";
-			const body = buildOpenAiBody(model, input, responseFormat);
+			const body = buildOpenAiBody(model, input, responseFormat, options?.toolOptions);
 
 			try {
 				const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -79,6 +83,7 @@ async function executeProvider(
 					usage: extractOpenAiUsage(raw),
 					provider: providerName,
 					model,
+					toolCalls: extractOpenAiToolCalls(raw),
 				};
 			} catch (err) {
 				if (err instanceof ServiceUnavailableError) throw err;
@@ -97,7 +102,7 @@ async function executeProvider(
 
 		case "anthropic": {
 			const baseUrl = providerConfig.baseUrl ?? "https://api.anthropic.com/v1";
-			const body = buildAnthropicBody(model, input, responseFormat);
+			const body = buildAnthropicBody(model, input, responseFormat, options?.toolOptions);
 
 			try {
 				const response = await fetch(`${baseUrl}/messages`, {
@@ -125,6 +130,7 @@ async function executeProvider(
 					usage: extractAnthropicUsage(raw),
 					provider: providerName,
 					model,
+					toolCalls: extractAnthropicToolCalls(raw),
 				};
 			} catch (err) {
 				if (err instanceof ServiceUnavailableError) throw err;
@@ -171,6 +177,7 @@ function buildOpenAiBody(
 	model: string,
 	input: AiInput,
 	responseFormat?: "json" | { jsonSchema: Record<string, unknown> },
+	toolOptions?: GatewayToolOptions,
 ): Record<string, unknown> {
 	let body: Record<string, unknown>;
 	if ("messages" in input) {
@@ -192,6 +199,16 @@ function buildOpenAiBody(
 		}
 	}
 
+	if (toolOptions?.tools?.length) {
+		body.tools = toolOptions.tools.map((t) => ({
+			type: "function",
+			function: { name: t.name, description: t.description, parameters: t.parameters },
+		}));
+		if (toolOptions.toolChoice !== undefined) {
+			body.tool_choice = toolOptions.toolChoice;
+		}
+	}
+
 	return body;
 }
 
@@ -199,6 +216,7 @@ function buildAnthropicBody(
 	model: string,
 	input: AiInput,
 	responseFormat?: "json" | { jsonSchema: Record<string, unknown> },
+	toolOptions?: GatewayToolOptions,
 ): Record<string, unknown> {
 	// Build the JSON instruction to prepend to the system message
 	let jsonInstruction = "";
@@ -214,12 +232,14 @@ function buildAnthropicBody(
 		}
 	}
 
+	let body: Record<string, unknown>;
+
 	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
 		const msgs = (input as { messages: ChatMessage[] }).messages;
 		// Anthropic requires system messages to be separate
 		const systemMsg = msgs.find((m: ChatMessage) => m.role === "system");
 		const nonSystem = msgs.filter((m: ChatMessage) => m.role !== "system");
-		const body: Record<string, unknown> = {
+		body = {
 			model,
 			messages: nonSystem.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
 			max_tokens: 1024,
@@ -232,11 +252,8 @@ function buildAnthropicBody(
 		if (systemParts.length > 0) {
 			body.system = systemParts.join("\n\n");
 		}
-
-		return body;
-	}
-	if ("prompt" in input) {
-		const body: Record<string, unknown> = {
+	} else if ("prompt" in input) {
+		body = {
 			model,
 			messages: [{ role: "user", content: input.prompt }],
 			max_tokens: 1024,
@@ -244,13 +261,25 @@ function buildAnthropicBody(
 		if (jsonInstruction) {
 			body.system = jsonInstruction;
 		}
-		return body;
+	} else {
+		body = { model, max_tokens: 1024, ...input };
+		if (jsonInstruction) {
+			body.system = jsonInstruction;
+		}
 	}
 
-	const body: Record<string, unknown> = { model, max_tokens: 1024, ...input };
-	if (jsonInstruction) {
-		body.system = jsonInstruction;
+	if (toolOptions?.tools?.length) {
+		// Anthropic uses `input_schema` instead of `parameters`
+		body.tools = toolOptions.tools.map((t) => ({
+			name: t.name,
+			description: t.description,
+			input_schema: t.parameters,
+		}));
+		if (toolOptions.toolChoice !== undefined) {
+			body.tool_choice = toolOptions.toolChoice;
+		}
 	}
+
 	return body;
 }
 
@@ -310,6 +339,96 @@ function extractAnthropicUsage(
 		inputTokens: (usage.input_tokens as number) ?? 0,
 		outputTokens: (usage.output_tokens as number) ?? 0,
 	};
+}
+
+// --- Tool-related helpers ---
+
+/** Apply tool options to a Workers AI input */
+function applyToolsWorkersAi(
+	input: AiInput,
+	toolOptions?: GatewayToolOptions,
+): Record<string, unknown> {
+	if (!toolOptions?.tools?.length) return input as Record<string, unknown>;
+
+	const extended: Record<string, unknown> = { ...(input as Record<string, unknown>) };
+	extended.tools = toolOptions.tools.map((t) => ({
+		type: "function",
+		function: { name: t.name, description: t.description, parameters: t.parameters },
+	}));
+	if (toolOptions.toolChoice !== undefined) {
+		extended.tool_choice = toolOptions.toolChoice;
+	}
+	return extended;
+}
+
+/** Extract tool calls from a Workers AI response */
+function extractWorkersAiToolCalls(raw: unknown): GatewayToolCall[] | undefined {
+	if (raw == null || typeof raw !== "object") return undefined;
+	const obj = raw as Record<string, unknown>;
+	const rawCalls = obj.tool_calls as Array<Record<string, unknown>> | undefined;
+	if (!Array.isArray(rawCalls) || rawCalls.length === 0) return undefined;
+
+	return parseRawToolCalls(rawCalls);
+}
+
+/** Extract tool calls from an OpenAI response */
+function extractOpenAiToolCalls(raw: Record<string, unknown>): GatewayToolCall[] | undefined {
+	const choices = raw.choices as Array<Record<string, unknown>> | undefined;
+	if (!choices?.[0]) return undefined;
+	const message = choices[0].message as Record<string, unknown> | undefined;
+	if (!message) return undefined;
+	const rawCalls = message.tool_calls as Array<Record<string, unknown>> | undefined;
+	if (!Array.isArray(rawCalls) || rawCalls.length === 0) return undefined;
+
+	return parseRawToolCalls(rawCalls);
+}
+
+/** Extract tool calls from an Anthropic response */
+function extractAnthropicToolCalls(raw: Record<string, unknown>): GatewayToolCall[] | undefined {
+	const content = raw.content as Array<Record<string, unknown>> | undefined;
+	if (!Array.isArray(content)) return undefined;
+
+	const toolBlocks = content.filter((block) => block.type === "tool_use");
+	if (toolBlocks.length === 0) return undefined;
+
+	return toolBlocks.map((block) => ({
+		id: typeof block.id === "string" ? block.id : `call_${Math.random().toString(36).slice(2)}`,
+		name: block.name as string,
+		arguments:
+			block.input != null && typeof block.input === "object"
+				? (block.input as Record<string, unknown>)
+				: {},
+	}));
+}
+
+/**
+ * Parse raw tool calls from Workers AI / OpenAI format.
+ * Both use: `{ id, type: "function", function: { name, arguments } }`
+ */
+function parseRawToolCalls(rawCalls: Array<Record<string, unknown>>): GatewayToolCall[] {
+	const calls: GatewayToolCall[] = [];
+	for (const raw of rawCalls) {
+		const fn = raw.function as Record<string, unknown> | undefined;
+		if (!fn || typeof fn.name !== "string") continue;
+
+		let args: Record<string, unknown> = {};
+		if (typeof fn.arguments === "string") {
+			try {
+				args = JSON.parse(fn.arguments) as Record<string, unknown>;
+			} catch {
+				args = {};
+			}
+		} else if (fn.arguments != null && typeof fn.arguments === "object") {
+			args = fn.arguments as Record<string, unknown>;
+		}
+
+		calls.push({
+			id: typeof raw.id === "string" ? raw.id : `call_${calls.length}`,
+			name: fn.name,
+			arguments: args,
+		});
+	}
+	return calls;
 }
 
 /**
