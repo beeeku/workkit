@@ -78,7 +78,7 @@ export function evaluateVariant(
 	}
 
 	// Fallback to last variant (handles floating-point edge case)
-	return entries[entries.length - 1][0];
+	return entries[entries.length - 1]![0];
 }
 
 /**
