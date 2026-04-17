@@ -252,8 +252,8 @@ export function kv<T = unknown>(namespace: KVNamespace, options?: KVOptions<T>):
 			} as AsyncIterable<KVKeyEntry>;
 		},
 
-		async getMany(keys: string[], _opts?: GetOptions): Promise<Map<string, T | null>> {
-			const results = new Map<string, T | null>();
+		async getMany(keys: string[], _opts?: GetOptions): Promise<Map<string, T>> {
+			const results = new Map<string, T>();
 			if (keys.length === 0) return results;
 			const entries = await Promise.all(
 				keys.map(async (key) => {
@@ -262,7 +262,9 @@ export function kv<T = unknown>(namespace: KVNamespace, options?: KVOptions<T>):
 				}),
 			);
 			for (const [key, value] of entries) {
-				results.set(key, value);
+				if (value !== null) {
+					results.set(key, value);
+				}
 			}
 			return results;
 		},

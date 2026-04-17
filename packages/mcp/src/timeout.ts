@@ -11,7 +11,6 @@ export async function executeWithTimeout<T>(
 
 	return new Promise<T>((resolve, reject) => {
 		let settled = false;
-		let timer: ReturnType<typeof setTimeout>;
 
 		const cleanup = () => {
 			clearTimeout(timer);
@@ -36,19 +35,12 @@ export async function executeWithTimeout<T>(
 			settleReject(signal.reason ?? new Error("Aborted"));
 		};
 
-		// Assign timer before adding the abort listener so cleanup() is always
-		// safe to call (clearTimeout on an unassigned variable is a no-op in JS
-		// but explicit initialization avoids any linter/reader confusion).
-		timer = setTimeout(() => {
+		const timer = setTimeout(() => {
 			settleReject(new TimeoutError(`Tool execution exceeded ${timeoutMs}ms`));
 		}, timeoutMs);
 
 		signal.addEventListener("abort", onAbort, { once: true });
 
-		// Use Promise.resolve().then(handler) so synchronous throws from handler
-		// are converted to rejected promises and cleanup always runs.
-		Promise.resolve()
-			.then(handler)
-			.then(settleResolve, settleReject);
+		Promise.resolve().then(handler).then(settleResolve, settleReject);
 	});
 }
