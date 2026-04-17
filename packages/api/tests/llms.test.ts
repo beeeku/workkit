@@ -68,6 +68,7 @@ describe("llms generation", () => {
 
 		expect(output).toContain("# Workkit Demo API");
 		expect(output).toContain("### users");
+		expect(output).toContain("### admin");
 		expect(output).toContain("- GET /users — List users");
 		expect(output).toContain("- DELETE /users/{id} — Delete user");
 	});

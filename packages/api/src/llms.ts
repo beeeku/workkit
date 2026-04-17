@@ -274,7 +274,7 @@ function pickGroup(tags: string[], path: string, groupBy: LlmsGroupBy): string {
 		return "Endpoints";
 	}
 	if (tags.length > 0) {
-		return tags[0] ?? "General";
+		return tags[0];
 	}
 	return resourceFromPath(path);
 }
@@ -355,7 +355,7 @@ function formatSchema(
 
 async function resolveSpec(source: LlmsRoutesConfig["openapiSpec"]): Promise<Record<string, unknown>> {
 	if (typeof source === "function") {
-		return source();
+		return await source();
 	}
 	return source;
 }
