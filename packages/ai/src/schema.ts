@@ -57,9 +57,7 @@ function convertDef(def: Record<string, unknown>): Record<string, unknown> {
 			const items = def.element ?? (def as any).items;
 			return {
 				type: "array",
-				items: items
-					? convertDef((items as any)?._zod?.def ?? (items as any)?._def ?? {})
-					: {},
+				items: items ? convertDef((items as any)?._zod?.def ?? (items as any)?._def ?? {}) : {},
 			};
 		}
 
@@ -75,11 +73,7 @@ function convertDef(def: Record<string, unknown>): Record<string, unknown> {
 					properties[key] = fieldSchema;
 
 					const fieldType = fieldDef.type as string | undefined;
-					if (
-						fieldType !== "optional" &&
-						fieldType !== "default" &&
-						fieldType !== "nullable"
-					) {
+					if (fieldType !== "optional" && fieldType !== "default" && fieldType !== "nullable") {
 						required.push(key);
 					}
 				}

@@ -158,9 +158,7 @@ export async function structuredAI<T>(
 						const path = issue.path
 							? issue.path
 									.map((p) =>
-										typeof p === "object" && p !== null && "key" in p
-											? String(p.key)
-											: String(p),
+										typeof p === "object" && p !== null && "key" in p ? String(p.key) : String(p),
 									)
 									.join(".")
 							: "";

@@ -100,12 +100,15 @@ export function createFlags(kv: KVNamespace, options?: FlagOptions): FlagClient 
 
 		while (!done) {
 			const list = await kv.list({ prefix, cursor });
-			for (const key of list.keys) {
+			const flagPromises = list.keys.map(async (key) => {
 				const flagKey = key.name.slice(prefix.length);
-				const flag = await getFlag(flagKey);
+				return getFlag(flagKey);
+			});
+			const flags = await Promise.all(flagPromises);
+			for (const flag of flags) {
 				if (flag) definitions.push(flag);
 			}
-			if (list.list_complete) {
+			if (list.list_complete || !list.cursor) {
 				done = true;
 			} else {
 				cursor = list.cursor;

@@ -1,6 +1,6 @@
 import { BindingNotFoundError } from "@workkit/errors";
-import type { AiBinding } from "./types";
 import type { ToolCall, ToolUseOptions, ToolUseResult } from "./tools";
+import type { AiBinding } from "./types";
 
 /** Message format for tool use conversations */
 export interface ToolMessage {
@@ -66,9 +66,10 @@ function extractContent(response: unknown): string {
 }
 
 /** Convert ToolDefinition[] to Workers AI tool format */
-function toWorkersAiTools(
-	tools: ToolUseOptions["tools"],
-): Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }> {
+function toWorkersAiTools(tools: ToolUseOptions["tools"]): Array<{
+	type: "function";
+	function: { name: string; description: string; parameters: Record<string, unknown> };
+}> {
 	return tools.map((t) => ({
 		type: "function" as const,
 		function: {

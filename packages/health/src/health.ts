@@ -23,8 +23,12 @@ export function createHealthCheck(
 		const timer = setTimeout(() => controller.abort(), timeout);
 
 		try {
+			const probePromise = probe.check();
+			// Attach a no-op catch so a late rejection (after timeout wins) doesn't surface
+			// as an unhandled promise rejection in Workers or strict Node environments.
+			probePromise.catch(() => undefined);
 			await Promise.race([
-				probe.check(),
+				probePromise,
 				new Promise<never>((_, reject) => {
 					controller.signal.addEventListener("abort", () => {
 						reject(new Error(`Probe "${probe.name}" timed out after ${timeout}ms`));

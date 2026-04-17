@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createGateway } from "../src/gateway";
-import type { AiInput, AiOutput, Gateway } from "../src/types";
+
+const TEST_PROVIDER_KEY = "test-key-not-real"; // not a real secret — test fixture
 
 // ─── Mock helpers ────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ describe("responseFormat — openai provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { openai: { type: "openai", apiKey: "test-key" } },
+			providers: { openai: { type: "openai", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "openai",
 		});
 
@@ -93,7 +94,7 @@ describe("responseFormat — openai provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { openai: { type: "openai", apiKey: "test-key" } },
+			providers: { openai: { type: "openai", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "openai",
 		});
 
@@ -114,7 +115,7 @@ describe("responseFormat — openai provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { openai: { type: "openai", apiKey: "test-key" } },
+			providers: { openai: { type: "openai", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "openai",
 		});
 
@@ -135,15 +136,11 @@ describe("responseFormat — anthropic provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { anthropic: { type: "anthropic", apiKey: "test-key" } },
+			providers: { anthropic: { type: "anthropic", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "anthropic",
 		});
 
-		await gw.run(
-			"claude-3-5-sonnet-20241022",
-			{ prompt: "test" },
-			{ responseFormat: "json" },
-		);
+		await gw.run("claude-3-5-sonnet-20241022", { prompt: "test" }, { responseFormat: "json" });
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		const calledBody = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -157,7 +154,7 @@ describe("responseFormat — anthropic provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { anthropic: { type: "anthropic", apiKey: "test-key" } },
+			providers: { anthropic: { type: "anthropic", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "anthropic",
 		});
 
@@ -180,7 +177,7 @@ describe("responseFormat — anthropic provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { anthropic: { type: "anthropic", apiKey: "test-key" } },
+			providers: { anthropic: { type: "anthropic", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "anthropic",
 		});
 
@@ -208,14 +205,11 @@ describe("responseFormat — anthropic provider", () => {
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
-			providers: { anthropic: { type: "anthropic", apiKey: "test-key" } },
+			providers: { anthropic: { type: "anthropic", apiKey: TEST_PROVIDER_KEY } },
 			defaultProvider: "anthropic",
 		});
 
-		await gw.run(
-			"claude-3-5-sonnet-20241022",
-			{ prompt: "test" },
-		);
+		await gw.run("claude-3-5-sonnet-20241022", { prompt: "test" });
 
 		const calledBody = JSON.parse(fetchMock.mock.calls[0][1].body);
 		expect(calledBody.system).toBeUndefined();

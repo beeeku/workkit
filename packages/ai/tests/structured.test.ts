@@ -6,9 +6,7 @@ import type { AiBinding } from "../src/types";
 // ─── Helpers ─────────────────────────────────────────────────
 
 /** Create a mock AI binding that returns configured responses in sequence */
-function createMockBinding(
-	...responses: unknown[]
-): AiBinding & {
+function createMockBinding(...responses: unknown[]): AiBinding & {
 	calls: Array<{ model: string; inputs: Record<string, unknown> }>;
 } {
 	const calls: Array<{ model: string; inputs: Record<string, unknown> }> = [];
@@ -26,7 +24,9 @@ function createMockBinding(
 
 /** Create a simple Standard Schema v1 compatible schema for testing */
 function createSchema<T>(
-	validateFn: (value: unknown) =>
+	validateFn: (
+		value: unknown,
+	) =>
 		| { value: T; issues?: undefined }
 		| { issues: ReadonlyArray<{ message: string; path?: ReadonlyArray<PropertyKey> }> },
 	jsonSchemaOverride?: Record<string, unknown>,
@@ -162,10 +162,7 @@ describe("structuredAI()", () => {
 	});
 
 	it("throws StructuredOutputError when max retries exceeded on invalid JSON", async () => {
-		const binding = createMockBinding(
-			{ response: "not json" },
-			{ response: "still not json" },
-		);
+		const binding = createMockBinding({ response: "not json" }, { response: "still not json" });
 		const schema = nameSchema();
 
 		await expect(
@@ -179,10 +176,7 @@ describe("structuredAI()", () => {
 	});
 
 	it("throws StructuredOutputError when max retries exceeded on validation failure", async () => {
-		const binding = createMockBinding(
-			{ response: '{"age":1}' },
-			{ response: '{"age":2}' },
-		);
+		const binding = createMockBinding({ response: '{"age":1}' }, { response: '{"age":2}' });
 		const schema = nameSchema();
 
 		try {
@@ -228,16 +222,12 @@ describe("structuredAI()", () => {
 				const user = obj.user as Record<string, unknown>;
 				if (typeof user.name !== "string") {
 					return {
-						issues: [
-							{ message: "Expected name to be a string", path: ["user", "name"] },
-						],
+						issues: [{ message: "Expected name to be a string", path: ["user", "name"] }],
 					};
 				}
 				if (typeof user.age !== "number") {
 					return {
-						issues: [
-							{ message: "Expected age to be a number", path: ["user", "age"] },
-						],
+						issues: [{ message: "Expected age to be a number", path: ["user", "age"] }],
 					};
 				}
 				return { value: value as { user: { name: string; age: number } } };
@@ -381,10 +371,7 @@ describe("structuredAI()", () => {
 	});
 
 	it("defaults to 1 retry when maxRetries is not specified", async () => {
-		const binding = createMockBinding(
-			{ response: "not json" },
-			{ response: '{"name":"OK"}' },
-		);
+		const binding = createMockBinding({ response: "not json" }, { response: '{"name":"OK"}' });
 		const schema = nameSchema();
 
 		// Default maxRetries = 1, so this should succeed on the retry

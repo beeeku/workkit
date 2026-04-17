@@ -94,10 +94,9 @@ describe("gateway tool use — Workers AI", () => {
 			defaultProvider: "ai",
 		});
 
-		const result = await gw.run(
-			"model",
-			{ messages: [{ role: "user", content: "test" }] } as AiInput,
-		);
+		const result = await gw.run("model", {
+			messages: [{ role: "user", content: "test" }],
+		} as AiInput);
 
 		expect(result.toolCalls).toBeUndefined();
 	});
@@ -128,11 +127,9 @@ describe("gateway tool use — OpenAI format", () => {
 			defaultProvider: "custom",
 		});
 
-		await gw.run(
-			"test-model",
-			{ messages: [{ role: "user", content: "test" }] } as AiInput,
-			{ toolOptions: sampleTools },
-		);
+		await gw.run("test-model", { messages: [{ role: "user", content: "test" }] } as AiInput, {
+			toolOptions: sampleTools,
+		});
 
 		// Custom provider receives the input as-is (no tool transformation)
 		// This test verifies the gateway passes toolOptions through RunOptions
