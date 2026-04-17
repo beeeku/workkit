@@ -186,7 +186,7 @@ export function createLlmsRoutes<TEnv = unknown>(
 		method: "GET",
 		path: llmsPath,
 		handler: async () => {
-			const openapiSpec = await resolveSpec(config.openapiSpec);
+			const openapiSpec = await resolveOpenAPISpec(config.openapiSpec);
 			const content = generateLlmsTxt(openapiSpec, config.llmsOptions);
 			return new Response(content, {
 				headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -198,7 +198,7 @@ export function createLlmsRoutes<TEnv = unknown>(
 		method: "GET",
 		path: llmsFullPath,
 		handler: async () => {
-			const openapiSpec = await resolveSpec(config.openapiSpec);
+			const openapiSpec = await resolveOpenAPISpec(config.openapiSpec);
 			const content = generateLlmsFullTxt(openapiSpec, config.llmsFullOptions);
 			return new Response(content, {
 				headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -364,7 +364,9 @@ function formatSchema(
 	return JSON.stringify(schema);
 }
 
-async function resolveSpec(source: LlmsRoutesConfig["openapiSpec"]): Promise<Record<string, unknown>> {
+async function resolveOpenAPISpec(
+	source: LlmsRoutesConfig["openapiSpec"],
+): Promise<Record<string, unknown>> {
 	if (typeof source === "function") {
 		return await source();
 	}

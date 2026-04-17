@@ -26,6 +26,28 @@ const openapiSpec = {
 					},
 				},
 			},
+			post: {
+				summary: "Create user",
+				tags: ["users"],
+				requestBody: {
+					required: true,
+					content: {
+						"application/json": {
+							schema: { type: "object", properties: { name: { type: "string" } } },
+						},
+					},
+				},
+				responses: {
+					"200": {
+						description: "Created",
+						content: {
+							"application/json": {
+								schema: { type: "object", properties: { id: { type: "string" } } },
+							},
+						},
+					},
+				},
+			},
 		},
 		"/users/{id}": {
 			get: {
@@ -71,6 +93,7 @@ describe("llms generation", () => {
 		expect(output).toContain("### users");
 		expect(output).toContain("### admin");
 		expect(output).toContain("- GET /users — List users");
+		expect(output).toContain("- POST /users — Create user");
 		expect(output).toContain("- DELETE /users/{id} — Delete user");
 	});
 
@@ -94,6 +117,8 @@ describe("llms generation", () => {
 		expect(output).toContain("Auth: apiKeyAuth");
 		expect(output).toContain("Parameters:");
 		expect(output).toContain("Request Body:");
+		expect(output).toContain("### POST /users");
+		expect(output).toContain("- application/json: {\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}");
 		expect(output).toContain("Responses:");
 		expect(output).toContain("\"type\":\"object\"");
 	});
