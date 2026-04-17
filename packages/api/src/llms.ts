@@ -1,7 +1,13 @@
 import { api } from "./define";
-import type { ApiDefinition, LlmsGenerationOptions, LlmsGroupBy, LlmsRoutesConfig } from "./types";
+import type {
+	LlmsGenerationOptions,
+	LlmsGroupBy,
+	LlmsRoutePair,
+	LlmsRoutesConfig,
+} from "./types";
 
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "head", "options"]);
+const globRegexCache = new Map<string, RegExp>();
 
 interface ParsedOperation {
 	method: string;
@@ -172,7 +178,7 @@ export function generateLlmsFullTxt(
  */
 export function createLlmsRoutes<TEnv = unknown>(
 	config: LlmsRoutesConfig,
-): [ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>, ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>] {
+): LlmsRoutePair<TEnv> {
 	const llmsPath = config.llmsPath ?? "/llms.txt";
 	const llmsFullPath = config.llmsFullPath ?? "/llms-full.txt";
 
@@ -302,13 +308,18 @@ function shouldIncludePath(path: string, options: LlmsGenerationOptions): boolea
 }
 
 function globMatches(value: string, pattern: string): boolean {
+	const regex = globRegexCache.get(pattern) ?? compileGlob(pattern);
+	globRegexCache.set(pattern, regex);
+	return regex.test(value);
+}
+
+function compileGlob(pattern: string): RegExp {
 	const escaped = pattern
 		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
 		.replace(/\*\*/g, "__DOUBLE_WILDCARD__")
 		.replace(/\*/g, "[^/]*")
 		.replace(/__DOUBLE_WILDCARD__/g, ".*");
-	const regex = new RegExp(`^${escaped}$`);
-	return regex.test(value);
+	return new RegExp(`^${escaped}$`);
 }
 
 function describeAuth(openapiSpec: Record<string, unknown>, operation: Record<string, unknown>): string {

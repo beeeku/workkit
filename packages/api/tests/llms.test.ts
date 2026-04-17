@@ -58,10 +58,11 @@ const openapiSpec = {
 		},
 	},
 } as const;
+const openapiRecord = openapiSpec as unknown as Record<string, unknown>;
 
 describe("llms generation", () => {
 	it("generates llms.txt grouped by tags", () => {
-		const output = generateLlmsTxt(openapiSpec as unknown as Record<string, unknown>, {
+		const output = generateLlmsTxt(openapiRecord, {
 			siteBlurb: "Use this index to discover endpoints quickly.",
 			groupBy: "tag",
 		});
@@ -74,7 +75,7 @@ describe("llms generation", () => {
 	});
 
 	it("supports include and exclude path globs", () => {
-		const output = generateLlmsTxt(openapiSpec as unknown as Record<string, unknown>, {
+		const output = generateLlmsTxt(openapiRecord, {
 			includePaths: ["/users/**"],
 			excludePaths: ["/users/{id}"],
 		});
@@ -85,7 +86,7 @@ describe("llms generation", () => {
 	});
 
 	it("generates llms-full.txt with schemas and auth details", () => {
-		const output = generateLlmsFullTxt(openapiSpec as unknown as Record<string, unknown>, {
+		const output = generateLlmsFullTxt(openapiRecord, {
 			groupBy: "resource",
 		});
 
@@ -101,7 +102,7 @@ describe("llms generation", () => {
 describe("createLlmsRoutes", () => {
 	it("serves llms.txt and llms-full.txt routes", async () => {
 		const [llms, llmsFull] = createLlmsRoutes({
-			openapiSpec: () => openapiSpec as unknown as Record<string, unknown>,
+			openapiSpec: () => openapiRecord,
 		});
 
 		const router = createRouter({ apis: [llms, llmsFull] });

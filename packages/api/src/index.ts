@@ -45,6 +45,7 @@ export type {
 	LlmsGenerationOptions,
 	OpenAPISpecSource,
 	LlmsRoutesConfig,
+	LlmsRoutePair,
 	// Client
 	ClientConfig,
 } from "./types";

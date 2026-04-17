@@ -226,6 +226,11 @@ export interface LlmsRoutesConfig {
 	llmsFullOptions?: LlmsGenerationOptions;
 }
 
+export type LlmsRoutePair<TEnv = unknown> = [
+	ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>,
+	ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>,
+];
+
 // --- Client ---
 
 /** Client configuration */
