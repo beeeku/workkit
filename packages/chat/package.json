@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/chat",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Real-time chat transport with typed WebSocket messaging and Durable Object sessions for Cloudflare Workers",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",

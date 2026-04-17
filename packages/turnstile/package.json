@@ -1,6 +1,6 @@
 {
   "name": "@workkit/turnstile",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Cloudflare Turnstile server-side verification with typed results and Hono middleware",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
