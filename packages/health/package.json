@@ -1,6 +1,6 @@
 {
   "name": "@workkit/health",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Health checks and dependency probes for Cloudflare Workers bindings",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

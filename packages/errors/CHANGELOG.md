@@ -1,5 +1,11 @@
 # @workkit/errors
 
+## 1.0.2
+
+### Patch Changes
+
+- Add `WORKKIT_TURNSTILE` to the `WorkkitErrorCode` union type.
+
 ## 1.0.1
 
 ### Patch Changes

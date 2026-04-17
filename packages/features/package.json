@@ -1,6 +1,6 @@
 {
   "name": "@workkit/features",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "KV-backed feature flags with percentage rollouts, targeting, and A/B testing for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
