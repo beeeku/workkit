@@ -1,5 +1,15 @@
 # @workkit/ai-gateway
 
+## 0.2.1
+
+### Patch Changes
+
+- 9a52478: - `CacheStorage` interface now includes a `delete` method (required for correct
+  cache invalidation).
+  - `withCache().invalidate()` now calls `storage.delete()` instead of writing
+    an empty string with a 1-second TTL, which could leave stale data visible
+    for up to a second.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @workkit/kv
 
+## 0.2.2
+
+### Patch Changes
+
+- 9a52478: `getMany` now includes missing keys in the returned `Map` with a `null` value
+  instead of omitting them entirely. This lets callers distinguish between
+  "key was not requested" and "key does not exist in KV".
+
 ## 0.2.1
 
 ### Patch Changes

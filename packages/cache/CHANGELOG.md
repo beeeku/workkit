@@ -1,5 +1,14 @@
 # @workkit/cache
 
+## 0.1.2
+
+### Patch Changes
+
+- 9a52478: `cacheAside`: each call now creates its own isolated in-memory cache when no
+  explicit `cache` instance is provided, preventing unintended key-space
+  collisions between unrelated `cacheAside` wrappers that previously shared a
+  single module-level cache.
+
 ## 0.1.1
 
 ### Patch Changes

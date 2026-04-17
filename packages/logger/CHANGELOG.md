@@ -1,5 +1,12 @@
 # @workkit/logger
 
+## 0.1.1
+
+### Patch Changes
+
+- 9a52478: Bump `@types/node` dev dependency from `^22.0.0` to `^25.0.0` to match the
+  current LTS Node.js type definitions.
+
 ## 0.1.0
 
 ### Minor Changes
