@@ -1,5 +1,17 @@
 # @workkit/agent
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [caec293]
+- Updated dependencies [caec293]
+- Updated dependencies [caec293]
+- Updated dependencies [caec293]
+- Updated dependencies [caec293]
+- Updated dependencies [caec293]
+  - @workkit/ai-gateway@0.3.0
+
 ## 0.1.0
 
 ### Minor Changes
@@ -12,7 +24,7 @@
   - **`defineAgent({ name, model, provider, tools, stopWhen, hooks })`** —
     multi-turn loop with mandatory `stopWhen.maxSteps` (default 10) and
     optional `stopWhen.maxTokens` cumulative budget. Returns `{ text, messages,
-    usage, stopReason }`.
+usage, stopReason }`.
   - **`agent.stream()`** — typed `AgentEvent` discriminated union (`step-start`,
     `text-delta`, `tool-start`, `tool-end`, `handoff`, `step-complete`, `error`,
     `done`).
