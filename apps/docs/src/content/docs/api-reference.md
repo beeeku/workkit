@@ -270,3 +270,167 @@ Quick reference of all exported functions, types, and classes per package.
 | `createMockDO()` | function | In-memory DO storage mock |
 | `createRequest(path, options?)` | function | Request factory |
 | `createExecutionContext()` | function | Mock ExecutionContext |
+
+## `@workkit/r2`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `r2(bucket, options?)` | function | Typed R2 client wrapper |
+| `presign(bucket, key, options)` | function | Generate presigned PUT/GET URLs |
+| `streamUpload(bucket, key, stream)` | function | Streaming multipart upload |
+
+## `@workkit/cache`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `cache(kv, options?)` | function | Cache-aside helper backed by KV |
+| `swr(kv, key, fetcher, options?)` | function | Stale-while-revalidate read-through |
+| `tagged(kv, options?)` | function | Tagged invalidation client |
+| `memoryCache(options?)` | function | In-process LRU cache |
+
+## `@workkit/crypto`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `aesGcmEncrypt(plaintext, key)` | function | AES-256-GCM encrypt |
+| `aesGcmDecrypt(ciphertext, key)` | function | AES-256-GCM decrypt |
+| `hash(input, algo?)` | function | SHA-2 / SHA-3 hashing |
+| `hmac(input, key, algo?)` | function | HMAC signature |
+| `generateSigningKey()` | function | Ed25519 keypair generator |
+| `importSigningKey(jwk)` | function | Import private signing key |
+| `importVerifyingKey(jwk)` | function | Import public verifying key |
+
+## `@workkit/api`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `route(method, path, handler)` | function | OpenAPI-aware route definition |
+| `generateOpenAPI(routes)` | function | Build OpenAPI 3.1 spec from routes |
+| `swaggerUI(spec)` | function | Inline Swagger UI handler |
+
+## `@workkit/health`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `health(checks)` | function | Compose binding health probes |
+| `kvProbe(kv)` / `d1Probe(db)` / `r2Probe(bucket)` / `queueProbe(q)` | function | Built-in dependency probes |
+| `healthHandler(checks, options?)` | function | Hono-style `/health` handler |
+
+## `@workkit/turnstile`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `verifyTurnstile(token, secret, options?)` | function | Server-side CAPTCHA verification |
+| `turnstile(options)` | function | Hono middleware that gates handlers on a valid token |
+
+## `@workkit/features`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createFlags(kv, options?)` | function | KV-backed feature flag client |
+| `evaluate(flag, context)` | function | Evaluate a flag against a user context (rollout %, targeting) |
+
+## `@workkit/mail`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `mail(transport, options?)` | function | Typed email send client |
+| `parseInbound(raw)` | function | Parse Email Routing inbound message |
+| `route(rules)` | function | Inbound routing helper |
+
+## `@workkit/chat`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createChatTransport(env, options?)` | function | WebSocket transport factory |
+| `ChatSessionDO` | DO class | Re-exportable Durable Object for chat sessions |
+| `ChatMessage` | type | Discriminated union of typed chat events |
+
+## `@workkit/notify`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `define(spec, options)` | function | Define a typed notification with channel rendering |
+| `createNotifyConsumer(adapters)` | function | Queue consumer that dispatches via adapters |
+| `ALL_MIGRATIONS` | const | D1 schema for core (preferences, opt-out, records) |
+
+Subpath imports: `@workkit/notify/email`, `@workkit/notify/inapp`, `@workkit/notify/whatsapp` — each ships an `*_MIGRATION_SQL` plus an `*Adapter` factory.
+
+## `@workkit/browser`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `browser(binding, options?)` | function | Acquire a Browser Rendering session |
+| `withPage(session, fn, options?)` | function | Run `fn(page)` with guaranteed cleanup |
+| `loadFonts(page, fonts, options?)` | function | Inject `@font-face` declarations safely |
+
+## `@workkit/pdf`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `renderPdf(session, html, options?)` | function | Render HTML to PDF with header/footer presets |
+| `storePdf(bucket, key, bytes, options?)` | function | Store rendered PDF in R2 |
+| `presignPdf(bucket, key, options)` | function | Generate a presigned download URL |
+| `presets` | object | Page-size and margin presets |
+| `raw(html)` | function | Mark a string as already-escaped HTML |
+
+## `@workkit/agent`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `tool(spec)` | function | Define a Standard-Schema-validated tool |
+| `defineAgent(spec)` | function | Compose a multi-turn agent loop |
+| `handoff(target, options?)` | function | Synthetic tool that hands off to another agent |
+| `AgentEvent` | type | Discriminated union streamed by `agent.stream()` |
+| `HandoffCycleError` / `BudgetExceededError` | error class | Domain-specific failures |
+
+## `@workkit/memory`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createMemory(options)` | function | Memory factory (D1 + optional Vectorize/AI/KV) |
+| `getSchema()` | function | D1 schema SQL for migrations |
+| `cosineSimilarity` / `estimateTokens` / `extractSearchTerms` | function | Recall scoring utilities |
+| `Memory` / `Conversation` / `Fact` / `RecallResult` / `MemoryError` | type | Public types |
+
+## `@workkit/mcp`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createMCPServer(config)` | function | MCP server with tools, resources, prompts |
+| `generateOpenAPISpec(server)` | function | Export OpenAPI from a server instance |
+| `validateInput(schema, input)` | function | Standard Schema validation helper |
+| `ToolAnnotations` | type | MCP 2025-06 tool safety hints |
+
+## `@workkit/workflow`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createDurableWorkflow(name, config)` | function | Builder for DO-backed workflows |
+| `createWorkflow(name, config)` | function | Alias for non-durable testing flows |
+| `WorkflowExecutionDO` | DO class | Re-exportable Durable Object for execution state |
+| `parseDuration(str)` | function | Parse `"30s"`, `"5m"`, `"1h"` to ms |
+| `generateExecutionId()` | function | Create a unique execution ID |
+
+## `@workkit/approval`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `createApprovalGate(config)` | function | Approval gate factory |
+| `ApprovalRequestDO` | DO class | Re-exportable Durable Object for live requests |
+| `evaluatePolicies(action, policies)` | function | Match an action against registered policies |
+| `generateApprovalToken` / `verifyApprovalToken` / `generateApprovalKeys` | function | Ed25519 signed approval tokens |
+| `createAuditProjection(db)` | function | Append-only audit projection over D1 |
+
+## CLI commands (`bunx workkit <cmd>`)
+
+| Command | Description |
+|---------|-------------|
+| `init` | Scaffold a new Workers project with workkit defaults |
+| `add [packages...]` | Interactively add `@workkit/*` packages to an existing project |
+| `catalog` | List every workkit package with one-line descriptions |
+| `check` | Run the constitution check on the current repo |
+| `gen-client` | Generate a typed client from an `@workkit/api` definition |
+| `gen-docs` | Generate API reference markdown from `src/index.ts` exports |
+| `migrate` | Apply D1 migrations from a directory |
+| `seed` | Seed a D1 database from a JSON or SQL fixture |

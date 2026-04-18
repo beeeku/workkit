@@ -331,3 +331,9 @@ export default {
   },
 }
 ```
+
+## See also
+
+- [Agents](/workkit/guides/agents/) — `@workkit/agent` builds agent loops on top of `@workkit/ai-gateway`.
+- [Agent Memory](/workkit/guides/agent-memory/) — `@workkit/memory` uses Workers AI for embeddings and exposes recall results you can inject into prompts.
+- [MCP Servers](/workkit/guides/mcp-servers/) — surface your tools to MCP clients.

@@ -394,3 +394,8 @@ await order.initialize(orderId)
 await order.transition({ type: 'pay' })
 await order.transition({ type: 'ship', trackingNumber: 'TRACK-456' })
 ```
+
+## See also
+
+- [Durable Workflows](/workkit/guides/durable-workflows/) — `@workkit/workflow` is a higher-level abstraction for multi-step durable orchestration; reach for it before hand-rolling a state-machine DO.
+- [Approval Workflows](/workkit/guides/approval-workflows/) — uses a per-request DO under the hood for approval state.

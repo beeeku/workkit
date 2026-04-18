@@ -133,4 +133,7 @@ Synthetic handoff tool. Pass the **full** agent (not just `{ name }`) so collisi
 ## See also
 
 - [AI Integration](/workkit/guides/ai-integration/) — `@workkit/ai-gateway` primer.
+- [Agent Memory](/workkit/guides/agent-memory/) — pair `@workkit/memory` for fact recall and conversation budgeting.
+- [Durable Workflows](/workkit/guides/durable-workflows/) — reach for `@workkit/workflow` when an agent loop needs durable multi-step orchestration.
+- [MCP Servers](/workkit/guides/mcp-servers/) — expose your agent's tools as a Model Context Protocol server.
 - [Notifications](/workkit/guides/notifications/) — agents often produce notifications as side effects.
