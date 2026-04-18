@@ -67,25 +67,17 @@ export async function recordOptIn(deps: OptInDeps, args: RecordOptInArgs): Promi
 		.run();
 }
 
-export async function revokeOptIn(
-	deps: OptInDeps,
-	userId: string,
-	reason: string,
-): Promise<void> {
+export async function revokeOptIn(deps: OptInDeps, userId: string, reason: string): Promise<void> {
 	const ts = deps.now?.() ?? Date.now();
 	await deps.db
-		.prepare(
-			"UPDATE wa_optin_proofs SET revoked_at = ?, revoke_reason = ? WHERE user_id = ?",
-		)
+		.prepare("UPDATE wa_optin_proofs SET revoked_at = ?, revoke_reason = ? WHERE user_id = ?")
 		.bind(ts, reason, userId)
 		.run();
 }
 
 export async function isOptedIn(deps: OptInDeps, userId: string): Promise<boolean> {
 	const row = await deps.db
-		.prepare(
-			"SELECT revoked_at FROM wa_optin_proofs WHERE user_id = ?",
-		)
+		.prepare("SELECT revoked_at FROM wa_optin_proofs WHERE user_id = ?")
 		.bind(userId)
 		.first<{ revoked_at: number | null }>();
 	if (!row) return false;

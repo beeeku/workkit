@@ -8,7 +8,7 @@ Adapters ship as **subpath imports** in this same package — bring the runtime 
 |---|---|---|
 | `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
 | `@workkit/notify/inapp` | D1-backed feed + SSE streaming | — |
-| `@workkit/notify/whatsapp` | Meta WA Cloud API + Twilio + Gupshup _(landing in #29)_ | _(see issue)_ |
+| `@workkit/notify/whatsapp` | Meta WA Cloud API (default) + Twilio/Gupshup stubs | — |
 
 ## Install
 
@@ -210,6 +210,65 @@ await markRead(env.DB, { userId, ids: ["..."] });
 - `safeLink` rejects `javascript:`/`data:`/`file:` schemes.
 - `forgetInAppUser(db, userId, registry?)` cascades + drops active SSE subs.
 
+### WhatsApp — `@workkit/notify/whatsapp`
+
+```ts
+import {
+  whatsappAdapter,
+  metaWaProvider,
+  twilioWaProvider,
+  gupshupWaProvider,
+  recordOptIn,
+  MarketingPauseRegistry,
+  WA_ALL_MIGRATIONS,
+} from "@workkit/notify/whatsapp";
+
+for (const sql of WA_ALL_MIGRATIONS) await env.DB.exec(sql);
+
+const provider = metaWaProvider({
+  accessToken: env.WA_ACCESS_TOKEN,
+  phoneNumberId: env.WA_PHONE_NUMBER_ID,
+});
+const pauseRegistry = new MarketingPauseRegistry();
+
+const whatsapp = whatsappAdapter({
+  provider,
+  db: env.DB,
+  bucket: env.MEDIA,
+  pauseRegistry,
+  dndCheck: async (e164) => /* TRAI lookup */ false,
+  optOutHook: async (userId, channel, _notificationId, reason) => {
+    /* notify-core's optOut() helper */
+  },
+  userIdFromPhone: async (e164) => /* lookup your internal id */ null,
+});
+
+// Persist opt-in proof when the user clicks the WhatsApp opt-in.
+await recordOptIn({ db: env.DB }, {
+  userId: "u1",
+  phoneE164: "+919999999999",
+  method: "checkbox-signup",
+  sourceUrl: "https://app.example.com/onboarding",
+});
+
+// Mount the webhook (signature verification + handshake)
+app.get("/wa/webhook", (req) =>
+  provider.handleVerificationChallenge(req.raw, env.WA_WEBHOOK_VERIFY_TOKEN) ??
+  new Response("not a verification challenge", { status: 400 }),
+);
+```
+
+- **Provider-pluggable**: `metaWaProvider` is the reference impl; `twilioWaProvider` and `gupshupWaProvider` are stubs (community contribution welcome).
+- **Opt-in proof required pre-send** — `OptInRequiredError` if the proof row is missing or revoked.
+- **24h session window** auto-routed: outside the window forces template send; inside allows session text.
+- **DND callback** invoked only for `category: "marketing"` templates (transactional exempt).
+- **Marketing-pause registry** flips on quality-rating webhooks (`account_update.phone_quality` low/flagged); transactional sends unaffected.
+- **Inbound STOP/UNSUBSCRIBE** keywords (multi-locale: EN/HI/ES/FR) trigger automatic opt-out via the injected hook.
+- **E.164 enforcement**, optional `phoneCipher` for at-rest encryption.
+- **R2 etag → media-id cache** so the same R2 object isn't re-uploaded per recipient (default 30d TTL, matches Meta retention).
+- **Meta webhook GET-handshake** handler bundled.
+- **Single-isolate scope** for the marketing-pause flag; multi-isolate fan-out via Durable Object is a v2 concern.
+
 ## Security & compliance
 
 - **Opt-out re-checked at dispatch** (not just at enqueue) so a `STOP` between request and queue worker is honored.
@@ -224,12 +283,14 @@ await markRead(env.DB, { userId, ids: ["..."] });
 
 ## Out of scope (separate issues)
 
-- WhatsApp adapter (#29) — Meta direct + Twilio + Gupshup. Will land as `@workkit/notify/whatsapp`.
+- Twilio + Gupshup full WhatsApp implementations — interface stable; community contribution welcome.
 - Per-provider rate limiting (lands with each adapter).
 - Queue-side draining of pending messages on `forgetUser` (gap in `@workkit/queue`).
 - D1/R2-backed editable template registry.
 - Cross-isolate SSE fan-out (DO-backed adapter — future).
+- Cross-isolate WhatsApp marketing-pause coordination (DO-backed — future).
 - Push notifications (FCM/APNs — future).
+- Rich interactive WhatsApp templates (buttons, lists) — future.
 
 ## Versioning
 

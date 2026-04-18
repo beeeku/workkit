@@ -19,10 +19,7 @@ export function cacheKey(provider: string, r2Key: string, etag: string): string 
 	return `${provider}://${r2Key}:${etag}`;
 }
 
-export async function getCached(
-	deps: MediaCacheDeps,
-	key: string,
-): Promise<CachedMedia | null> {
+export async function getCached(deps: MediaCacheDeps, key: string): Promise<CachedMedia | null> {
 	const row = await deps.db
 		.prepare(
 			"SELECT media_id, mime_type, bytes, uploaded_at, expires_at FROM wa_media_cache WHERE cache_key = ?",
@@ -76,9 +73,7 @@ export async function putCached(
 		.run();
 }
 
-export async function purgeExpiredMedia(
-	deps: MediaCacheDeps,
-): Promise<{ deleted: number }> {
+export async function purgeExpiredMedia(deps: MediaCacheDeps): Promise<{ deleted: number }> {
 	const now = deps.now?.() ?? Date.now();
 	const r = await deps.db
 		.prepare("DELETE FROM wa_media_cache WHERE expires_at IS NOT NULL AND expires_at < ?")
