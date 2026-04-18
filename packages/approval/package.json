@@ -1,6 +1,6 @@
 {
   "name": "@workkit/approval",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Approval-as-Infrastructure — declarative approval policies, audit trails, and token-gated decisions for Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
