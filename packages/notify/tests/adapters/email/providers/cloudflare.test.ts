@@ -87,6 +87,30 @@ describe("cloudflareEmailProvider", () => {
 		expect(binding._sent[0].raw).toContain("reply@example.com");
 	});
 
+	it("omits Reply-To when replyTo is an empty array", async () => {
+		const binding = createMockSendEmail();
+		const provider = cloudflareEmailProvider({
+			binding: binding as unknown as SendEmail,
+			from: "x@example.com",
+			replyTo: [],
+		});
+		const result = await provider.send(baseArgs());
+		expect(result.status).toBe("sent");
+		expect(binding._sent[0].raw).not.toContain("Reply-To:");
+	});
+
+	it("omits Reply-To when replyTo is an empty string", async () => {
+		const binding = createMockSendEmail();
+		const provider = cloudflareEmailProvider({
+			binding: binding as unknown as SendEmail,
+			from: "x@example.com",
+			replyTo: "",
+		});
+		const result = await provider.send(baseArgs());
+		expect(result.status).toBe("sent");
+		expect(binding._sent[0].raw).not.toContain("Reply-To:");
+	});
+
 	it("forwards attachments to @workkit/mail", async () => {
 		const binding = createMockSendEmail();
 		const provider = cloudflareEmailProvider({
