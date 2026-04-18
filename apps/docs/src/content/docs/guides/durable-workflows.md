@@ -58,7 +58,7 @@ if (result.ok) console.log("done", result.value);
 else console.error(result.error.failedStep, result.error.message);
 ```
 
-`result()` returns `{ ok: true; value }` once the workflow reaches `completed`, or `{ ok: false; error }` for `failed` / `cancelled`. Poll `handle.status()` if you don't want to block.
+In v0.1.x `run()` itself awaits the DO `/execute` call until the workflow terminates — by the time it resolves, the journal is final. `result()` then reads the current status and returns `{ ok: true; value }` for `completed` or `{ ok: false; error }` for `failed` / `cancelled` without further polling. Use `handle.status()` directly if you want to inspect intermediate state from another caller (e.g. a separate request inspecting an `executionId`).
 
 ## Step semantics
 

@@ -89,6 +89,23 @@ export function createMCPServer<
 
 		const app = new Hono<{ Bindings: TEnv }>();
 
+		// Authentication middleware — config.auth.handler is invoked for every request whose
+		// path is not in config.auth.exclude. The handler is a Middleware<TEnv> that may either
+		// return a Response (rejecting the request) or call next() to continue.
+		if (config.auth?.handler) {
+			const authHandler = config.auth.handler;
+			const exclude = new Set(config.auth.exclude ?? []);
+			app.use("*", async (c, next) => {
+				const path = new URL(c.req.url).pathname;
+				if (exclude.has(path)) return next();
+				const result = await authHandler(c.req.raw, c.env as any, async () => {
+					await next();
+					return c.res;
+				});
+				return result;
+			});
+		}
+
 		// MCP transport endpoint
 		app.post(mcpPath, async (c) => {
 			const env = c.env;
@@ -115,6 +132,42 @@ export function createMCPServer<
 			app.get("/openapi.json", (c) => {
 				return c.json(getOpenAPISpec());
 			});
+
+			// Swagger UI: serve a small HTML shell that loads swagger-ui-dist from the CDN
+			// and points it at /openapi.json. Opt-in via openapi.swaggerUI: true | { cdn?: boolean }.
+			const swaggerOpt = config.openapi?.swaggerUI;
+			if (swaggerOpt) {
+				const cdn =
+					typeof swaggerOpt === "object" && swaggerOpt.cdn === false
+						? null
+						: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5";
+				if (cdn) {
+					app.get("/docs", (c) => {
+						const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${config.name} — API docs</title>
+<link rel="stylesheet" href="${cdn}/swagger-ui.css" />
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="${cdn}/swagger-ui-bundle.js"></script>
+<script>
+window.onload = () => {
+  window.ui = SwaggerUIBundle({
+    url: "/openapi.json",
+    dom_id: "#swagger-ui",
+    deepLinking: true,
+  });
+};
+</script>
+</body>
+</html>`;
+						return c.html(html);
+					});
+				}
+			}
 		}
 
 		// Health endpoint

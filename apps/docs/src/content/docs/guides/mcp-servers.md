@@ -97,9 +97,9 @@ const server = createMCPServer({
 
 `type` is informational metadata for clients; the actual verification lives in your `handler`. `exclude` lists paths the middleware skips.
 
-## Sessions (Durable Objects)
+## Sessions (Durable Objects) — roadmap
 
-Stateful tools (cursors, pagination, in-flight subscriptions) opt into DO-backed sessions. The config is a string literal — the runtime wires up the DO under the hood:
+Stateful tools will opt into DO-backed sessions via the `session` config:
 
 ```ts
 const server = createMCPServer({
@@ -109,7 +109,7 @@ const server = createMCPServer({
 });
 ```
 
-`ttl` is in seconds. There is no `MCPSessionDO` to re-export in v0.1.x — the implementation is internal.
+The config type is reserved on `MCPServerConfig` but the runtime wiring (DO class, session lookup header, `sessionId` propagation into handler context) lands in a follow-up release — track [issue #46](https://github.com/beeeku/workkit/issues/46) for the design.
 
 ## Middleware
 

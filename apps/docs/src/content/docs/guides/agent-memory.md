@@ -29,7 +29,7 @@ Run the D1 schema once in your migrations:
 
 ```ts
 import { getSchema } from "@workkit/memory";
-for (const sql of getSchema()) await env.DB.exec(sql);
+await env.DB.exec(getSchema());
 ```
 
 ## Quick start
@@ -135,7 +135,7 @@ if (snapshot.ok) {
 
 `Conversation.get(options?)` accepts `{ tokenBudget?, includeCompacted? }` and returns `MemoryResult<ConversationSnapshot>`. List individual messages with `messages(options?)`.
 
-> **v0.1.0 limitation:** `summarize()` currently returns `{ ok: false, error: { code: "COMPACTION_ERROR", message: "Summary not implemented in v0.1.0" } }`. Conversation compaction is on the roadmap; track via the package CHANGELOG.
+> **v0.1.0 limitation:** `summarize()` currently returns `{ ok: false, error: { code: "COMPACTION_ERROR", message: "Summary compaction not yet implemented" } }`. Conversation compaction is on the roadmap; track via the package CHANGELOG.
 
 ## Encryption
 
@@ -169,7 +169,7 @@ const stats = await memory.stats();
 if (stats.ok) console.log(stats.value);
 ```
 
-`compact()` in v0.1.0 performs TTL-based expiry only — `mergedCount` returns 0 until merging lands. `reembed()` requires the `embeddings` (Workers AI) binding; otherwise it returns `{ ok: false, error: { code: "EMBEDDING_ERROR" } }`.
+`compact()` in v0.1.0 performs TTL-based expiry only — `mergedCount` returns 0 until merging lands. `reembed()` requires the `embeddings` (Workers AI) binding; otherwise it returns `{ ok: false, error: { code: "EMBEDDING_ERROR", message: "No AI binding configured" } }`. Every `MemoryError` carries both `code` and `message` — branch on the code, log the message.
 
 ## Errors
 

@@ -1,15 +1,18 @@
+import { decryptText } from "./encryption";
 import type { Fact, MemoryResult, SearchOptions } from "./types";
 import { extractSearchTerms } from "./utils";
 
-function parseFact(row: any): Fact {
+async function parseFact(row: any, encryptionKey?: CryptoKey): Promise<Fact> {
+	const encrypted = Boolean(row.encrypted);
+	const text = encrypted && encryptionKey ? await decryptText(row.text, encryptionKey) : row.text;
 	return {
 		id: row.id,
-		text: row.text,
+		text,
 		subject: row.subject ?? null,
 		source: row.source ?? null,
 		tags: row.tags ? JSON.parse(row.tags) : [],
 		confidence: row.confidence ?? 1.0,
-		encrypted: Boolean(row.encrypted),
+		encrypted,
 		createdAt: row.created_at,
 		validFrom: row.valid_from,
 		validUntil: row.valid_until ?? null,
@@ -27,7 +30,7 @@ const ORDER_COLUMN: Record<NonNullable<SearchOptions["orderBy"]>, string> = {
 	confidence: "confidence",
 };
 
-export function createSearch(db: D1Database) {
+export function createSearch(db: D1Database, encryptionKey?: CryptoKey) {
 	return async function search(
 		query: string,
 		options: SearchOptions = {},
@@ -110,7 +113,8 @@ export function createSearch(db: D1Database) {
 				.prepare(sql)
 				.bind(...binds)
 				.all();
-			return { ok: true, value: (results ?? []).map(parseFact) };
+			const parsed = await Promise.all((results ?? []).map((r) => parseFact(r, encryptionKey)));
+			return { ok: true, value: parsed };
 		} catch (error: any) {
 			return { ok: false, error: { code: "STORAGE_ERROR", message: error.message } };
 		}

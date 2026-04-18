@@ -26,11 +26,12 @@ import type {
 
 export function createMemory(options: MemoryOptions): Memory {
 	const { db } = options;
-	const facts = createFactStore(db);
-	const search = createSearch(db);
+	const facts = createFactStore(db, options.encryptionKey);
+	const search = createSearch(db, options.encryptionKey);
 	const recall = createRecall(db, {
 		decayHalfLifeDays: options.decayHalfLifeDays,
 		d1ScanLimit: options.d1ScanLimit,
+		encryptionKey: options.encryptionKey,
 	});
 	const cache = createCache(options.cache);
 	const embeddings = createEmbeddingPipeline({
