@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/notify",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Unified notification dispatch for Cloudflare Workers — preferences, opt-out, quiet hours, idempotency, fallback chains, pluggable adapters (email, in-app).",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",
