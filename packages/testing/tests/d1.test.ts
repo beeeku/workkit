@@ -384,6 +384,75 @@ describe("createMockD1", () => {
 			expect(rows.results).toEqual([{ payload: "first" }]);
 		});
 	});
+
+	describe("classify() broader SQL shapes", () => {
+		it("tracks REPLACE INTO as a write", async () => {
+			await db.prepare("CREATE TABLE kv (k TEXT PRIMARY KEY, v TEXT)").run();
+			await db.prepare("REPLACE INTO kv (k, v) VALUES (?, ?)").bind("a", "1").run();
+			expect(db.writes()).toHaveLength(1);
+		});
+
+		it("tracks CTE-prefixed UPDATE as a write", async () => {
+			db = createMockD1({ users: [{ id: 1, age: 30 }] });
+			await db
+				.prepare(
+					"WITH oldest AS (SELECT id FROM users ORDER BY age DESC LIMIT 1) UPDATE users SET age = age + 1 WHERE id IN (SELECT id FROM oldest)",
+				)
+				.run();
+			expect(db.writes()).toHaveLength(1);
+		});
+
+		it("tracks PRAGMA as a read", async () => {
+			await db.prepare("PRAGMA user_version").all();
+			expect(db.reads()).toHaveLength(1);
+		});
+	});
+
+	describe("error injection across entry points", () => {
+		it("batch() honors failAfter and rolls back", async () => {
+			await db.prepare("CREATE TABLE t (id INTEGER, v TEXT)").run();
+			db.failAfter(1);
+			await expect(
+				db.batch([
+					db.prepare("INSERT INTO t VALUES (?, ?)").bind(1, "a"),
+					db.prepare("INSERT INTO t VALUES (?, ?)").bind(2, "b"),
+					db.prepare("INSERT INTO t VALUES (?, ?)").bind(3, "c"),
+				]),
+			).rejects.toThrow();
+			db.clearInjections();
+			const rows = await db.prepare("SELECT * FROM t").all();
+			expect(rows.results).toEqual([]);
+		});
+
+		it("exec() honors failOn", async () => {
+			db.failOn(/DROP/i, new Error("nope"));
+			await expect(db.exec("DROP TABLE if_i_existed")).rejects.toThrow("nope");
+		});
+	});
+
+	describe("RETURNING detection is literal-safe", () => {
+		it("does not misroute INSERT with the word 'RETURNING' in a string literal", async () => {
+			await db.prepare("CREATE TABLE notes (msg TEXT)").run();
+			const result = await db
+				.prepare("INSERT INTO notes (msg) VALUES ('the word RETURNING appears here')")
+				.run();
+			expect(result.meta.changes).toBe(1);
+		});
+	});
+
+	describe("close()", () => {
+		it("releases the underlying handle", () => {
+			const tmp = createMockD1();
+			expect(typeof tmp.close).toBe("function");
+			tmp.close();
+		});
+
+		it("works via Symbol.dispose", () => {
+			const tmp = createMockD1();
+			expect(typeof tmp[Symbol.dispose]).toBe("function");
+			tmp[Symbol.dispose]();
+		});
+	});
 });
 
 describe("createFailingD1", () => {

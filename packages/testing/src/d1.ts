@@ -25,12 +25,63 @@ function mockMeta(overrides?: Partial<MockD1Meta>): MockD1Meta {
 	};
 }
 
+// Strip SQL string literals ('…') and quoted identifiers ("…") so keyword-
+// scanning regexes don't hit false positives inside user data.
+function stripLiterals(sql: string): string {
+	return sql.replace(/'(?:[^']|'')*'/g, "''").replace(/"(?:[^"]|"")*"/g, '""');
+}
+
+// Scan past a leading WITH […AS (…)][,…] CTE list, returning the offset of the
+// statement head (SELECT/INSERT/UPDATE/DELETE) that follows. Respects nested
+// parens and string literals.
+function skipCte(sql: string): number {
+	let i = sql.search(/\S/);
+	if (i < 0 || !/^WITH\b/i.test(sql.slice(i))) return 0;
+	i += 4;
+	if (/^\s+RECURSIVE\b/i.test(sql.slice(i))) i += sql.slice(i).match(/^\s+RECURSIVE/i)![0].length;
+	while (i < sql.length) {
+		// skip until opening paren of a CTE body
+		while (i < sql.length && sql[i] !== "(") i++;
+		if (i >= sql.length) break;
+		let depth = 1;
+		i++;
+		while (i < sql.length && depth > 0) {
+			const ch = sql[i];
+			if (ch === "'" || ch === '"') {
+				const q = ch;
+				i++;
+				while (i < sql.length && sql[i] !== q) i++;
+				i++;
+				continue;
+			}
+			if (ch === "(") depth++;
+			else if (ch === ")") depth--;
+			i++;
+		}
+		// after the CTE body: either a comma (more CTEs) or the statement head
+		while (i < sql.length && /\s/.test(sql[i] as string)) i++;
+		if (sql[i] === ",") {
+			i++;
+			continue;
+		}
+		return i;
+	}
+	return 0;
+}
+
 function classify(sql: string): "read" | "write" | "delete" | null {
-	const head = sql.trimStart().slice(0, 16).toUpperCase();
-	if (head.startsWith("SELECT")) return "read";
-	if (head.startsWith("INSERT") || head.startsWith("UPDATE")) return "write";
+	const clean = stripLiterals(sql);
+	const offset = skipCte(clean);
+	const head = clean.slice(offset).trimStart().slice(0, 16).toUpperCase();
+	if (head.startsWith("SELECT") || head.startsWith("PRAGMA")) return "read";
+	if (head.startsWith("INSERT") || head.startsWith("UPDATE") || head.startsWith("REPLACE"))
+		return "write";
 	if (head.startsWith("DELETE")) return "delete";
 	return null;
+}
+
+function hasReturning(sql: string): boolean {
+	return /\bRETURNING\b/i.test(stripLiterals(sql));
 }
 
 function quoteId(name: string): string {
@@ -81,7 +132,7 @@ export function createMockD1(
 		if (cls) tracker._record(cls);
 
 		const normalized = params.map(normalize);
-		const returns = /\bRETURNING\b/i.test(sql);
+		const returns = hasReturning(sql);
 		const isSelect = cls === "read";
 
 		const stmt = adapter.prepare(sql);
@@ -181,6 +232,7 @@ export function createMockD1(
 			try {
 				const out: unknown[] = [];
 				for (const stmt of statements) {
+					await injector._check(stmt._sql);
 					const r = runSql(stmt._sql, stmt._params ?? []);
 					out.push({ results: r.results, success: true, meta: r.meta });
 				}
@@ -195,6 +247,7 @@ export function createMockD1(
 		},
 
 		async exec(sql: string): Promise<{ count: number; duration: number }> {
+			await injector._check(sql);
 			adapter.exec(sql);
 			const count = sql
 				.split(";")
@@ -204,9 +257,18 @@ export function createMockD1(
 		},
 
 		dump: async () => new ArrayBuffer(0),
+
+		close() {
+			adapter.close();
+		},
+		[Symbol.dispose]() {
+			adapter.close();
+		},
 	};
 
-	return db as unknown as D1Database & MockOperations & ErrorInjection;
+	return db as unknown as D1Database &
+		MockOperations &
+		ErrorInjection & { close(): void; [Symbol.dispose](): void };
 }
 
 export function createFailingD1(error: Error | string): D1Database {
