@@ -1,5 +1,5 @@
 import type { NotifyD1 } from "../../types";
-import type { PhoneCipher } from "./phone";
+import { type PhoneCipher, assertE164 } from "./phone";
 
 export interface OptInProof {
 	userId: string;
@@ -49,8 +49,11 @@ async function encrypt(cipher: PhoneCipher | undefined, value: string): Promise<
 }
 
 export async function recordOptIn(deps: OptInDeps, args: RecordOptInArgs): Promise<void> {
+	// Validate E.164 at write time too (not just at send time) so the
+	// compliance artifact never contains malformed numbers.
+	const validatedPhone = assertE164(args.phoneE164);
 	const ts = deps.now?.() ?? Date.now();
-	const phoneStored = await encrypt(deps.cipher, args.phoneE164);
+	const phoneStored = await encrypt(deps.cipher, validatedPhone);
 	await deps.db
 		.prepare(
 			"INSERT INTO wa_optin_proofs(user_id, phone_e164, opted_in_at, method, source_url, ip_hash, user_agent, revoked_at, revoke_reason) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL) ON CONFLICT(user_id) DO UPDATE SET phone_e164 = excluded.phone_e164, opted_in_at = excluded.opted_in_at, method = excluded.method, source_url = excluded.source_url, ip_hash = excluded.ip_hash, user_agent = excluded.user_agent, revoked_at = NULL, revoke_reason = NULL",

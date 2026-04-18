@@ -60,7 +60,10 @@ export function metaWaProvider(options: MetaWaProviderOptions): WaProvider {
 				body.type = "text";
 				body.text = { body: args.sessionText };
 			} else {
-				throw new TemplateNotApprovedError("WaSendArgs requires template, media, or sessionText");
+				// Programmer error — not a template-approval issue. Throwing
+				// TemplateNotApprovedError would mislead callers that handle
+				// it specially.
+				throw new TypeError("WaSendArgs requires one of: template, media, or sessionText");
 			}
 
 			const resp = await fetch(sendUrl, {
@@ -264,7 +267,9 @@ function mapStatus(s: string | undefined): WebhookEvent["status"] | undefined {
 		case "failed":
 			return "failed";
 		case "sent":
-			return "delivered"; // closest mapping; Meta's "sent" means provider-accepted
+			// Meta's "sent" means provider-accepted, not user-delivered. Drop
+			// it so we don't mark a delivery row "delivered" prematurely.
+			return undefined;
 		default:
 			return undefined;
 	}

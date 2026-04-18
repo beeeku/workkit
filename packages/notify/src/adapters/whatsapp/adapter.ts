@@ -30,7 +30,9 @@ interface R2BucketLike {
 /**
  * Pluggable check for "is the recipient on the DND registry?". Adapter
  * only invokes this for `category: "marketing"` templates. Returning true
- * causes the send to be marked `skipped`.
+ * suppresses the send and is reported through the adapter's existing
+ * failure result path (`AdapterSendResult.status` does not include
+ * `skipped`).
  */
 export type DndChecker = (phoneE164: string) => Promise<boolean>;
 
@@ -74,6 +76,11 @@ const PROVIDER_NAMES = new Set<WaProvider["name"]>(["meta", "twilio", "gupshup"]
 export function whatsappAdapter(options: WhatsAppAdapterOptions): Adapter<WhatsAppPayload> {
 	if (!PROVIDER_NAMES.has(options.provider.name)) {
 		throw new Error(`unknown WhatsApp provider: ${(options.provider as WaProvider).name}`);
+	}
+	if (options.optOutHook && !options.userIdFromPhone) {
+		throw new Error(
+			"whatsappAdapter: `optOutHook` requires `userIdFromPhone` so inbound STOP webhooks can be attributed to the correct internal user id. Without it, STOP messages are dropped to avoid mis-keyed opt-outs.",
+		);
 	}
 	const pause = options.pauseRegistry ?? new MarketingPauseRegistry();
 
@@ -163,6 +170,24 @@ export function whatsappAdapter(options: WhatsAppAdapterOptions): Adapter<WhatsA
 				}
 			}
 
+			// Inside the 24h window with no template: send a session text
+			// derived from the channel template's `body(payload)` (or media-
+			// only). Without `body` AND without media, we'd have nothing to
+			// hand the provider — fail fast with a clear error.
+			let sessionText: string | undefined;
+			if (!useTemplate) {
+				sessionText = (args.template as { body?: (p: WhatsAppPayload) => string }).body?.(
+					args.payload,
+				);
+				if (!sessionText && !media) {
+					return {
+						status: "failed",
+						error:
+							"WhatsApp session message requires `template.body(payload)` to produce text (or `media`)",
+					};
+				}
+			}
+
 			try {
 				const result = await options.provider.send({
 					toE164,
@@ -174,6 +199,7 @@ export function whatsappAdapter(options: WhatsAppAdapterOptions): Adapter<WhatsA
 								variables: template.variables?.(args.payload),
 							}
 						: undefined,
+					sessionText,
 					media,
 				});
 				return { status: "sent", providerId: result.providerId };
@@ -219,9 +245,15 @@ async function handleInbound(
 	at: number,
 	options: WhatsAppAdapterOptions,
 ): Promise<void> {
-	// Update session-window state first — this is what unblocks session-message
-	// sends without forcing a template.
-	const userId = (await options.userIdFromPhone?.(fromE164)) ?? fromE164;
+	// Resolve to your internal userId. If not configured, we cannot safely
+	// touch user-keyed state (opt-in proofs, etc.) — silently return rather
+	// than write rows under the wrong key. The constructor warns at definition
+	// time if `optOutHook` is supplied without `userIdFromPhone`.
+	const resolved = options.userIdFromPhone ? await options.userIdFromPhone(fromE164) : undefined;
+	if (resolved === undefined || resolved === null) {
+		return;
+	}
+	const userId = resolved;
 	await recordInbound({ db: options.db }, { userId, at, text });
 
 	if (text && isStopKeyword(text, options.stopKeywords)) {

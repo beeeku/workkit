@@ -25,7 +25,10 @@ describe("opt-in proof helpers", () => {
 
 	it("revokeOptIn marks revoked_at; isOptedIn returns false after", async () => {
 		const db = createWaDb();
-		await recordOptIn({ db }, { userId: "u1", phoneE164: "+91999", method: "checkbox-signup" });
+		await recordOptIn(
+			{ db },
+			{ userId: "u1", phoneE164: "+919999999999", method: "checkbox-signup" },
+		);
 		await revokeOptIn({ db }, "u1", "inbound-stop");
 		expect(await isOptedIn({ db }, "u1")).toBe(false);
 		const proof = await getOptInProof({ db }, "u1");
@@ -35,9 +38,9 @@ describe("opt-in proof helpers", () => {
 
 	it("re-recordOptIn after revoke clears revoked_at", async () => {
 		const db = createWaDb();
-		await recordOptIn({ db }, { userId: "u1", phoneE164: "+91999", method: "x" });
+		await recordOptIn({ db }, { userId: "u1", phoneE164: "+919999999999", method: "x" });
 		await revokeOptIn({ db }, "u1", "test");
-		await recordOptIn({ db }, { userId: "u1", phoneE164: "+91999", method: "x" });
+		await recordOptIn({ db }, { userId: "u1", phoneE164: "+919999999999", method: "x" });
 		expect(await isOptedIn({ db }, "u1")).toBe(true);
 	});
 

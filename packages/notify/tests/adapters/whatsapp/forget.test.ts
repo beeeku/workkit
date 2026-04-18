@@ -7,8 +7,8 @@ import { createWaDb } from "./_d1";
 describe("forgetWhatsAppUser()", () => {
 	it("deletes only the supplied user's opt-in proof + inbound log rows", async () => {
 		const db = createWaDb();
-		await recordOptIn({ db }, { userId: "u1", phoneE164: "+91999", method: "x" });
-		await recordOptIn({ db }, { userId: "u2", phoneE164: "+91888", method: "x" });
+		await recordOptIn({ db }, { userId: "u1", phoneE164: "+919999999999", method: "x" });
+		await recordOptIn({ db }, { userId: "u2", phoneE164: "+918888888888", method: "x" });
 		await recordInbound({ db }, { userId: "u1", at: 100 });
 		await recordInbound({ db }, { userId: "u2", at: 100 });
 

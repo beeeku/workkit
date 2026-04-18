@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_wa_optin_phone ON wa_optin_proofs(phone_e164);
 
 export const WA_MEDIA_CACHE_MIGRATION_SQL: string = `
 CREATE TABLE IF NOT EXISTS wa_media_cache (
-	cache_key TEXT PRIMARY KEY,      -- 'r2://<r2Key>:<etag>'
+	cache_key TEXT PRIMARY KEY,      -- '<provider>://<r2Key>:<etag>' (e.g. 'meta://reports/u/r.pdf:etag1')
 	provider TEXT NOT NULL,          -- 'meta' | 'twilio' | 'gupshup'
 	media_id TEXT NOT NULL,
 	mime_type TEXT,

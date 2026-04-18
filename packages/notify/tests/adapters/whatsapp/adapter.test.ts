@@ -113,17 +113,38 @@ describe("whatsappAdapter() — 24h session window", () => {
 		expect(r.error).toContain("24h");
 	});
 
-	it("permits a session message inside the window without a template", async () => {
+	it("permits a session message inside the window when body is provided", async () => {
 		const db = createWaDb();
 		await recordOptIn({ db }, { userId: "u1", phoneE164: "+919999999999", method: "x" });
 		await recordInbound({ db }, { userId: "u1", at: Date.now() });
 		const provider = fakeProvider();
 		const adapter = whatsappAdapter({ provider, db });
-		const r = await adapter.send(args({}));
-		// Inside window + no template → adapter calls provider.send (which our
-		// fake accepts) → sent. The "outside-24h" early-return must NOT fire.
+		const r = await adapter.send(args({ body: () => "hi" }));
 		expect(r.status).toBe("sent");
 		expect(provider.calls.send).toBe(1);
+	});
+
+	it("rejects a session message inside the window when no body or media is provided", async () => {
+		const db = createWaDb();
+		await recordOptIn({ db }, { userId: "u1", phoneE164: "+919999999999", method: "x" });
+		await recordInbound({ db }, { userId: "u1", at: Date.now() });
+		const adapter = whatsappAdapter({ provider: fakeProvider(), db });
+		const r = await adapter.send(args({}));
+		expect(r.status).toBe("failed");
+		expect(r.error).toContain("session message requires");
+	});
+});
+
+describe("whatsappAdapter() — constructor invariants", () => {
+	it("throws if optOutHook is supplied without userIdFromPhone", () => {
+		const db = createWaDb();
+		expect(() =>
+			whatsappAdapter({
+				provider: fakeProvider(),
+				db,
+				optOutHook: async () => undefined,
+			}),
+		).toThrow(/userIdFromPhone/);
 	});
 });
 

@@ -16,9 +16,12 @@ export async function recordInbound(
 	args: { userId: string; at?: number; text?: string },
 ): Promise<void> {
 	const at = args.at ?? deps.now?.() ?? Date.now();
+	// Use MAX(existing, incoming) so out-of-order webhook deliveries can never
+	// move `last_inbound_at` backwards (which would prematurely close the 24h
+	// session window). `last_text` only updates when the timestamp advances.
 	await deps.db
 		.prepare(
-			"INSERT INTO wa_inbound_log(user_id, last_inbound_at, last_text) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET last_inbound_at = excluded.last_inbound_at, last_text = excluded.last_text",
+			"INSERT INTO wa_inbound_log(user_id, last_inbound_at, last_text) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET last_inbound_at = CASE WHEN excluded.last_inbound_at > wa_inbound_log.last_inbound_at THEN excluded.last_inbound_at ELSE wa_inbound_log.last_inbound_at END, last_text = CASE WHEN excluded.last_inbound_at > wa_inbound_log.last_inbound_at THEN excluded.last_text ELSE wa_inbound_log.last_text END",
 		)
 		.bind(args.userId, at, args.text ?? null)
 		.run();
