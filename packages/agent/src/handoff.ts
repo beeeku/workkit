@@ -57,7 +57,7 @@ export function handoff(
 	};
 }
 
-export const HANDOFF_HOP_LIMIT = DEFAULT_HOP_LIMIT;
+export const HANDOFF_HOP_LIMIT: number = DEFAULT_HOP_LIMIT;
 
 /**
  * Throws ToolNameCollisionError if any tool name appears more than once in
