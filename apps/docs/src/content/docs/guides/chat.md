@@ -54,25 +54,39 @@ The transport upgrades to a WebSocket, sends `{"type":"ping"}` every `heartbeatI
 
 ## Durable-Object sessions
 
+Cloudflare instantiates DOs with `(state, env)` only — the third `options` arg the base class accepts isn't reachable from a `wrangler.toml` binding. **Subclass and call `super(state, env, { onMessage })` from the constructor** so your handler is wired up:
+
 ```ts
-import { ChatSessionDO } from "@workkit/chat";
+import { ChatSessionDO, type ChatMessage } from "@workkit/chat";
 
 export class ChatDO extends ChatSessionDO {
-  // Provide options via the third constructor arg if you subclass, or pass
-  // them when newing up — see `ChatSessionDOOptions` below.
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env, {
+      onMessage: async (sessionId, msg): Promise<ChatMessage | undefined> => {
+        if (msg.type !== "message") return undefined;
+        return {
+          id: crypto.randomUUID(),
+          type: "message",
+          role: "assistant",
+          content: `Echo: ${msg.content}`,
+          timestamp: Date.now(),
+        };
+      },
+      maxStoredMessages: 100,
+    });
+  }
 }
-
-export { ChatDO as ChatSessionDO };
 
 export default {
   async fetch(req: Request, env: Env) {
-    const url = new URL(req.url);
-    const sessionId = url.searchParams.get("sessionId") ?? crypto.randomUUID();
+    const sessionId = new URL(req.url).searchParams.get("sessionId") ?? crypto.randomUUID();
     const id = env.CHAT_DO.idFromName(sessionId);
     return env.CHAT_DO.get(id).fetch(req);
   },
 };
 ```
+
+Without the constructor override, `ChatSessionDO` falls back to a no-op `onMessage` and incoming messages will be silently dropped.
 
 The DO uses [WebSocket hibernation](https://developers.cloudflare.com/durable-objects/api/websockets/) — your connection survives Worker restarts and CPU limits. Messages are persisted in DO storage (capped by `maxStoredMessages`, default 100) so reconnects can replay missed messages by passing `?lastMessageId=<id>`.
 

@@ -17,19 +17,21 @@ bun add @workkit/health hono
 
 ```ts
 import { Hono } from "hono";
-import { healthHandler, kvProbe, d1Probe, r2Probe, queueProbe } from "@workkit/health";
+import { createHealthCheck, kvProbe, d1Probe, r2Probe, queueProbe } from "@workkit/health";
 
 const app = new Hono<{ Bindings: Env }>();
 
-healthHandler(
-  [
-    kvProbe(env.CACHE_KV),
-    d1Probe(env.DB),
-    r2Probe(env.UPLOADS, { critical: false }),
-    queueProbe(env.JOBS, { critical: false }),
-  ],
-  { path: "/health" },
-)(app);
+app.get("/health", async (c) => {
+  const checker = createHealthCheck([
+    kvProbe(c.env.CACHE_KV),
+    d1Probe(c.env.DB),
+    r2Probe(c.env.UPLOADS, { critical: false }),
+    queueProbe(c.env.JOBS, { critical: false }),
+  ]);
+  const result = await checker.check();
+  c.header("Cache-Control", "no-store");
+  return c.json(result, result.status === "unhealthy" ? 503 : 200);
+});
 
 export default app;
 ```

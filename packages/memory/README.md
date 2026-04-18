@@ -19,7 +19,7 @@ bun add @workkit/memory @workkit/errors
 import { createMemory, getSchema } from "@workkit/memory";
 
 // Run schema once during migrations
-for (const sql of getSchema()) await env.DB.exec(sql);
+await env.DB.exec(getSchema());
 
 const memory = createMemory({
   db: env.DB,

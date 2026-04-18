@@ -38,9 +38,21 @@ export default {
 
 ## Usage — Durable Object sessions
 
+Cloudflare instantiates DOs with `(state, env)` only, so subclass and pass your `onMessage` to `super(...)`:
+
 ```ts
 import { ChatSessionDO } from "@workkit/chat";
-export { ChatSessionDO };
+
+export class ChatDO extends ChatSessionDO {
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env, {
+      onMessage: async (sessionId, msg) =>
+        msg.type === "message"
+          ? { id: crypto.randomUUID(), type: "message", role: "assistant", content: `Echo: ${msg.content}`, timestamp: Date.now() }
+          : undefined,
+    });
+  }
+}
 
 export default {
   async fetch(req: Request, env: Env) {

@@ -14,27 +14,36 @@ bun add @workkit/health hono
 
 ## Quick start
 
+Because probes need access to per-request bindings, register the route once and create probes inside the handler:
+
 ```ts
 import { Hono } from "hono";
-import { healthHandler, kvProbe, d1Probe, r2Probe, queueProbe } from "@workkit/health";
+import { createHealthCheck, kvProbe, d1Probe, r2Probe, queueProbe } from "@workkit/health";
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use(async (c, next) => {
-  healthHandler(
-    [
-      kvProbe(c.env.CACHE_KV),
-      d1Probe(c.env.DB),
-      r2Probe(c.env.UPLOADS, { critical: false }),
-      queueProbe(c.env.JOBS, { critical: false }),
-    ],
-    { path: "/health" },
-  )(app);
-  return next();
+app.get("/health", async (c) => {
+  const checker = createHealthCheck([
+    kvProbe(c.env.CACHE_KV),
+    d1Probe(c.env.DB),
+    r2Probe(c.env.UPLOADS, { critical: false }),
+    queueProbe(c.env.JOBS, { critical: false }),
+  ]);
+  const result = await checker.check();
+  c.header("Cache-Control", "no-store");
+  return c.json(result, result.status === "unhealthy" ? 503 : 200);
 });
 
 export default app;
 ```
+
+If your bindings are exposed at module scope (e.g. tests, or via a global env capture), use `healthHandler()` for one-line setup:
+
+```ts
+healthHandler([kvProbe(env.CACHE_KV), d1Probe(env.DB)], { path: "/health" })(app);
+```
+
+`healthHandler(...)(app)` registers a `GET` route — call it **once during app construction**, not inside a request middleware (you'd re-register the route every request).
 
 A `GET /health` returns:
 
@@ -45,7 +54,7 @@ A `GET /health` returns:
     { "name": "kv", "status": "healthy", "latencyMs": 12, "checkedAt": "..." },
     { "name": "d1", "status": "healthy", "latencyMs": 18, "checkedAt": "..." }
   ],
-  "checkedAt": "..."
+  "timestamp": "..."
 }
 ```
 
@@ -126,7 +135,7 @@ export default {
 
 ## Caching
 
-`HealthCheckOptions.cacheTtl` (ms) lets you cache the aggregated result so a high-traffic `/health` doesn't hammer probes. Most platforms call `/health` every 5–30s, so `cacheTtl: 5_000` is usually safe.
+`HealthCheckOptions.cacheTtl` (seconds) caches the aggregated result so a high-traffic `/health` doesn't hammer probes. Most platforms call `/health` every 5–30s, so `cacheTtl: 5` is usually safe.
 
 ## See also
 

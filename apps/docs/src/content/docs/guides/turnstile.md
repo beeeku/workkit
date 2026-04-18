@@ -52,21 +52,24 @@ interface TurnstileResult {
 import { Hono } from "hono";
 import { turnstile } from "@workkit/turnstile";
 
-const app = new Hono<{ Bindings: { TURNSTILE_SECRET: string } }>();
+type Bindings = { TURNSTILE_SECRET: string };
+const app = new Hono<{ Bindings: Bindings }>();
 
-app.use(
-  "/api/comments",
-  turnstile({
-    secretKey: app.env.TURNSTILE_SECRET,
+// Wrap the middleware so we can read the secret from per-request env.
+app.use("/api/comments", async (c, next) => {
+  return turnstile({
+    secretKey: c.env.TURNSTILE_SECRET,
     expectedAction: "submit-comment",
-  }),
-);
+  })(c, next);
+});
 
 app.post("/api/comments", (c) => {
   const result = c.get("turnstile");  // TurnstileResult, populated on success
   return c.json({ ok: true, verifiedHostname: result.hostname });
 });
 ```
+
+Hono apps don't expose `app.env` at module scope — the env binding is per-request via `c.env`. The wrapper above reads the secret per request and delegates to the middleware.
 
 Token discovery order:
 
@@ -90,7 +93,18 @@ interface TurnstileMiddlewareOptions {
 
 ## Errors
 
-`TurnstileError` is thrown for transport-level failures — network errors, timeouts, malformed `siteverify` responses. **It is not thrown for `success: false`** — that's a normal result you should branch on. The middleware converts both into a `403` response with `{ error, codes }`.
+`TurnstileError` is thrown for transport-level failures — network errors, timeouts, malformed `siteverify` responses. **It is not thrown for `success: false`** — that's a normal result you should branch on.
+
+The Hono middleware returns `403` with `{ error, codes }` for missing tokens and verification failures (`success: false`), but **transport errors propagate** — wrap your route in error handling if you want them surfaced as something other than the default 500:
+
+```ts
+app.onError((err, c) => {
+  if (err instanceof TurnstileError) {
+    return c.json({ error: "verification unavailable", codes: err.errorCodes }, 503);
+  }
+  return c.json({ error: "internal" }, 500);
+});
+```
 
 ## Idempotency
 

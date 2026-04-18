@@ -85,8 +85,9 @@ const composed = composeMessage({
   subject: "hello",
   text: "world",
 });
-console.log(composed.raw);      // full MIME
-console.log(composed.headers);  // parsed header map
+console.log(composed.raw);   // full MIME envelope
+console.log(composed.from);  // canonical from address
+console.log(composed.to);    // recipients[]
 ```
 
 ## Receive — single handler
@@ -95,14 +96,20 @@ console.log(composed.headers);  // parsed header map
 import { createEmailHandler } from "@workkit/mail";
 
 export default {
-  email: createEmailHandler(async (inbound, env, ctx) => {
-    if (inbound.subject?.startsWith("UNSUBSCRIBE")) {
-      await env.DB.prepare("UPDATE users SET subscribed = 0 WHERE email = ?")
-        .bind(inbound.from)
-        .run();
-      return;
-    }
-    inbound.setReject("Unknown subject prefix");
+  email: createEmailHandler({
+    handler: async (inbound, env, ctx) => {
+      if (inbound.subject?.startsWith("UNSUBSCRIBE")) {
+        await env.DB.prepare("UPDATE users SET subscribed = 0 WHERE email = ?")
+          .bind(inbound.from)
+          .run();
+        return;
+      }
+      inbound.setReject("Unknown subject prefix");
+    },
+    onError: (err, inbound) => {
+      console.error("inbound handler failed", inbound.messageId, err);
+      inbound.setReject("Internal error");
+    },
   }),
 };
 ```
