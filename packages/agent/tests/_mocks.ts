@@ -2,6 +2,7 @@ import type {
 	AiInput,
 	AiOutput,
 	Gateway,
+	GatewayStreamEvent,
 	GatewayToolCall,
 	RunOptions,
 	TokenUsage,
@@ -75,4 +76,61 @@ export function call(
 	id = `call_${name}`,
 ): GatewayToolCall {
 	return { id, name, arguments: args };
+}
+
+/** A scripted step for the streaming mock: per-token text deltas + optional tool_use. */
+export interface MockStreamStep {
+	chunks?: string[];
+	toolCalls?: GatewayToolCall[];
+	usage?: TokenUsage;
+}
+
+/**
+ * Mock gateway that implements `stream()`. Each `run()` call consumes one
+ * step from `steps` and surfaces it as a `ReadableStream<GatewayStreamEvent>`
+ * with per-chunk `text` events followed by `tool_use` events and a final `done`.
+ */
+export function mockStreamingGateway(steps: MockStreamStep[]): {
+	gateway: Gateway;
+	state: { streamCalls: number; runCalls: number };
+} {
+	const state = { streamCalls: 0, runCalls: 0 };
+	const gateway: Gateway = {
+		async run(model, _input, _options) {
+			state.runCalls++;
+			const step = steps.shift() ?? {};
+			return {
+				text: (step.chunks ?? []).join(""),
+				raw: {},
+				usage: step.usage,
+				provider: "mock",
+				model,
+				toolCalls: step.toolCalls,
+			};
+		},
+		async stream(_model, _input, _options) {
+			state.streamCalls++;
+			const step = steps.shift() ?? {};
+			return new ReadableStream<GatewayStreamEvent>({
+				start(controller) {
+					for (const delta of step.chunks ?? []) {
+						controller.enqueue({ type: "text", delta });
+					}
+					for (const tc of step.toolCalls ?? []) {
+						controller.enqueue({
+							type: "tool_use",
+							id: tc.id,
+							name: tc.name,
+							input: tc.arguments,
+						});
+					}
+					controller.enqueue({ type: "done", usage: step.usage });
+					controller.close();
+				},
+			});
+		},
+		providers: () => ["mock"],
+		defaultProvider: () => "mock",
+	};
+	return { gateway, state };
 }
