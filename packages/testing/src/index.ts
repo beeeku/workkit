@@ -2,6 +2,8 @@ export { createMockKV } from "./kv";
 export { createMockD1, createFailingD1 } from "./d1";
 export { createMockR2 } from "./r2";
 export { createMockQueue } from "./queue";
+export { createMockSendEmail, createMockForwardableEmail } from "./email";
+export type { MockSendEmail, MockForwardableEmail, MockEmailOptions } from "./email";
 export { createMockDO } from "./do";
 export { createTestEnv } from "./env";
 export { createRequest } from "./request";

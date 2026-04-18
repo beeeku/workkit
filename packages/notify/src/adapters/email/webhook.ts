@@ -24,16 +24,20 @@ export async function verifyResendSignature(
 	const timestampHeader = req.headers.get("svix-timestamp");
 	const idHeader = req.headers.get("svix-id");
 	if (!sigHeader || !timestampHeader || !idHeader) {
-		throw new WebhookSignatureError("missing svix-signature/svix-timestamp/svix-id headers");
+		throw new WebhookSignatureError(
+			"resend",
+			"missing svix-signature/svix-timestamp/svix-id headers",
+		);
 	}
 
 	const tsSeconds = Number(timestampHeader);
-	if (!Number.isFinite(tsSeconds)) throw new WebhookSignatureError("non-numeric svix-timestamp");
+	if (!Number.isFinite(tsSeconds))
+		throw new WebhookSignatureError("resend", "non-numeric svix-timestamp");
 	const timestampMs = tsSeconds * 1000;
 
 	const maxAgeMs = options.maxAgeMs ?? 5 * 60 * 1000;
 	if (Math.abs(Date.now() - timestampMs) > maxAgeMs) {
-		throw new WebhookSignatureError("timestamp outside replay window");
+		throw new WebhookSignatureError("resend", "timestamp outside replay window");
 	}
 
 	const rawBody = await req.text();
@@ -51,10 +55,10 @@ export async function verifyResendSignature(
 
 	const variants = parseSignatureHeader(sigHeader);
 	if (variants.length === 0) {
-		throw new WebhookSignatureError("no v1 signature variant present");
+		throw new WebhookSignatureError("resend", "no v1 signature variant present");
 	}
 	const ok = variants.some((v) => constantTimeEqual(v, expected));
-	if (!ok) throw new WebhookSignatureError("signature mismatch");
+	if (!ok) throw new WebhookSignatureError("resend", "signature mismatch");
 	return { rawBody, timestampMs };
 }
 
@@ -85,7 +89,7 @@ function decodeSecret(secret: string): Uint8Array {
 	try {
 		bin = atob(value);
 	} catch {
-		throw new WebhookSignatureError("invalid webhook secret encoding");
+		throw new WebhookSignatureError("resend", "invalid webhook secret encoding");
 	}
 	const out = new Uint8Array(bin.length);
 	for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);

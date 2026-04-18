@@ -1,6 +1,7 @@
 /**
- * In-memory mock implementations of CF Email types for testing.
- * Follows the mock-queue.ts pattern from @workkit/queue.
+ * In-memory mocks for Cloudflare Email bindings: `SendEmail` (outbound)
+ * and `ForwardableEmailMessage` (inbound). Mirrors the `createMockKV` /
+ * `createMockQueue` shape.
  */
 
 export interface MockSendEmail {
@@ -44,10 +45,6 @@ export interface MockEmailOptions {
 	headers?: Record<string, string>;
 }
 
-/**
- * Create a mock ForwardableEmailMessage for testing inbound handlers.
- * Constructs a minimal valid MIME message from the provided options.
- */
 export function createMockForwardableEmail(options: MockEmailOptions = {}): MockForwardableEmail {
 	const from = options.from ?? "sender@example.com";
 	const to = options.to ?? "recipient@example.com";

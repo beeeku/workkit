@@ -1,5 +1,17 @@
 export { emailAdapter } from "./adapter";
-export type { EmailAdapterOptions, EmailOptOutHook, EmailPayload } from "./adapter";
+export type { EmailAdapterOptions, EmailPayload } from "./adapter";
+
+export type {
+	EmailProvider,
+	EmailProviderSendArgs,
+	EmailAttachmentWire,
+} from "./provider";
+
+export { cloudflareEmailProvider } from "./providers/cloudflare";
+export type { CloudflareEmailProviderOptions } from "./providers/cloudflare";
+
+export { resendEmailProvider } from "./providers/resend";
+export type { ResendEmailProviderOptions, EmailOptOutHook } from "./providers/resend";
 
 export { renderEmail, htmlToText } from "./render";
 
@@ -17,4 +29,5 @@ export {
 	AttachmentTooLargeError,
 	FromDomainError,
 	WebhookSignatureError,
+	ProviderMissingError,
 } from "./errors";
