@@ -40,10 +40,43 @@ function buildFontFaceCss(fonts: FontDescriptor[]): string {
 		.join("\n");
 }
 
+// Anything that could break out of `url("...")` or `'...'` token, or out of
+// the `12px "<family>"` string handed to `document.fonts.check`. Detect
+// control chars (0x00-0x1F, 0x7F), quotes, parens, and backslash via a
+// per-char scan to keep the regex Biome-clean.
+function hasUnsafeCssChar(value: string): boolean {
+	for (let i = 0; i < value.length; i++) {
+		const code = value.charCodeAt(i);
+		if (code <= 0x1f || code === 0x7f) return true;
+		if (code === 0x22 || code === 0x27) return true; // " '
+		if (code === 0x28 || code === 0x29) return true; // ( )
+		if (code === 0x5c) return true; // \
+	}
+	return false;
+}
+
 function validateFonts(fonts: FontDescriptor[]): void {
 	for (const f of fonts) {
-		if (!/^https:\/\//i.test(f.url)) {
+		if (!f.family || hasUnsafeCssChar(f.family)) {
+			throw new FontLoadError(
+				f.family || "<empty>",
+				new Error(`font family contains unsafe characters: ${JSON.stringify(f.family)}`),
+			);
+		}
+		let parsed: URL;
+		try {
+			parsed = new URL(f.url);
+		} catch {
+			throw new FontLoadError(f.family, new Error(`font url is not a valid URL: ${f.url}`));
+		}
+		if (parsed.protocol !== "https:") {
 			throw new FontLoadError(f.family, new Error(`font url must use https://: ${f.url}`));
+		}
+		if (hasUnsafeCssChar(parsed.href)) {
+			throw new FontLoadError(
+				f.family,
+				new Error(`font url contains characters unsafe for CSS url(): ${f.url}`),
+			);
 		}
 	}
 }

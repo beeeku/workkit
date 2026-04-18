@@ -3,8 +3,22 @@
 <head>
 	<meta charset="utf-8" />
 	<title>font</title>
+	<!--
+	  Visual fixture for the loadFonts() @font-face injection path.
+	  The @font-face declaration is intentionally inline (not via loadFonts) so
+	  the fixture renders deterministically when opened directly. Tests that
+	  exercise the loadFonts code path should setContent this body and then
+	  invoke loadFonts() with the same Inter URL before baselining.
+	-->
 	<style>
-		body { font-family: "Inter", system-ui, sans-serif; padding: 24px; }
+		@font-face {
+			font-family: "Inter";
+			font-weight: 400;
+			font-style: normal;
+			font-display: block;
+			src: url("https://rsms.me/inter/font-files/Inter-Regular.woff2") format("woff2");
+		}
+		body { font-family: "Inter", Helvetica, Arial, sans-serif; padding: 24px; }
 	</style>
 </head>
 <body>

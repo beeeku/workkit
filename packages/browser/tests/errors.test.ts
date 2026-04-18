@@ -24,6 +24,39 @@ describe("normalizeBrowserError", () => {
 		expect((err as RateLimitError).retryAfterMs).toBeUndefined();
 	});
 
+	it("maps lowercase Retry-After in plain Record headers to retryAfterMs", () => {
+		const err = normalizeBrowserError("test", {
+			status: 429,
+			message: "rate limited",
+			headers: { "retry-after": "2" },
+		});
+		expect(err).toBeInstanceOf(RateLimitError);
+		expect((err as RateLimitError).retryAfterMs).toBe(2000);
+	});
+
+	it("does not treat non-numeric Retry-After tokens as seconds", () => {
+		// "2025" is a year-shaped token — must not be read as 2025 seconds.
+		// Without a valid date parse this should fall through to undefined.
+		const err = normalizeBrowserError("test", {
+			status: 429,
+			message: "rate limited",
+			headers: new Headers({ "Retry-After": "not-a-date" }),
+		});
+		expect((err as RateLimitError).retryAfterMs).toBeUndefined();
+	});
+
+	it("parses HTTP-date Retry-After to a future ms delta", () => {
+		const future = new Date(Date.now() + 10_000).toUTCString();
+		const err = normalizeBrowserError("test", {
+			status: 429,
+			message: "rate limited",
+			headers: new Headers({ "Retry-After": future }),
+		});
+		const ms = (err as RateLimitError).retryAfterMs ?? 0;
+		expect(ms).toBeGreaterThan(5000);
+		expect(ms).toBeLessThanOrEqual(10_000);
+	});
+
 	it("maps 503/502/504 to ServiceUnavailableError", () => {
 		for (const status of [502, 503, 504]) {
 			const err = normalizeBrowserError("test", { status, message: "down" });

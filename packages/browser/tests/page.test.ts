@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { withPage } from "../src/page";
 import type { BrowserPageLike, BrowserSessionLike } from "../src/types";
 
@@ -103,5 +103,37 @@ describe("withPage", () => {
 	it("normalizes session.newPage failures", async () => {
 		const { session } = mockSession({ failNewPage: true });
 		await expect(withPage(session, async () => "ok")).rejects.toThrow();
+	});
+
+	it("removes the abort listener after the handler settles successfully", async () => {
+		const { session } = mockSession();
+		const ctrl = new AbortController();
+		const addSpy = vi.spyOn(ctrl.signal, "addEventListener");
+		const removeSpy = vi.spyOn(ctrl.signal, "removeEventListener");
+		await withPage(session, async () => "ok", { signal: ctrl.signal });
+		const adds = addSpy.mock.calls.filter((c) => c[0] === "abort").length;
+		const removes = removeSpy.mock.calls.filter((c) => c[0] === "abort").length;
+		expect(adds).toBe(1);
+		expect(removes).toBeGreaterThanOrEqual(1);
+	});
+
+	it("removes the abort listener after the handler rejects", async () => {
+		const { session } = mockSession();
+		const ctrl = new AbortController();
+		const addSpy = vi.spyOn(ctrl.signal, "addEventListener");
+		const removeSpy = vi.spyOn(ctrl.signal, "removeEventListener");
+		await expect(
+			withPage(
+				session,
+				async () => {
+					throw new Error("boom");
+				},
+				{ signal: ctrl.signal },
+			),
+		).rejects.toThrow("boom");
+		const adds = addSpy.mock.calls.filter((c) => c[0] === "abort").length;
+		const removes = removeSpy.mock.calls.filter((c) => c[0] === "abort").length;
+		expect(adds).toBe(1);
+		expect(removes).toBeGreaterThanOrEqual(1);
 	});
 });
