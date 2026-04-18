@@ -99,7 +99,7 @@
     },
     "packages/agent": {
       "name": "@workkit/agent",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@workkit/ai-gateway": "workspace:*",
@@ -139,7 +139,7 @@
     },
     "packages/approval": {
       "name": "@workkit/approval",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/crypto": "workspace:*",
         "@workkit/errors": "workspace:*",
@@ -165,7 +165,7 @@
     },
     "packages/browser": {
       "name": "@workkit/browser",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/errors": "^1.0.2",
       },
@@ -258,7 +258,7 @@
     },
     "packages/errors": {
       "name": "@workkit/errors",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "devDependencies": {
         "@workkit/types": "workspace:*",
       },
@@ -344,7 +344,7 @@
     },
     "packages/mcp": {
       "name": "@workkit/mcp",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "hono": "^4.7.10",
@@ -357,7 +357,7 @@
     },
     "packages/memory": {
       "name": "@workkit/memory",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -369,7 +369,7 @@
     },
     "packages/notify": {
       "name": "@workkit/notify",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@workkit/errors": "^1.0.2",
@@ -388,7 +388,7 @@
     },
     "packages/pdf": {
       "name": "@workkit/pdf",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@workkit/browser": "workspace:*",
         "@workkit/errors": "^1.0.2",
@@ -430,6 +430,9 @@
     "packages/testing": {
       "name": "@workkit/testing",
       "version": "0.2.0",
+      "devDependencies": {
+        "@types/node": "^22.0.0",
+      },
     },
     "packages/turnstile": {
       "name": "@workkit/turnstile",
@@ -463,7 +466,7 @@
     },
     "packages/workflow": {
       "name": "@workkit/workflow",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -2489,6 +2492,8 @@
 
     "@workkit/mcp/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
+    "@workkit/testing/@types/node": ["@types/node@22.19.17", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-wGdMcf+vPYM6jikpS/qhg6WiqSV/OhG+jeeHT/KlVqxYfD40iYJf9/AE1uQxVWFvU7MipKRkRv8NSHiCGgPr8Q=="],
+
     "astro/@clack/prompts": ["@clack/prompts@1.1.0", "", { "dependencies": { "@clack/core": "1.1.0", "sisteransi": "^1.0.5" } }, "sha512-pkqbPGtohJAvm4Dphs2M8xE29ggupihHdy1x84HNojZuMtFsHiUlRvqD24tM2+XmI+61LlfNceM3Wr7U5QES5g=="],
 
     "astro/package-manager-detector": ["package-manager-detector@1.6.0", "", {}, "sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA=="],
@@ -2658,6 +2663,8 @@
     "@workkit/docs/astro/shiki": ["shiki@3.23.0", "", { "dependencies": { "@shikijs/core": "3.23.0", "@shikijs/engine-javascript": "3.23.0", "@shikijs/engine-oniguruma": "3.23.0", "@shikijs/langs": "3.23.0", "@shikijs/themes": "3.23.0", "@shikijs/types": "3.23.0", "@shikijs/vscode-textmate": "^10.0.2", "@types/hast": "^3.0.4" } }, "sha512-55Dj73uq9ZXL5zyeRPzHQsK7Nbyt6Y10k5s7OjuFZGMhpp4r/rsLBH0o/0fstIzX1Lep9VxefWljK/SKCzygIA=="],
 
     "@workkit/docs/astro/yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
+
+    "@workkit/testing/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "astro/@clack/prompts/@clack/core": ["@clack/core@1.1.0", "", { "dependencies": { "sisteransi": "^1.0.5" } }, "sha512-SVcm4Dqm2ukn64/8Gub2wnlA5nS2iWJyCkdNHcvNHPIeBTGojpdJ+9cZKwLfmqy7irD4N5qLteSilJlE0WLAtA=="],
 

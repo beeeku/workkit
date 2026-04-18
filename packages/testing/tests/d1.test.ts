@@ -278,7 +278,9 @@ describe("createMockD1", () => {
 
 	describe("batch", () => {
 		it("executes multiple statements", async () => {
-			db = createMockD1({ users: [] });
+			await db
+				.prepare("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)")
+				.run();
 			const results = await db.batch([
 				db.prepare("INSERT INTO users (name) VALUES (?)").bind("Alice"),
 				db.prepare("INSERT INTO users (name) VALUES (?)").bind("Bob"),
@@ -293,6 +295,95 @@ describe("createMockD1", () => {
 		it("executes multiple SQL statements", async () => {
 			const result = await db.exec("CREATE TABLE t1 (id INTEGER); CREATE TABLE t2 (id INTEGER)");
 			expect(result.count).toBe(2);
+		});
+	});
+
+	// Regression tests for issue #48 — query shapes the old regex parser got wrong.
+	describe("issue #48 regressions", () => {
+		it("preserves literal values mid-VALUES without shifting bound params", async () => {
+			await db
+				.prepare(
+					"CREATE TABLE otp_challenges (id INTEGER PRIMARY KEY, code_hash TEXT, status TEXT, created_at INTEGER)",
+				)
+				.run();
+
+			await db
+				.prepare(
+					"INSERT INTO otp_challenges (id, code_hash, status, created_at) VALUES (?, ?, 'pending', ?)",
+				)
+				.bind(1, "abc", 1_700_000_000)
+				.run();
+
+			const row = await db.prepare("SELECT status, created_at FROM otp_challenges").first();
+			expect(row).toEqual({ status: "pending", created_at: 1_700_000_000 });
+		});
+
+		it("returns COUNT(*) under any alias, not only 'count'", async () => {
+			db = createMockD1({
+				otp_challenges: [
+					{ id: 1, status: "pending" },
+					{ id: 2, status: "done" },
+				],
+			});
+			const row = await db.prepare("SELECT COUNT(*) AS c FROM otp_challenges").first();
+			expect(row).toEqual({ c: 2 });
+		});
+
+		it("supports UPDATE ... RETURNING with a subquery in WHERE", async () => {
+			db = createMockD1({
+				otp_challenges: [
+					{ id: 1, fail_count: 0, created_at: 100 },
+					{ id: 2, fail_count: 0, created_at: 200 },
+				],
+			});
+			const result = await db
+				.prepare(
+					"UPDATE otp_challenges SET fail_count = fail_count + 1 WHERE id = (SELECT id FROM otp_challenges ORDER BY created_at DESC LIMIT 1) RETURNING fail_count",
+				)
+				.all();
+			expect(result.results).toEqual([{ fail_count: 1 }]);
+		});
+
+		it("supports ON CONFLICT DO UPDATE SET ... excluded.x (upsert)", async () => {
+			await db
+				.prepare(
+					"CREATE TABLE subscriptions (user_id TEXT PRIMARY KEY, tier TEXT, updated_at INTEGER)",
+				)
+				.run();
+			await db
+				.prepare("INSERT INTO subscriptions (user_id, tier, updated_at) VALUES (?, ?, ?)")
+				.bind("u1", "free", 1)
+				.run();
+
+			await db
+				.prepare(
+					"INSERT INTO subscriptions (user_id, tier, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET tier = excluded.tier, updated_at = excluded.updated_at",
+				)
+				.bind("u1", "pro", 2)
+				.run();
+
+			const row = await db
+				.prepare("SELECT tier, updated_at FROM subscriptions WHERE user_id = ?")
+				.bind("u1")
+				.first();
+			expect(row).toEqual({ tier: "pro", updated_at: 2 });
+		});
+
+		it("honors INSERT OR IGNORE on unique conflicts", async () => {
+			await db
+				.prepare("CREATE TABLE webhook_log (event_id TEXT PRIMARY KEY, payload TEXT)")
+				.run();
+			await db
+				.prepare("INSERT OR IGNORE INTO webhook_log (event_id, payload) VALUES (?, ?)")
+				.bind("evt_1", "first")
+				.run();
+			await db
+				.prepare("INSERT OR IGNORE INTO webhook_log (event_id, payload) VALUES (?, ?)")
+				.bind("evt_1", "second")
+				.run();
+
+			const rows = await db.prepare("SELECT payload FROM webhook_log").all();
+			expect(rows.results).toEqual([{ payload: "first" }]);
 		});
 	});
 });

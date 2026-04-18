@@ -5,6 +5,7 @@ export default defineConfig({
 		"src/index.ts",
 		"src/kv.ts",
 		"src/d1.ts",
+		"src/adapter.ts",
 		"src/r2.ts",
 		"src/queue.ts",
 		"src/do.ts",
