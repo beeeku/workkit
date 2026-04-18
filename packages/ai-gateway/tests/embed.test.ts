@@ -108,14 +108,12 @@ describe("gateway.embed() — Anthropic + custom", () => {
 	});
 
 	it("delegates to custom provider embed() when present", async () => {
-		const embed = vi
-			.fn()
-			.mockResolvedValue({
-				vectors: [[0.5]],
-				raw: {},
-				provider: "custom",
-				model: "x",
-			});
+		const embed = vi.fn().mockResolvedValue({
+			vectors: [[0.5]],
+			raw: {},
+			provider: "custom",
+			model: "x",
+		});
 		const gw = createGateway({
 			providers: {
 				custom: {

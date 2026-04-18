@@ -81,11 +81,7 @@ export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGate
 			: undefined,
 
 		embed: innerEmbed
-			? async (
-					model: string,
-					input: EmbedInput,
-					options?: RunOptions,
-				): Promise<EmbedOutput> => {
+			? async (model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput> => {
 					config.onRequest?.(model, input as unknown as AiInput);
 					const start = Date.now();
 					try {

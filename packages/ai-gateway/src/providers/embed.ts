@@ -43,7 +43,10 @@ async function embedWorkersAi(
 ): Promise<EmbedOutput> {
 	const texts = toArray(input);
 	try {
-		const raw = (await providerConfig.binding.run(model, { text: texts })) as Record<string, unknown>;
+		const raw = (await providerConfig.binding.run(model, { text: texts })) as Record<
+			string,
+			unknown
+		>;
 		const data = Array.isArray(raw?.data) ? (raw.data as number[][]) : [];
 		return {
 			vectors: data,
