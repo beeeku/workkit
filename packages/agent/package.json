@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/agent",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "Composable agent loop primitives — typed tools (Standard Schema), handoffs, streaming, hooks. Provider-agnostic via @workkit/ai-gateway.",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",

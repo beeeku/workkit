@@ -1,5 +1,39 @@
 # @workkit/ai
 
+## 0.2.1
+
+### Patch Changes
+
+- ba6ec37: **Deprecation notice — `@workkit/ai` is folding into `@workkit/ai-gateway`.** Every public export now carries a `@deprecated` JSDoc tag pointing at its `@workkit/ai-gateway` equivalent, and the README leads with a migration table. Implementations are unchanged in this release — nothing breaks — but new code should start with `@workkit/ai-gateway`. See [ADR-001](../packages/../.maina/decisions/001-ai-package-consolidation.md).
+
+  **Deprecated exports:**
+
+  - `ai()` → `createGateway({ providers: { ai: { type: "workers-ai", binding } }, defaultProvider: "ai" })`
+  - `streamAI()` → `gateway.stream!(model, input)` (returns typed `GatewayStreamEvent`)
+  - `fallback()` → `gateway.runFallback!(entries, input)` (server-side via CF Universal Endpoint)
+  - `withRetry()` → `withRetry(gateway, { maxAttempts })`
+  - `structuredAI()` → `gateway.run(model, input, { responseFormat: { jsonSchema } })`
+  - `aiWithTools()` → `gateway.run(model, input, { toolOptions })` + manual dispatch
+  - `createToolRegistry()` → same function from `@workkit/ai-gateway`
+
+  **Not deprecated:** `StructuredOutputError` and `estimateTokens` remain.
+
+  **Timeline:** removal scheduled for `@workkit/ai@2.0`. The full reimplementation as a shim over `@workkit/ai-gateway` is tracked in [#63](https://github.com/beeeku/workkit/issues/63) and will ship as `@workkit/ai@1.0` before the 2.0 removal.
+
+- dcb8d1b: **Follow-up fixes from Copilot review on PRs #70–#72.**
+
+  `@workkit/agent`:
+
+  - Streaming step now always returns a defined `AiOutput.raw` (falls back to `{}` if the provider's terminal `done` event doesn't include `raw`), satisfying the `Gateway` output contract.
+  - New regression test: consumer aborts mid-stream → the model stream surfaces the abort.
+  - Doc comment on `mockStreamingGateway` corrected to cover both `run()` and `stream()` paths.
+
+  `@workkit/ai`:
+
+  - `calculateDelay` and `defaultIsRetryable` now also carry `@deprecated` JSDoc (they're internal helpers for the deprecated `withRetry`). The claim in the earlier changeset that "every public export now carries `@deprecated`" is now accurate.
+  - `createToolRegistry` guidance corrected: `@workkit/ai-gateway` does not re-export this helper. Migrating callers can keep using it from `@workkit/ai` until the v2.0 removal or inline the equivalent `Map<string, handler>`.
+  - README migration table: `await` added to the "before" column examples (they were all async), and the `fallback` → `runFallback` row now notes the `cfGateway` prerequisite and the Workers-AI-only fallback path.
+
 ## 0.2.0
 
 ### Minor Changes

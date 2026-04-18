@@ -1,5 +1,87 @@
 # @workkit/ai-gateway
 
+## 0.4.0
+
+### Minor Changes
+
+- 3535cb1: **Embeddings support.** New optional `gateway.embed(model, input, options?)` method returning a unified `EmbedOutput { vectors, raw, usage?, provider, model }`. Closes #69.
+
+  ```ts
+  // Workers AI
+  const { vectors } = await gateway.embed!("@cf/baai/bge-base-en-v1.5", {
+    text: ["chunk 1", "chunk 2"],
+  });
+
+  // OpenAI (with or without CF AI Gateway routing)
+  const { vectors, usage } = await gateway.embed!("text-embedding-3-small", {
+    text: "hello",
+  });
+  ```
+
+  Provider coverage:
+
+  - **Workers AI** — `binding.run(model, { text })`.
+  - **OpenAI** — `POST /embeddings`, routes through `cfGateway` when configured, preserves vector order via `index` field.
+  - **Anthropic** — throws `ValidationError` (no public embeddings endpoint).
+  - **Custom** — delegates to user-supplied `embed?(model, input)` on the provider config; throws `ValidationError` if not implemented.
+
+  Single-string input is normalized to a one-element array so callers can use either shape.
+
+  **Wrapper integration:**
+
+  - `withCache` — caches embeddings under a dedicated `ai-embed-cache:` key namespace so embedding and completion responses never collide. Keyed on `(model, input)`.
+  - `withRetry` — retries retryable embed errors using the same error-driven strategy as `run`/`stream`.
+  - `withLogging` — currently wires `onError` only for embeds; `onRequest` / `onResponse` are typed for `AiInput`/`AiOutput` and would need embed-specific callbacks to safely log embedding traffic (follow-up).
+
+  Additive — no breaking changes. Unblocks future `@workkit/memory` consolidation onto the gateway.
+
+- 62d460d: **Port `@workkit/ai` helpers into `@workkit/ai-gateway`** — phase 2 of [ADR-001](../.maina/decisions/001-ai-package-consolidation.md). All additive; no breaking changes.
+
+  New public exports:
+
+  - **`createToolRegistry()`** + `ToolHandler` / `ToolRegistry` types — `Map<name, handler>` helper for dispatching tool calls. Drop-in replacement for the same-named helper in `@workkit/ai`, but typed against `GatewayToolDefinition` / `GatewayToolCall`.
+  - **`aiWithTools(gateway, model, input, options)`** — multi-turn tool-use session. When `options.handler` is supplied, the model's tool calls are auto-dispatched and results fed back for another turn (up to `maxTurns`). When absent, the first set of tool calls is returned for manual dispatch. Operates on `gateway.run()` with normalized tool-call handling across Workers AI / OpenAI / Anthropic.
+  - **`structuredAI(gateway, model, input, { schema })`** + `StructuredOutputError` — JSON-mode output with Standard Schema validation and self-correcting retry. Calls `gateway.run(…, { responseFormat: { jsonSchema } })`; only OpenAI enforces the schema natively (via `response_format: { type: "json_schema" }`). Workers AI and Anthropic use instruction-based JSON mode — the schema is included in a system prompt, and `structuredAI` validates the response client-side and retries with the validation errors fed back to the model.
+  - **`standardSchemaToJsonSchema(schema)`** — Zod / Valibot / ArkType → JSON Schema converter (prefers the schema's own `toJSONSchema()`, falls back to Zod internals, `{type:"object"}` as a permissive default).
+  - **`estimateTokens(text | messages)`** — rough heuristic for capacity/cost planning.
+
+  Example:
+
+  ```ts
+  import {
+    createGateway,
+    aiWithTools,
+    createToolRegistry,
+  } from "@workkit/ai-gateway";
+
+  const gateway = createGateway({
+    providers: { anthropic: { type: "anthropic", apiKey: env.ANTHROPIC_KEY } },
+    defaultProvider: "anthropic",
+  });
+
+  const registry = createToolRegistry();
+  registry.register("get_weather", {
+    definition: {
+      name: "get_weather",
+      description: "…",
+      parameters: {
+        /* … */
+      },
+    },
+    handler: async (args) =>
+      JSON.stringify(await getWeather(args.location as string)),
+  });
+
+  const result = await aiWithTools(
+    gateway,
+    "claude-sonnet-4-6",
+    { messages: [{ role: "user", content: "weather in SF?" }] },
+    { tools: registry.getTools(), handler: (call) => registry.execute(call) }
+  );
+  ```
+
+  This unblocks the full `@workkit/ai@1.0` shim rewrite tracked in #63: once this ships, `@workkit/ai` can become thin re-exports over `@workkit/ai-gateway`.
+
 ## 0.3.0
 
 ### Minor Changes
