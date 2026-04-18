@@ -22,7 +22,7 @@ export interface DispatchInput<P> {
 
 export interface DispatchOutcome {
 	jobId: string;
-	finalStatus: "delivered" | "sent" | "failed" | "skipped" | "duplicate";
+	finalStatus: "delivered" | "sent" | "read" | "failed" | "skipped" | "duplicate";
 	channelAttempted: ChannelName | null;
 	deliveryId: string | null;
 }
@@ -117,6 +117,10 @@ export async function dispatch<P>(
 
 		const adapter = registry.get(channel);
 		if (!adapter) {
+			// Missing adapter is a configuration error, not user opt-out. Mark
+			// as eligible so the final disposition is `failed` (not `skipped`)
+			// and the error is surfaced.
+			everEligible = true;
 			lastError = `no adapter registered for channel "${channel}"`;
 			continue;
 		}
@@ -153,19 +157,15 @@ export async function dispatch<P>(
 			).send(args);
 			if (result.status === "sent" || result.status === "delivered" || result.status === "read") {
 				await setChannel(deps.db, deliveryId, channel);
-				await updateDeliveryStatus(
-					deps.db,
-					deliveryId,
-					result.status === "read" ? "delivered" : result.status,
-					{
-						providerId: result.providerId,
-						error: undefined,
-						deliveredAt: result.status === "delivered" ? now() : undefined,
-					},
-				);
+				await updateDeliveryStatus(deps.db, deliveryId, result.status, {
+					providerId: result.providerId,
+					error: undefined,
+					deliveredAt:
+						result.status === "delivered" || result.status === "read" ? now() : undefined,
+				});
 				return {
 					jobId: input.job.id,
-					finalStatus: result.status === "read" ? "delivered" : result.status,
+					finalStatus: result.status,
 					channelAttempted: channel,
 					deliveryId,
 				};

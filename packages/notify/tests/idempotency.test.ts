@@ -23,6 +23,13 @@ describe("canonicalJson()", () => {
 		a.self = a;
 		expect(() => canonicalJson(a)).toThrow(ValidationError);
 	});
+
+	it("allows non-cyclic shared references (DAG-style payloads)", () => {
+		const shared = { v: 1 };
+		// `a` and `b` point at the same object but there is no cycle.
+		const payload = { a: shared, b: shared };
+		expect(() => canonicalJson(payload)).not.toThrow();
+	});
 });
 
 describe("sha256Hex()", () => {

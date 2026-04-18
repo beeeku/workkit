@@ -46,9 +46,16 @@ export function webhookHandler(opts: WebhookHandlerOptions): (req: Request) => P
 				rejected += 1;
 				continue;
 			}
+			// Bind to the handler's channel, not the event's. A bug or hostile
+			// adapter parser can't update deliveries on a different channel
+			// even if `provider_id` collides.
+			if (e.channel && e.channel !== opts.channel) {
+				rejected += 1;
+				continue;
+			}
 			const found = await opts.db
 				.prepare("SELECT id FROM notification_deliveries WHERE provider_id = ? AND channel = ?")
-				.bind(e.providerId, e.channel)
+				.bind(e.providerId, opts.channel)
 				.first<{ id: string }>();
 			if (!found) {
 				rejected += 1;

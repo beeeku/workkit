@@ -6,7 +6,6 @@ import type {
 	ChannelTemplate,
 	DefineNotificationOptions,
 	DispatchJob,
-	NotifyD1,
 	Priority,
 	SendOptions,
 	SendResult,
@@ -23,7 +22,6 @@ export interface Notification<P> {
 
 export interface DefineDeps {
 	enqueue: (job: DispatchJob<unknown>) => Promise<void>;
-	db?: NotifyD1; // optional — only used to short-circuit duplicate before enqueue
 	now?: () => number;
 }
 

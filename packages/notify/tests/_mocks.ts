@@ -270,15 +270,16 @@ function matchWhere(row: Row, parts: WherePart[], values: unknown[]): boolean {
 		}
 		if (p.rhs === "?") {
 			const expected = values[vi++];
-			if (row[p.col] !== expected) {
-				if (p.op === "<") {
-					if (typeof row[p.col] === "number" && typeof expected === "number") {
-						if (!((row[p.col] as number) < (expected as number))) return false;
-						continue;
-					}
+			if (p.op === "<") {
+				// `<` is strict; equal values must NOT match.
+				const cell = row[p.col];
+				if (typeof cell === "number" && typeof expected === "number") {
+					if (!(cell < expected)) return false;
+					continue;
 				}
 				return false;
 			}
+			if (row[p.col] !== expected) return false;
 			continue;
 		}
 		if (typeof p.rhs === "object" && p.rhs.kind === "col-or-null") {
