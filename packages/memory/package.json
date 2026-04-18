@@ -1,6 +1,6 @@
 {
   "name": "@workkit/memory",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Edge-native agent memory — facts, recall, conversations, temporal queries on Cloudflare Workers",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
