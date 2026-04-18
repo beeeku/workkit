@@ -49,8 +49,8 @@ describe("agent.stream() — provider.stream forwarding", () => {
 
 	it("falls back to provider.run (and a single text-delta) when stream is absent", async () => {
 		const { gateway, state } = mockStreamingGateway([{ chunks: ["one shot"] }]);
-		// Strip stream to force the fallback path
-		delete (gateway as { stream?: unknown }).stream;
+		// Strip stream to force the fallback path.
+		(gateway as { stream?: unknown }).stream = undefined;
 
 		const agent = defineAgent({ name: "stream-fallback", model: "m", provider: gateway });
 		const deltas: string[] = [];
