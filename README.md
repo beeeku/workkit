@@ -24,7 +24,7 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/ratelimit`](packages/ratelimit) | KV-backed rate limiting (fixed/sliding/token bucket), tiered limits, and quota tracking |
 | [`@workkit/crypto`](packages/crypto) | AES-256-GCM encryption, digital signatures, key rotation, AAD, and random utilities |
 | [`@workkit/ai`](packages/ai) | Typed Workers AI client with streaming, fallback chains, and retry |
-| [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway with routing, cost tracking, and caching |
+| [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway — Workers AI, OpenAI, Anthropic, custom. Routing, streaming, fallback, retry, prompt caching, Cloudflare AI Gateway routing, cost tracking |
 | [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
 | [`@workkit/logger`](packages/logger) | Structured logging with request context and Hono middleware |
 | [`@workkit/auth`](packages/auth) | JWT, session management, and auth middleware |
