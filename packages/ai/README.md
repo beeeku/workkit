@@ -15,12 +15,13 @@ Replace `@workkit/ai` imports with `@workkit/ai-gateway` and construct a gateway
 
 | Before (`@workkit/ai`) | After (`@workkit/ai-gateway`) |
 |---|---|
-| `ai(env.AI).run(model, input)` | `gateway.run(model, input)` |
-| `streamAI(env.AI, model, input)` | `gateway.stream!(model, input)` (typed `GatewayStreamEvent`) |
-| `fallback(env.AI, [{model, timeout}], input)` | `gateway.runFallback!(entries, input)` (server-side via CF Universal Endpoint) |
-| `withRetry(env.AI, model, input, { maxRetries })` | `withRetry(gateway, { maxAttempts }).run(model, input)` |
-| `structuredAI(env.AI, model, input, { schema })` | `gateway.run(model, input, { responseFormat: { jsonSchema } })` |
-| `aiWithTools(env.AI, model, input, { tools }, handler)` | `gateway.run(model, input, { toolOptions: { tools } })` + manual dispatch |
+| `await ai(env.AI).run(model, input)` | `await gateway.run(model, input)` |
+| `await streamAI(env.AI, model, input)` | `await gateway.stream!(model, input)` (typed `GatewayStreamEvent`) |
+| `await fallback(env.AI, [{model, timeout}], input)` | `await gateway.runFallback!(entries, input)` — **requires `cfGateway` on `createGateway`** (calls the Cloudflare AI Gateway Universal Endpoint; only OpenAI / Anthropic providers in the chain). For Workers-AI-only client-side fallback, keep using `@workkit/ai`'s `fallback` or roll your own `try`/`catch` over `gateway.run`. |
+| `await withRetry(env.AI, model, input, { maxRetries })` | `await withRetry(gateway, { maxAttempts }).run(model, input)` |
+| `await structuredAI(env.AI, model, input, { schema })` | `await gateway.run(model, input, { responseFormat: { jsonSchema } })` |
+| `await aiWithTools(env.AI, model, input, { tools }, handler)` | `await gateway.run(model, input, { toolOptions: { tools } })` + manual dispatch |
+| `createToolRegistry()` | Not re-exported by `@workkit/ai-gateway`; keep using `@workkit/ai`'s helper or inline a `Map<string, handler>`. |
 
 ```ts
 // Before

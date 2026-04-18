@@ -47,6 +47,45 @@ describe("agent.stream() — provider.stream forwarding", () => {
 		expect(types[types.length - 1]).toBe("done");
 	});
 
+	it("aborts the model stream when the caller aborts options.signal mid-stream", async () => {
+		const controller = new AbortController();
+		const gateway = {
+			async run() {
+				return { text: "", raw: {}, provider: "mock", model: "m" };
+			},
+			async stream(_model: string, _input: unknown, options?: { signal?: AbortSignal }) {
+				return new ReadableStream({
+					start(ctrl) {
+						ctrl.enqueue({ type: "text", delta: "hi" });
+						// Stay open until the signal aborts, then error the stream.
+						options?.signal?.addEventListener("abort", () =>
+							ctrl.error(new DOMException("aborted", "AbortError")),
+						);
+					},
+				});
+			},
+			providers: () => ["mock"],
+			defaultProvider: () => "mock",
+		};
+		const agent = defineAgent({
+			name: "stream-abort",
+			model: "m",
+			provider: gateway as never,
+		});
+
+		const events: string[] = [];
+		await expect(async () => {
+			for await (const e of agent.stream({
+				messages: [{ role: "user", content: "hi" }],
+				context: { signal: controller.signal },
+			})) {
+				events.push(e.type);
+				if (e.type === "text-delta") controller.abort();
+			}
+		}).rejects.toThrow();
+		expect(events).toContain("text-delta");
+	});
+
 	it("falls back to provider.run (and a single text-delta) when stream is absent", async () => {
 		const { gateway, state } = mockStreamingGateway([{ chunks: ["one shot"] }]);
 		// Strip stream to force the fallback path.
