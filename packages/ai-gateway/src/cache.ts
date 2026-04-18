@@ -88,6 +88,12 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 			await config.storage.delete(cacheKey);
 		},
 
+		// Fallback chains are not cached — each call hits the upstream gateway.
+		runFallback: gateway.runFallback?.bind(gateway),
+
+		// Streams are not cached — each call hits the upstream gateway.
+		stream: gateway.stream?.bind(gateway),
+
 		providers(): string[] {
 			return gateway.providers();
 		},

@@ -13,6 +13,10 @@ export { withCache } from "./cache";
 // Logging
 export { withLogging } from "./logging";
 
+// Retry
+export { withRetry } from "./retry";
+export type { RetryConfig } from "./retry";
+
 // Types
 export type {
 	// Provider types
@@ -27,6 +31,9 @@ export type {
 	// Gateway types
 	Gateway,
 	GatewayConfig,
+	CfGatewayConfig,
+	FallbackEntry,
+	GatewayStreamEvent,
 	AiInput,
 	AiOutput,
 	ChatMessage,

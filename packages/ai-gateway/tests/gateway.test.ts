@@ -269,3 +269,163 @@ describe("run() — multiple providers", () => {
 		expect(resultB.text).toBe("Provider B");
 	});
 });
+
+// ─── CF AI Gateway routing ──────────────────────────────────
+
+function mockHttp(body: Record<string, unknown>, status = 200) {
+	return vi.fn().mockResolvedValue({
+		ok: status >= 200 && status < 300,
+		status,
+		json: () => Promise.resolve(body),
+		text: () => Promise.resolve(JSON.stringify(body)),
+	});
+}
+
+describe("cfGateway — URL routing", () => {
+	it("routes Anthropic through CF AI Gateway URL", async () => {
+		const fetchMock = mockHttp({
+			content: [{ type: "text", text: "ok" }],
+			usage: { input_tokens: 1, output_tokens: 1 },
+		});
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock.mock.calls[0][0]).toBe(
+			"https://gateway.ai.cloudflare.com/v1/ACCT/GW/anthropic/v1/messages",
+		);
+	});
+
+	it("routes OpenAI through CF AI Gateway URL", async () => {
+		const fetchMock = mockHttp({ choices: [{ message: { content: "ok" } }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "openai",
+		});
+
+		await gw.run("gpt-4o", { prompt: "hi" });
+
+		expect(fetchMock.mock.calls[0][0]).toBe(
+			"https://gateway.ai.cloudflare.com/v1/ACCT/GW/openai/chat/completions",
+		);
+	});
+
+	it("provider baseUrl overrides cfGateway", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: {
+				anthropic: {
+					type: "anthropic",
+					apiKey: "k",
+					baseUrl: "https://custom.example.com/v1",
+				},
+			},
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+
+		expect(fetchMock.mock.calls[0][0]).toBe("https://custom.example.com/v1/messages");
+	});
+
+	it("falls back to provider default URL when cfGateway not set", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+
+		expect(fetchMock.mock.calls[0][0]).toBe("https://api.anthropic.com/v1/messages");
+	});
+
+	it("leaves Workers AI binding untouched by cfGateway", async () => {
+		const mockAi = createMockWorkersAi();
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "ai",
+		});
+
+		await gw.run("@cf/meta/llama-3.1-8b-instruct", { prompt: "hi" });
+
+		expect(mockAi.run).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("cfGateway — header injection", () => {
+	it("injects cf-aig-authorization, cache-ttl, skip-cache when set", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			cfGateway: {
+				accountId: "ACCT",
+				gatewayId: "GW",
+				authToken: "secret-token",
+				cacheTtl: 3600,
+				skipCache: true,
+			},
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+
+		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		expect(headers["cf-aig-authorization"]).toBe("Bearer secret-token");
+		expect(headers["cf-aig-cache-ttl"]).toBe("3600");
+		expect(headers["cf-aig-skip-cache"]).toBe("true");
+	});
+
+	it("omits cf-aig-* headers when cfGateway not set", async () => {
+		const fetchMock = mockHttp({ choices: [{ message: { content: "ok" } }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		await gw.run("gpt-4o", { prompt: "hi" });
+
+		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		expect(headers["cf-aig-authorization"]).toBeUndefined();
+		expect(headers["cf-aig-cache-ttl"]).toBeUndefined();
+		expect(headers["cf-aig-skip-cache"]).toBeUndefined();
+	});
+
+	it("omits optional cf-aig-* headers when not individually set", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+
+		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+		expect(headers["cf-aig-authorization"]).toBeUndefined();
+		expect(headers["cf-aig-cache-ttl"]).toBeUndefined();
+		expect(headers["cf-aig-skip-cache"]).toBeUndefined();
+	});
+});
