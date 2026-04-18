@@ -28,10 +28,14 @@ export function openAdapter(): SqliteAdapter {
 		};
 		return wrap(new Database(":memory:"));
 	}
-	const { DatabaseSync } = req("node:sqlite") as {
-		DatabaseSync: new (path: string) => UnderlyingDb;
-	};
-	return wrap(new DatabaseSync(":memory:"));
+	try {
+		const { DatabaseSync } = req("node:sqlite") as {
+			DatabaseSync: new (path: string) => UnderlyingDb;
+		};
+		return wrap(new DatabaseSync(":memory:"));
+	} catch (cause) {
+		throw new Error("createMockD1 requires Node >=22 for node:sqlite", { cause });
+	}
 }
 
 function wrap(db: UnderlyingDb): SqliteAdapter {

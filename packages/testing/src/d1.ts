@@ -102,7 +102,7 @@ export function createMockD1(
 		return {
 			results: [],
 			meta: mockMeta({
-				changed_db: r.changes > 0,
+				changed_db: true,
 				changes: r.changes,
 				last_row_id: Number(r.lastInsertRowid ?? 0),
 				rows_written: r.changes,
@@ -195,12 +195,12 @@ export function createMockD1(
 		},
 
 		async exec(sql: string): Promise<{ count: number; duration: number }> {
-			const statements = sql
+			adapter.exec(sql);
+			const count = sql
 				.split(";")
 				.map((s) => s.trim())
-				.filter((s) => s.length > 0);
-			for (const s of statements) adapter.exec(s);
-			return { count: statements.length, duration: 0.1 };
+				.filter(Boolean).length;
+			return { count, duration: 0.1 };
 		},
 
 		dump: async () => new ArrayBuffer(0),

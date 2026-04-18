@@ -34,13 +34,13 @@ that would fail in production.
 
 ## Success Criteria
 
-- [ ] All five gaps from issue #48 have regression tests that pass
-- [ ] Existing tracker (`MockOperations`) tests still pass
-- [ ] Existing error-injection (`ErrorInjection`) tests still pass
-- [ ] `initialTables` seeding still works (schema inferred from first row)
-- [ ] No new runtime dependencies added (constitution rule 1)
-- [ ] `bun test` green on macOS and Linux CI
-- [ ] Public API signature of `createMockD1` unchanged
+- [x] All five gaps from issue #48 have regression tests that pass
+- [x] Existing tracker (`MockOperations`) tests still pass
+- [x] Existing error-injection (`ErrorInjection`) tests still pass
+- [x] `initialTables` seeding still works (schema inferred from first non-empty row)
+- [x] No new runtime dependencies added (constitution rule 1)
+- [x] `bun run test` green in CI on Node 22
+- [x] Public API signature of `createMockD1` unchanged
 
 ## Scope
 

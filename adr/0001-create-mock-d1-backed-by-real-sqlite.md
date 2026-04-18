@@ -87,7 +87,7 @@ No cross-package imports. No new package-level dependencies.
 
 ### Data Flow
 
-```
+```text
 consumer
   -> createMockD1({table: [{id:1,name:'x'}]})
      -> openAdapter()                       # selects bun or node
@@ -113,7 +113,6 @@ None (runtime). `bun:sqlite` and `node:sqlite` are builtins.
 export interface SqliteAdapter {
   exec(sql: string): void;
   prepare(sql: string): SqliteStatement;
-  serialize(): ArrayBuffer;
   close(): void;
 }
 
@@ -175,4 +174,6 @@ N/A (in-memory test mock).
 - `prepare(sql)` with multi-statement SQL: routed to `exec()` (both
   `bun:sqlite` and `node:sqlite` require single statements in
   `prepare`).
-- `dump()`: returns adapter `serialize()` output as `ArrayBuffer`.
+- `dump()`: returns an empty `ArrayBuffer`. The underlying SQLite engines
+  expose serialization, but no current test needs the payload; deferred
+  unless a consumer hits this.
