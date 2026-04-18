@@ -1,61 +1,77 @@
-# Implementation Plan
+# Implementation Plan — @workkit/notify-email
 
 > HOW only — see spec.md for WHAT and WHY.
 
 ## Architecture
 
-What is the technical approach? How does it fit into existing architecture?
-Where are the integration points with existing code?
-
-- Pattern: [NEEDS CLARIFICATION]
-- Integration points: [NEEDS CLARIFICATION]
+- **Pattern**: factory function `emailAdapter(options)` returns an `Adapter<EmailPayload>` from `@workkit/notify`.
+- **Layering**:
+  - `adapter.ts` — `emailAdapter(options)` + `send` impl.
+  - `render.ts` — React Email render bridge + plain-text fallback generator.
+  - `webhook.ts` — Resend webhook event parser + Svix signature verify.
+  - `attachments.ts` — R2 fetch with bounded concurrency + size cap.
+  - `auto-opt-out.ts` — handler invoked from webhook to write opt-outs via injected callback.
+  - `errors.ts` — adapter-specific errors.
+- **Integration**: `@workkit/notify` (Adapter shape, types, optOut helper); `@react-email/render` optional peer; consumer-supplied `R2Bucket` for attachments.
 
 ## Key Technical Decisions
 
-What libraries, patterns, or approaches? WHY these and not alternatives?
-
-- [NEEDS CLARIFICATION]
+- **`fetch` directly against `https://api.resend.com/emails`** — no SDK; small surface, easy to mock.
+- **`@react-email/render`** as optional peer; if absent, fall back to treating template as a plain HTML string.
+- **`htmlToText`** — tiny inline implementation: strip script/style blocks, strip tags, decode entities, collapse whitespace.
+- **Svix verification** — header format `v1,<base64-sha256>`, secret prefix `whsec_`. Verify with Web Crypto's HMAC-SHA256.
+- **Attachment concurrency** = 4 by default; size cap default 40MB total payload.
+- **Auto opt-out** writes via a `optOutCallback(userId, channel, notificationId?)` so we don't reach into the notify D1 directly — keeps adapter testable.
 
 ## Files
 
 | File | Purpose | New/Modified |
-|------|---------|-------------|
-| [NEEDS CLARIFICATION] | | |
+|---|---|---|
+| `packages/notify-email/package.json` etc. | Manifest + build/test config | New |
+| `packages/notify-email/src/index.ts` | Public exports | New |
+| `packages/notify-email/src/adapter.ts` | `emailAdapter()` + send | New |
+| `packages/notify-email/src/render.ts` | React Email + plain-text fallback | New |
+| `packages/notify-email/src/webhook.ts` | parseWebhook + Svix verifySignature | New |
+| `packages/notify-email/src/attachments.ts` | R2 fetch + concurrency + size cap | New |
+| `packages/notify-email/src/errors.ts` | AttachmentTooLargeError, FromDomainError | New |
+| `packages/notify-email/tests/render.test.ts` | render + html→text | New |
+| `packages/notify-email/tests/webhook.test.ts` | parser + signature verify + replay window | New |
+| `packages/notify-email/tests/attachments.test.ts` | size cap + concurrency | New |
+| `packages/notify-email/tests/adapter.test.ts` | end-to-end with mocked Resend `fetch` + R2 | New |
+| `packages/notify-email/README.md` | Docs | New |
+| `.changeset/feat-notify-email-init.md` | `@workkit/notify-email@0.1.0` | New |
 
-## Tasks
+## Tasks (TDD red→green)
 
-TDD: every implementation task must have a preceding test task.
-
-- [ ] [NEEDS CLARIFICATION] Break down into small, testable tasks.
+1. scaffold
+2. impl:errors
+3. test:render → impl:render
+4. test:attachments → impl:attachments
+5. test:webhook → impl:webhook
+6. test:adapter → impl:adapter
+7. wire src/index.ts + README
+8. lint + typecheck + scoped tests
+9. maina verify
+10. changeset
+11. maina commit + push + PR
+12. request review
 
 ## Failure Modes
 
-What can go wrong? How do we handle it gracefully?
-
-- [NEEDS CLARIFICATION]
+- **Resend rejects from-domain** (4xx) → return `status:'failed'` with the provider error string. Caller chooses retry policy.
+- **Resend 429** → return `status:'failed'` with the rate-limit error; queue retries.
+- **Attachment R2 fetch fails** → fail-fast with the underlying error message (don't silently send incomplete email).
+- **Webhook signature mismatch** → throw at adapter; the caller's `webhookHandler` returns 401.
+- **HTML render throws** → bubble; caller sees the trace in `error` field of the `failed` row.
+- **Plain-text fallback empty** → use `[no text content]` placeholder (RFC 5322 doesn't allow empty text body).
 
 ## Testing Strategy
 
-Unit tests, integration tests, or both? What mocks are needed?
-
-- [NEEDS CLARIFICATION]
+- Unit tests with hand-rolled `fetch` mock + R2 mock.
+- React Email render tested with a tiny inline component (no fixture file required) so we don't take a hard test-time dep on real React templates.
+- Webhook signature verified against a known good `secret` + payload pair.
 
 
 ## Wiki Context
 
-### Related Modules
-
-- **src** (69 entities) — `modules/src.md`
-- **cluster-17** (16 entities) — `modules/cluster-17.md`
-- **cluster-64** (7 entities) — `modules/cluster-64.md`
-- **cluster-43** (5 entities) — `modules/cluster-43.md`
-- **cluster-35** (3 entities) — `modules/cluster-35.md`
-- **cluster-129** (2 entities) — `modules/cluster-129.md`
-- **cluster-110** (2 entities) — `modules/cluster-110.md`
-- **cluster-134** (2 entities) — `modules/cluster-134.md`
-
-### Suggestions
-
-- Module 'src' already has 69 entities — consider extending it
-- Module 'cluster-17' already has 16 entities — consider extending it
-- Module 'cluster-64' already has 7 entities — consider extending it
+Auto-populated; no edits.

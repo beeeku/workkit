@@ -377,6 +377,20 @@
         "zod": "^3.23.0",
       },
     },
+    "packages/notify-email": {
+      "name": "@workkit/notify-email",
+      "version": "0.0.0",
+      "dependencies": {
+        "@workkit/errors": "^1.0.2",
+        "@workkit/notify": "workspace:*",
+      },
+      "peerDependencies": {
+        "@react-email/render": ">=1.0.0",
+      },
+      "optionalPeers": [
+        "@react-email/render",
+      ],
+    },
     "packages/pdf": {
       "name": "@workkit/pdf",
       "version": "0.0.0",
@@ -1171,6 +1185,8 @@
     "@workkit/memory": ["@workkit/memory@workspace:packages/memory"],
 
     "@workkit/notify": ["@workkit/notify@workspace:packages/notify"],
+
+    "@workkit/notify-email": ["@workkit/notify-email@workspace:packages/notify-email"],
 
     "@workkit/pdf": ["@workkit/pdf@workspace:packages/pdf"],
 
