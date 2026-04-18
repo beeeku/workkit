@@ -53,13 +53,15 @@ describe("feed()", () => {
 		expect(all.items).toHaveLength(1);
 	});
 
-	it("returns empty page on malformed cursor", async () => {
+	it("treats a malformed cursor like no cursor and returns the first page", async () => {
 		const db = createInAppDb();
-		await seedRows(db, [{ id: "a", user: "u1", createdAt: 1 }]);
-		// Bad cursor should not 500; server returns empty page using no-cursor branch.
+		await seedRows(db, [
+			{ id: "a", user: "u1", createdAt: 1 },
+			{ id: "b", user: "u1", createdAt: 2 },
+		]);
 		const page = await feed(db, { userId: "u1", cursor: "!!!not-base64!!!" });
-		// `decodeCursor` returns null → behaves as no cursor → returns rows.
-		expect(page.items.length).toBeGreaterThanOrEqual(0);
+		expect(page.items.map((i) => i.id)).toEqual(["b", "a"]);
+		expect(page.nextCursor).toBeNull();
 	});
 });
 

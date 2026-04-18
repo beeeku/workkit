@@ -30,7 +30,8 @@ const MAX_LIMIT = 100;
 
 /**
  * Encode a `(created_at, id)` cursor as opaque base64. Decoded server-side;
- * malformed cursors yield an empty page (no 500).
+ * malformed cursors are treated as absent (no 500) — `feed()` returns the
+ * first page in that case.
  */
 function encodeCursor(createdAt: number, id: string): string {
 	return btoa(`${createdAt}:${id}`).replace(/=+$/, "");
@@ -130,18 +131,15 @@ export async function markRead(
 		return { updated: r.meta?.changes ?? 0 };
 	}
 	if (!opts.ids || opts.ids.length === 0) return { updated: 0 };
-	let updated = 0;
-	for (const id of opts.ids) {
-		// Ownership check is enforced via WHERE user_id = ? AND id = ?.
-		const r = await db
-			.prepare(
-				"UPDATE in_app_notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL",
-			)
-			.bind(now, id, opts.userId)
-			.run();
-		updated += r.meta?.changes ?? 0;
-	}
-	return { updated };
+	// Single round-trip via IN (?,?,?). Ownership enforced by user_id = ?.
+	const placeholders = opts.ids.map(() => "?").join(", ");
+	const r = await db
+		.prepare(
+			`UPDATE in_app_notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL AND id IN (${placeholders})`,
+		)
+		.bind(now, opts.userId, ...opts.ids)
+		.run();
+	return { updated: r.meta?.changes ?? 0 };
 }
 
 export async function dismiss(
@@ -150,17 +148,14 @@ export async function dismiss(
 	now: number = Date.now(),
 ): Promise<{ updated: number }> {
 	if (opts.ids.length === 0) return { updated: 0 };
-	let updated = 0;
-	for (const id of opts.ids) {
-		const r = await db
-			.prepare(
-				"UPDATE in_app_notifications SET dismissed_at = ? WHERE id = ? AND user_id = ? AND dismissed_at IS NULL",
-			)
-			.bind(now, id, opts.userId)
-			.run();
-		updated += r.meta?.changes ?? 0;
-	}
-	return { updated };
+	const placeholders = opts.ids.map(() => "?").join(", ");
+	const r = await db
+		.prepare(
+			`UPDATE in_app_notifications SET dismissed_at = ? WHERE user_id = ? AND dismissed_at IS NULL AND id IN (${placeholders})`,
+		)
+		.bind(now, opts.userId, ...opts.ids)
+		.run();
+	return { updated: r.meta?.changes ?? 0 };
 }
 
 export async function unreadCount(db: NotifyD1, userId: string): Promise<number> {

@@ -4,7 +4,11 @@ const DEFAULT_ALLOWED_SCHEMES = ["https:"] as const;
 
 export interface SafeLinkOptions {
 	allowedSchemes?: ReadonlyArray<string>;
-	/** Allow protocol-relative paths (`/foo/bar`) and bare path-only strings? Default true. */
+	/**
+	 * Allow relative paths that start with `/` (e.g. `/briefs/r1`). Default true.
+	 * Protocol-relative URLs (`//host/...`) are always rejected; bare paths
+	 * without a leading `/` are not accepted either.
+	 */
 	allowRelative?: boolean;
 }
 

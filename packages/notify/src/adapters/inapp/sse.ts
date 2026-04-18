@@ -36,13 +36,18 @@ export class SseRegistry {
 	push(userId: string, event: string): void {
 		const set = this.map.get(userId);
 		if (!set) return;
+		const failed: SseSubscriber[] = [];
 		for (const sub of set) {
 			try {
 				sub.push(event);
 			} catch {
-				// Best-effort; drop on next tick if writer is dead.
+				// Subscriber's writer is dead — remove so we don't hot-loop on
+				// every future push.
+				failed.push(sub);
 			}
 		}
+		for (const sub of failed) set.delete(sub);
+		if (set.size === 0) this.map.delete(userId);
 	}
 
 	disconnectUser(userId: string): void {
@@ -99,11 +104,24 @@ export function createSseHandler(opts: SseHandlerOptions): (req: Request) => Pro
 		}
 
 		const encoder = new TextEncoder();
-		let writer: WritableStreamDefaultWriter<Uint8Array> | undefined;
+		// Hoist subscriber + timer to outer scope so `cancel()` can run the
+		// same teardown that `sub.close()` runs from the registry side. Both
+		// callbacks need to remove the subscriber from the registry AND clear
+		// the heartbeat interval; without that, an aborted client leaves
+		// `setInterval` ticking indefinitely.
 		let timer: ReturnType<typeof setInterval> | undefined;
+		let sub: SseSubscriber | undefined;
+		let cleanedUp = false;
+		const cleanup = () => {
+			if (cleanedUp) return;
+			cleanedUp = true;
+			if (timer) clearInterval(timer);
+			if (sub) opts.registry.remove(sub);
+		};
+
 		const stream = new ReadableStream<Uint8Array>({
 			start(controller) {
-				const sub: SseSubscriber = {
+				sub = {
 					userId: session.userId,
 					push: (data: string) => {
 						controller.enqueue(encoder.encode(`data: ${data}\n\n`));
@@ -114,6 +132,7 @@ export function createSseHandler(opts: SseHandlerOptions): (req: Request) => Pro
 						} catch {
 							// already closed
 						}
+						cleanup();
 					},
 				};
 				opts.registry.add(sub);
@@ -122,20 +141,13 @@ export function createSseHandler(opts: SseHandlerOptions): (req: Request) => Pro
 					try {
 						controller.enqueue(encoder.encode(": keepalive\n\n"));
 					} catch {
-						// connection went away
+						// connection went away — release resources here too
+						cleanup();
 					}
 				}, heartbeatMs);
-
-				// Tear down on cancel.
-				const cleanup = () => {
-					if (timer) clearInterval(timer);
-					opts.registry.remove(sub);
-				};
-				(controller as unknown as { workkitCleanup?: () => void }).workkitCleanup = cleanup;
 			},
 			cancel() {
-				if (timer) clearInterval(timer);
-				if (writer) writer.close().catch(() => undefined);
+				cleanup();
 			},
 		});
 

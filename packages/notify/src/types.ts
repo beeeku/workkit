@@ -46,7 +46,17 @@ export interface NotificationPreferences {
 }
 
 export interface ChannelTemplate<P> {
-	template?: string;
+	/**
+	 * The template body. Adapters interpret it differently:
+	 *  - `email`: `string` HTML, or a React Email element rendered via the
+	 *    optional `@react-email/render` peer.
+	 *  - `whatsapp`: typically a template id or full template object.
+	 *  - others: as the adapter documents.
+	 *
+	 * Typed as `unknown` so adapters can accept their own narrower shape
+	 * without forcing every other adapter to deal with it.
+	 */
+	template?: unknown;
 	variables?: (payload: P) => Record<string, unknown>;
 	props?: (payload: P) => unknown;
 	attachments?: (payload: P) => Array<{ filename?: string; r2Key: string; type?: string }>;
