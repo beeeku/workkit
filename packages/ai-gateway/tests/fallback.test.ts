@@ -152,10 +152,9 @@ describe("runFallback() — CF Universal Endpoint", () => {
 			defaultProvider: "anthropic",
 		});
 
-		await gw.runFallback!(
-			[{ provider: "anthropic", model: "claude-sonnet-4-6" }],
-			{ prompt: "hi" },
-		);
+		await gw.runFallback!([{ provider: "anthropic", model: "claude-sonnet-4-6" }], {
+			prompt: "hi",
+		});
 
 		const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
 		expect(headers["cf-aig-authorization"]).toBe("Bearer tok");

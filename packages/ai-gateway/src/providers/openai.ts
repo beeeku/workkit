@@ -59,11 +59,17 @@ export async function executeOpenAi(
 		};
 	} catch (err) {
 		if (err instanceof ServiceUnavailableError) throw err;
+		// Only classify aborts as TimeoutError when the caller set a timeout;
+		// external-signal cancels rethrow as-is so withRetry doesn't treat
+		// user-aborts as retryable.
 		if (signal?.aborted) {
-			throw new TimeoutError(`openai request for ${model}`, options?.timeout, {
-				cause: err,
-				context: { provider: providerName, model },
-			});
+			if (options?.timeout !== undefined) {
+				throw new TimeoutError(`openai request for ${model}`, options.timeout, {
+					cause: err,
+					context: { provider: providerName, model },
+				});
+			}
+			throw err;
 		}
 		throw new ServiceUnavailableError("openai", {
 			cause: err,

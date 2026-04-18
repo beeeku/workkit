@@ -1,18 +1,11 @@
 import { ConfigError, ServiceUnavailableError, ValidationError } from "@workkit/errors";
+import { buildFallbackBodyEntry, normalizeFallbackResponse } from "./fallback";
 import { executeAnthropic } from "./providers/anthropic";
 import { executeCustom } from "./providers/custom";
 import { executeOpenAi } from "./providers/openai";
-import {
-	cfGatewayHeaders,
-	resolveBaseUrl,
-	withTimeoutSignal,
-} from "./providers/shared";
+import { cfGatewayHeaders, resolveBaseUrl, withTimeoutSignal } from "./providers/shared";
 import { executeWorkersAi } from "./providers/workers-ai";
 import { streamProvider } from "./stream";
-import {
-	buildFallbackBodyEntry,
-	normalizeFallbackResponse,
-} from "./fallback";
 import type {
 	AiInput,
 	AiOutput,
@@ -182,7 +175,15 @@ export function createGateway<P extends ProviderMap>(config: GatewayConfig<P>): 
 					});
 				}
 
-				const raw = (await response.json()) as Record<string, unknown>;
+				let raw: Record<string, unknown>;
+				try {
+					raw = (await response.json()) as Record<string, unknown>;
+				} catch (parseErr) {
+					throw new ServiceUnavailableError("cf-gateway-fallback (invalid JSON)", {
+						cause: parseErr,
+						context: { status: response.status },
+					});
+				}
 				return normalizeFallbackResponse(
 					raw,
 					entries as [FallbackEntry, ...FallbackEntry[]],
@@ -221,9 +222,7 @@ export function createGateway<P extends ProviderMap>(config: GatewayConfig<P>): 
 						provider,
 						explicit,
 						config.cfGateway,
-						provider === "anthropic"
-							? "https://api.anthropic.com/v1"
-							: "https://api.openai.com/v1",
+						provider === "anthropic" ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1",
 					),
 				cfGatewayHeaders,
 			);

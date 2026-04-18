@@ -29,19 +29,32 @@ export async function streamProvider(
 	input: AiInput,
 	options: RunOptions | undefined,
 	cfGateway: CfGatewayConfig | undefined,
-	baseUrlResolver: (
-		provider: "openai" | "anthropic",
-		explicit: string | undefined,
-	) => string,
+	baseUrlResolver: (provider: "openai" | "anthropic", explicit: string | undefined) => string,
 	cfGatewayHeaders: (cf: CfGatewayConfig | undefined) => Record<string, string>,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	switch (providerConfig.type) {
 		case "workers-ai":
 			return streamWorkersAi(providerConfig, model, input, options);
 		case "anthropic":
-			return streamAnthropic(providerConfig, model, input, options, cfGateway, baseUrlResolver, cfGatewayHeaders);
+			return streamAnthropic(
+				providerConfig,
+				model,
+				input,
+				options,
+				cfGateway,
+				baseUrlResolver,
+				cfGatewayHeaders,
+			);
 		case "openai":
-			return streamOpenAi(providerConfig, model, input, options, cfGateway, baseUrlResolver, cfGatewayHeaders);
+			return streamOpenAi(
+				providerConfig,
+				model,
+				input,
+				options,
+				cfGateway,
+				baseUrlResolver,
+				cfGatewayHeaders,
+			);
 		case "custom":
 			throw new ServiceUnavailableError("custom providers do not support streaming", {
 				context: { provider: "custom" },
@@ -93,14 +106,14 @@ async function streamAnthropic(
 	input: AiInput,
 	options: RunOptions | undefined,
 	cfGateway: CfGatewayConfig | undefined,
-	baseUrlResolver: (
-		provider: "openai" | "anthropic",
-		explicit: string | undefined,
-	) => string,
+	baseUrlResolver: (provider: "openai" | "anthropic", explicit: string | undefined) => string,
 	cfGatewayHeaders: (cf: CfGatewayConfig | undefined) => Record<string, string>,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("anthropic", providerConfig.baseUrl);
-	const body = { ...buildAnthropicBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
+	const body = {
+		...buildAnthropicBody(model, input, options?.responseFormat, options?.toolOptions),
+		stream: true,
+	};
 	const { signal, abort, dispose } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/messages`, {
@@ -139,7 +152,11 @@ async function streamAnthropic(
 
 			if (t === "content_block_start" && index !== undefined) {
 				const block = obj.content_block as Record<string, unknown> | undefined;
-				if (block?.type === "tool_use" && typeof block.id === "string" && typeof block.name === "string") {
+				if (
+					block?.type === "tool_use" &&
+					typeof block.id === "string" &&
+					typeof block.name === "string"
+				) {
 					toolBlocks.set(index, { id: block.id, name: block.name, argsText: "" });
 				}
 			} else if (t === "content_block_delta" && index !== undefined) {
@@ -195,14 +212,14 @@ async function streamOpenAi(
 	input: AiInput,
 	options: RunOptions | undefined,
 	cfGateway: CfGatewayConfig | undefined,
-	baseUrlResolver: (
-		provider: "openai" | "anthropic",
-		explicit: string | undefined,
-	) => string,
+	baseUrlResolver: (provider: "openai" | "anthropic", explicit: string | undefined) => string,
 	cfGatewayHeaders: (cf: CfGatewayConfig | undefined) => Record<string, string>,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("openai", providerConfig.baseUrl);
-	const body = { ...buildOpenAiBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
+	const body = {
+		...buildOpenAiBody(model, input, options?.responseFormat, options?.toolOptions),
+		stream: true,
+	};
 	const { signal, abort, dispose } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/chat/completions`, {

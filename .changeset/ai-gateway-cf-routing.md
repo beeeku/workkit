@@ -15,7 +15,7 @@ createGateway({
     gatewayId: "my-gateway",
     authToken: env.CF_AIG_TOKEN, // → cf-aig-authorization
     cacheTtl: 3600,               // → cf-aig-cache-ttl
-    skipCache: false,             // → cf-aig-skip-cache
+    skipCache: true,              // → cf-aig-skip-cache (emitted only when true)
   },
   defaultProvider: "anthropic",
 });

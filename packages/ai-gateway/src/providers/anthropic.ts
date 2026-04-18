@@ -60,11 +60,17 @@ export async function executeAnthropic(
 		};
 	} catch (err) {
 		if (err instanceof ServiceUnavailableError) throw err;
+		// Only classify aborts as TimeoutError when the caller set a timeout;
+		// external-signal cancels rethrow as-is so withRetry doesn't treat
+		// user-aborts as retryable.
 		if (signal?.aborted) {
-			throw new TimeoutError(`anthropic request for ${model}`, options?.timeout, {
-				cause: err,
-				context: { provider: providerName, model },
-			});
+			if (options?.timeout !== undefined) {
+				throw new TimeoutError(`anthropic request for ${model}`, options.timeout, {
+					cause: err,
+					context: { provider: providerName, model },
+				});
+			}
+			throw err;
 		}
 		throw new ServiceUnavailableError("anthropic", {
 			cause: err,
@@ -98,7 +104,7 @@ export function buildAnthropicBody(
 	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
 		const msgs = (input as { messages: ChatMessage[] }).messages;
 		// Anthropic requires system messages to be separate
-		const systemMsg = msgs.find((m: ChatMessage) => m.role === "system");
+		const systemMsgs = msgs.filter((m: ChatMessage) => m.role === "system");
 		const nonSystem = msgs.filter((m: ChatMessage) => m.role !== "system");
 		body = {
 			model,
@@ -111,24 +117,27 @@ export function buildAnthropicBody(
 			max_tokens: 1024,
 		};
 
-		// Combine existing system message with JSON instruction. If the
-		// caller's system message opts into cacheControl, emit the Anthropic
-		// content-block array form so the cache_control flag is preserved.
-		if (systemMsg?.cacheControl) {
+		// If any system message opts into cacheControl, emit the content-block
+		// array form so the cache_control flag is preserved. Otherwise, join
+		// system messages into a single string (Anthropic accepts either).
+		const anyCached = systemMsgs.some((m) => m.cacheControl);
+		if (anyCached) {
 			const blocks: Array<Record<string, unknown>> = [];
 			if (jsonInstruction) {
 				blocks.push({ type: "text", text: jsonInstruction });
 			}
-			blocks.push({
-				type: "text",
-				text: systemMsg.content,
-				cache_control: { type: systemMsg.cacheControl },
-			});
+			for (const sys of systemMsgs) {
+				blocks.push({
+					type: "text",
+					text: sys.content,
+					...(sys.cacheControl ? { cache_control: { type: sys.cacheControl } } : {}),
+				});
+			}
 			body.system = blocks;
 		} else {
 			const systemParts: string[] = [];
 			if (jsonInstruction) systemParts.push(jsonInstruction);
-			if (systemMsg) systemParts.push(systemMsg.content);
+			for (const sys of systemMsgs) systemParts.push(sys.content);
 			if (systemParts.length > 0) {
 				body.system = systemParts.join("\n\n");
 			}
@@ -166,8 +175,14 @@ export function buildAnthropicBody(
 
 export function extractAnthropicText(raw: Record<string, unknown>): string | undefined {
 	const content = raw.content as Array<Record<string, unknown>> | undefined;
-	if (!content?.[0]) return undefined;
-	return typeof content[0].text === "string" ? content[0].text : undefined;
+	if (!Array.isArray(content)) return undefined;
+	// Concatenate all text blocks — Anthropic can return multiple text blocks
+	// interleaved with tool_use blocks in a single response.
+	const text = content
+		.filter((block) => block?.type === "text" && typeof block.text === "string")
+		.map((block) => block.text as string)
+		.join("");
+	return text.length > 0 ? text : undefined;
 }
 
 export function extractAnthropicUsage(raw: Record<string, unknown>): TokenUsage | undefined {

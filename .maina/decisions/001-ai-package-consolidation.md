@@ -98,7 +98,7 @@ Most apps will be a 3-line change plus a package swap. For the Workers-AI-only c
 - One API for all LLM calls in workkit.
 - Retry/stream/fallback/caching/cost tracking automatically available to Workers-AI users.
 - No more feature drift between packages.
-- Prompt caching (`cacheControl: "ephemeral"`) and CF Gateway routing work with Workers AI setups without code changes.
+- Provider-specific features (Anthropic prompt caching via `cacheControl: "ephemeral"`, CF Gateway routing for HTTP providers) become available to any gateway config that declares those providers. They do not retroactively apply to Workers-AI-only setups — prompt caching is Anthropic-native, and CF Gateway routing covers OpenAI/Anthropic traffic, not the Workers AI binding.
 
 **Negative**
 

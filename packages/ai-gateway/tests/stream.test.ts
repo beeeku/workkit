@@ -20,9 +20,7 @@ function mockHttpStream(chunks: string[]): typeof fetch {
 	}) as unknown as typeof fetch;
 }
 
-async function collect(
-	stream: ReadableStream<GatewayStreamEvent>,
-): Promise<GatewayStreamEvent[]> {
+async function collect(stream: ReadableStream<GatewayStreamEvent>): Promise<GatewayStreamEvent[]> {
 	const events: GatewayStreamEvent[] = [];
 	const reader = stream.getReader();
 	while (true) {
@@ -49,7 +47,9 @@ describe("gateway.stream() — Workers AI", () => {
 
 		const events = await collect(await gw.stream!("@cf/m", { prompt: "hi" }));
 
-		const texts = events.filter((e) => e.type === "text").map((e) => (e as { delta: string }).delta);
+		const texts = events
+			.filter((e) => e.type === "text")
+			.map((e) => (e as { delta: string }).delta);
 		expect(texts.join("")).toBe("Hello");
 
 		const done = events.find((e) => e.type === "done");
@@ -122,9 +122,7 @@ describe("gateway.stream() — Anthropic", () => {
 	});
 
 	it("sets stream: true and anthropic-version on the request", async () => {
-		const fetchMock = mockHttpStream([
-			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
-		]);
+		const fetchMock = mockHttpStream(['event: message_stop\ndata: {"type":"message_stop"}\n\n']);
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
@@ -387,9 +385,7 @@ describe("gateway.stream() — OpenAI", () => {
 
 describe("gateway.stream() — plumbing", () => {
 	it("always emits exactly one done event as the last event", async () => {
-		const fetchMock = mockHttpStream([
-			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
-		]);
+		const fetchMock = mockHttpStream(['event: message_stop\ndata: {"type":"message_stop"}\n\n']);
 		globalThis.fetch = fetchMock;
 
 		const gw = createGateway({
@@ -433,11 +429,19 @@ describe("gateway.stream() — plumbing", () => {
 		let listenerCount = 0;
 		const realAdd = controller.signal.addEventListener.bind(controller.signal);
 		const realRemove = controller.signal.removeEventListener.bind(controller.signal);
-		controller.signal.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject, opts?: AddEventListenerOptions | boolean) => {
+		controller.signal.addEventListener = ((
+			type: string,
+			listener: EventListenerOrEventListenerObject,
+			opts?: AddEventListenerOptions | boolean,
+		) => {
 			if (type === "abort") listenerCount++;
 			return realAdd(type, listener, opts);
 		}) as typeof controller.signal.addEventListener;
-		controller.signal.removeEventListener = ((type: string, listener: EventListenerOrEventListenerObject, opts?: EventListenerOptions | boolean) => {
+		controller.signal.removeEventListener = ((
+			type: string,
+			listener: EventListenerOrEventListenerObject,
+			opts?: EventListenerOptions | boolean,
+		) => {
 			if (type === "abort") listenerCount--;
 			return realRemove(type, listener, opts);
 		}) as typeof controller.signal.removeEventListener;

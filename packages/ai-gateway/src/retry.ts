@@ -30,9 +30,7 @@ export interface RetryConfig {
 export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 	const maxAttempts = config?.maxAttempts ?? 3;
 	if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
-		throw new RangeError(
-			`withRetry: maxAttempts must be an integer >= 1 (got ${maxAttempts})`,
-		);
+		throw new RangeError(`withRetry: maxAttempts must be an integer >= 1 (got ${maxAttempts})`);
 	}
 	const retryable = config?.isRetryable ?? isRetryable;
 
@@ -47,14 +45,14 @@ export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 			retry(() => gateway.run(model, input, options), options?.signal),
 		runFallback: innerFallback
 			? (entries: FallbackEntry[], input: AiInput, options?: RunOptions) =>
-				retry(() => innerFallback(entries, input, options), options?.signal)
+					retry(() => innerFallback(entries, input, options), options?.signal)
 			: undefined,
 		// Streaming retries on the initial connect only — once bytes start
 		// flowing, mid-stream errors are propagated as-is (retrying would
 		// re-emit already-delivered tokens to the consumer).
 		stream: innerStream
 			? (model: string, input: AiInput, options?: RunOptions) =>
-				retry(() => innerStream(model, input, options), options?.signal)
+					retry(() => innerStream(model, input, options), options?.signal)
 			: undefined,
 		providers: () => gateway.providers(),
 		defaultProvider: () => gateway.defaultProvider(),

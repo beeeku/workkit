@@ -169,7 +169,9 @@ export interface FallbackEntry {
 /**
  * Unified streaming event shape across providers.
  *
- * Every stream ends with exactly one `done` event. Text generation yields
+ * Successful streams end with exactly one `done` event; streams that encounter
+ * a mid-stream error reject the `read()` promise instead (no synthetic `done`
+ * is emitted on the error path). Text generation yields
  * zero or more `text` events with `delta` token chunks. When a provider
  * completes a tool-use block mid-stream, it yields a `tool_use` event with
  * the assembled arguments (emitted today for Anthropic and OpenAI; Workers
@@ -197,11 +199,7 @@ export interface Gateway {
 	 * Optional — present on gateways returned by `createGateway` and on
 	 * wrappers around them. Requires `cfGateway` to be configured.
 	 */
-	runFallback?(
-		entries: FallbackEntry[],
-		input: AiInput,
-		options?: RunOptions,
-	): Promise<AiOutput>;
+	runFallback?(entries: FallbackEntry[], input: AiInput, options?: RunOptions): Promise<AiOutput>;
 	/**
 	 * Stream tokens and events from a model.
 	 *

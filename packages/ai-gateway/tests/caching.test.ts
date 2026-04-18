@@ -108,6 +108,70 @@ describe("Anthropic prompt caching — cacheControl on messages", () => {
 		expect(body.system).toBe("plain system");
 	});
 
+	it("preserves all system messages (not just the first) in the Anthropic body", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", {
+			messages: [
+				{ role: "system", content: "sys-1" },
+				{ role: "system", content: "sys-2" },
+				{ role: "user", content: "hi" },
+			],
+		});
+
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body) as Record<string, unknown>;
+		expect(body.system).toBe("sys-1\n\nsys-2");
+	});
+
+	it("preserves all system messages with cacheControl as content-block array", async () => {
+		const fetchMock = mockHttp({ content: [{ type: "text", text: "ok" }] });
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		await gw.run("claude-sonnet-4-6", {
+			messages: [
+				{ role: "system", content: "static", cacheControl: "ephemeral" },
+				{ role: "system", content: "dynamic" },
+				{ role: "user", content: "hi" },
+			],
+		});
+
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body) as Record<string, unknown>;
+		expect(body.system).toEqual([
+			{ type: "text", text: "static", cache_control: { type: "ephemeral" } },
+			{ type: "text", text: "dynamic" },
+		]);
+	});
+
+	it("concatenates all Anthropic text blocks in the response", async () => {
+		const fetchMock = mockHttp({
+			content: [
+				{ type: "text", text: "Hello " },
+				{ type: "tool_use", id: "t1", name: "f", input: {} },
+				{ type: "text", text: "world" },
+			],
+		});
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const result = await gw.run("claude-sonnet-4-6", { prompt: "hi" });
+		expect(result.text).toBe("Hello world");
+	});
+
 	it("OpenAI silently ignores cacheControl (content stays a string)", async () => {
 		const fetchMock = mockHttp({ choices: [{ message: { content: "ok" } }] });
 		globalThis.fetch = fetchMock;
