@@ -370,9 +370,7 @@ describe("createMockD1", () => {
 		});
 
 		it("honors INSERT OR IGNORE on unique conflicts", async () => {
-			await db
-				.prepare("CREATE TABLE webhook_log (event_id TEXT PRIMARY KEY, payload TEXT)")
-				.run();
+			await db.prepare("CREATE TABLE webhook_log (event_id TEXT PRIMARY KEY, payload TEXT)").run();
 			await db
 				.prepare("INSERT OR IGNORE INTO webhook_log (event_id, payload) VALUES (?, ?)")
 				.bind("evt_1", "first")
