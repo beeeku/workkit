@@ -3,6 +3,7 @@ import { ToolValidationError } from "./errors";
 import type { AgentEvent } from "./events";
 import { HANDOFF_HOP_LIMIT } from "./handoff";
 import { toJsonSchema } from "./schema";
+import { runStep } from "./stream-step";
 import { runTool } from "./tool";
 import type {
 	Agent,
@@ -136,10 +137,12 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 
 		let output: import("@workkit/ai-gateway").AiOutput;
 		try {
-			output = await currentAgent.provider.run(
-				currentAgent.model,
+			output = await runStep(
+				currentAgent,
 				{ messages: toChatMessages(messages, currentAgent.instructions) },
 				runOptions,
+				step,
+				emit,
 			);
 		} catch (error) {
 			emit({ type: "error", error: { kind: "provider", message: errorMessage(error) } });
@@ -169,7 +172,9 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 		};
 		messages = [...messages, assistantMessage];
 
-		if (text.length > 0) emit({ type: "text-delta", delta: text, step });
+		// `runStep` already emitted per-token `text-delta` events when streaming
+		// (or a single synthesized one on the non-streaming path), so we don't
+		// re-emit here.
 		emit({ type: "step-complete", step, usage, assistant: assistantMessage });
 
 		const toolCalls: GatewayToolCall[] = output.toolCalls ?? [];
