@@ -224,6 +224,37 @@ describe("runFallback() — CF Universal Endpoint", () => {
 		expect(signal.aborted).toBe(true);
 	});
 
+	it("honors options.timeout even when options.signal is also provided", async () => {
+		const fetchMock = vi.fn().mockImplementation(
+			(_url: string, init: { signal?: AbortSignal }) =>
+				new Promise((_resolve, reject) => {
+					init.signal?.addEventListener("abort", () =>
+						reject(new DOMException("aborted", "AbortError")),
+					);
+				}),
+		);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "ak" } },
+			cfGateway: { accountId: "ACCT", gatewayId: "GW" },
+			defaultProvider: "anthropic",
+		});
+
+		// External signal that will never abort; timeout should still fire.
+		const external = new AbortController();
+		await expect(
+			gw.runFallback!(
+				[{ provider: "anthropic", model: "claude-sonnet-4-6" }],
+				{ prompt: "hi" },
+				{ timeout: 20, signal: external.signal },
+			),
+		).rejects.toThrow();
+
+		const fetchSignal = fetchMock.mock.calls[0][1].signal as AbortSignal;
+		expect(fetchSignal.aborted).toBe(true);
+	});
+
 	it("rejects workers-ai / custom providers in fallback entries", async () => {
 		const gw = createGateway({
 			providers: {

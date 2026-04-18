@@ -21,4 +21,4 @@ Supported providers in this release:
 
 `withCache`, `withLogging`, and `withRetry` each conditionally expose `stream` when the underlying gateway does. `withRetry` retries the initial connect only — mid-stream errors propagate as-is to avoid re-emitting already-delivered tokens.
 
-**Scope notes / roadmap.** The `tool_use` event variant is defined but not emitted by any provider in this PR — Anthropic `input_json_delta` accumulation and OpenAI `tool_calls` delta accumulation land in a follow-up. Additive; no breaking changes.
+The `tool_use` event variant is defined in this changeset; its provider-specific emission (Anthropic `input_json_delta` accumulation and OpenAI `tool_calls` delta accumulation) ships alongside in `ai-gateway-stream-tool-use.md`. Additive; no breaking changes.

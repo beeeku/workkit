@@ -19,9 +19,9 @@ import type {
  *
  * Per-provider stream wire formats are translated into the shared event shape:
  *  - `{ type: "text", delta }` for generated tokens
+ *  - `{ type: "tool_use", id, name, input }` when a tool call completes
+ *    (Anthropic `input_json_delta` accumulation; OpenAI `tool_calls` deltas)
  *  - `{ type: "done", usage?, raw? }` exactly once at the end of the stream
- *
- * Tool-use events are not emitted in this pass (see roadmap).
  */
 export async function streamProvider(
 	providerConfig: ProviderConfig,
@@ -161,11 +161,21 @@ async function streamAnthropic(
 						input: parseToolArgs(pending.argsText),
 					});
 				}
+			} else if (t === "message_start") {
+				// Anthropic surfaces input_tokens on the initial message_start frame.
+				const message = obj.message as Record<string, unknown> | undefined;
+				const usage = message?.usage as Record<string, unknown> | undefined;
+				if (usage && typeof usage.input_tokens === "number") {
+					finalUsage = {
+						inputTokens: usage.input_tokens,
+						outputTokens: finalUsage?.outputTokens ?? 0,
+					};
+				}
 			} else if (t === "message_delta") {
 				const usage = obj.usage as Record<string, unknown> | undefined;
 				if (usage && typeof usage.output_tokens === "number") {
 					finalUsage = {
-						inputTokens: 0,
+						inputTokens: finalUsage?.inputTokens ?? 0,
 						outputTokens: usage.output_tokens,
 					};
 				}

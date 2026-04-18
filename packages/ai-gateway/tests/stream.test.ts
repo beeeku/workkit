@@ -72,6 +72,27 @@ describe("gateway.stream() — Workers AI", () => {
 });
 
 describe("gateway.stream() — Anthropic", () => {
+	it("captures input_tokens from message_start and output_tokens from message_delta", async () => {
+		const fetchMock = mockHttpStream([
+			'event: message_start\ndata: {"type":"message_start","message":{"id":"m","usage":{"input_tokens":17,"output_tokens":0}}}\n\n',
+			'event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":42}}\n\n',
+			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const events = await collect(await gw.stream!("claude-sonnet-4-6", { prompt: "hi" }));
+		const done = events[events.length - 1] as {
+			type: "done";
+			usage?: { inputTokens: number; outputTokens: number };
+		};
+		expect(done.usage).toEqual({ inputTokens: 17, outputTokens: 42 });
+	});
+
 	it("streams content_block_delta text and emits done with usage", async () => {
 		const fetchMock = mockHttpStream([
 			'event: message_start\ndata: {"type":"message_start","message":{"id":"m"}}\n\n',

@@ -29,6 +29,11 @@ export interface RetryConfig {
  */
 export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 	const maxAttempts = config?.maxAttempts ?? 3;
+	if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+		throw new RangeError(
+			`withRetry: maxAttempts must be an integer >= 1 (got ${maxAttempts})`,
+		);
+	}
 	const retryable = config?.isRetryable ?? isRetryable;
 
 	const retry = <T>(fn: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> =>

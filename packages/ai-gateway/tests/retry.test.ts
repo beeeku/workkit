@@ -105,6 +105,13 @@ describe("withRetry()", () => {
 		expect(gw.defaultProvider()).toBe("test");
 	});
 
+	it("throws RangeError when maxAttempts is 0, negative, or non-integer", () => {
+		const gw = makeGateway(vi.fn());
+		expect(() => withRetry(gw, { maxAttempts: 0 })).toThrow(RangeError);
+		expect(() => withRetry(gw, { maxAttempts: -1 })).toThrow(RangeError);
+		expect(() => withRetry(gw, { maxAttempts: 1.5 })).toThrow(RangeError);
+	});
+
 	it("retries TimeoutError (also retryable)", async () => {
 		const run = vi
 			.fn()

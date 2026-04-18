@@ -171,9 +171,9 @@ export interface FallbackEntry {
  *
  * Every stream ends with exactly one `done` event. Text generation yields
  * zero or more `text` events with `delta` token chunks. When a provider
- * completes a tool-use block mid-stream, it yields a `tool_use` event
- * with the assembled arguments (tool-use emission is provider-specific;
- * at time of writing, not yet wired for any provider — see roadmap).
+ * completes a tool-use block mid-stream, it yields a `tool_use` event with
+ * the assembled arguments (emitted today for Anthropic and OpenAI; Workers
+ * AI tool-call streaming is not yet wired).
  */
 export type GatewayStreamEvent =
 	| { type: "text"; delta: string }

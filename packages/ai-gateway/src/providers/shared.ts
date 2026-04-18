@@ -33,25 +33,53 @@ export function cfGatewayHeaders(cf: CfGatewayConfig | undefined): Record<string
 /**
  * Resolve the effective AbortSignal for a request, combining an optional
  * `options.signal` with an `options.timeout` deadline. Returns a cleanup fn
- * the caller must run in a `finally` block to clear any pending timer.
+ * the caller must run in a `finally` block to clear the timer and drop any
+ * listener we added to the external signal.
+ *
+ * Semantics:
+ *  - signal only  → pass-through, no timer, no extra listener.
+ *  - timeout only → derived signal aborts when the timer fires.
+ *  - both         → derived signal aborts on whichever fires first.
+ *  - neither      → `{ signal: undefined }`.
  */
 export function withTimeoutSignal(options: RunOptions | undefined): {
 	signal: AbortSignal | undefined;
 	cleanup: () => void;
 } {
-	let signal = options?.signal;
-	let timeoutId: ReturnType<typeof setTimeout> | undefined;
-	if (options?.timeout && !signal) {
-		const controller = new AbortController();
-		signal = controller.signal;
-		timeoutId = setTimeout(() => controller.abort(), options.timeout);
+	const sourceSignal = options?.signal;
+	const timeout = options?.timeout;
+
+	if (!timeout) {
+		return { signal: sourceSignal, cleanup: noopCleanup };
 	}
+
+	const controller = new AbortController();
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+	let onSourceAbort: (() => void) | undefined;
+
+	if (sourceSignal?.aborted) {
+		controller.abort(sourceSignal.reason);
+	} else {
+		timeoutId = setTimeout(() => controller.abort(), timeout);
+		if (sourceSignal) {
+			onSourceAbort = () => controller.abort(sourceSignal.reason);
+			sourceSignal.addEventListener("abort", onSourceAbort, { once: true });
+		}
+	}
+
 	return {
-		signal,
+		signal: controller.signal,
 		cleanup: () => {
 			if (timeoutId) clearTimeout(timeoutId);
+			if (sourceSignal && onSourceAbort) {
+				sourceSignal.removeEventListener("abort", onSourceAbort);
+			}
 		},
 	};
+}
+
+function noopCleanup(): void {
+	return;
 }
 
 /**
