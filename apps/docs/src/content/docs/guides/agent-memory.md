@@ -29,7 +29,7 @@ Run the D1 schema once in your migrations:
 
 ```ts
 import { getSchema } from "@workkit/memory";
-for (const sql of getSchema()) await env.DB.exec(sql);
+await env.DB.exec(getSchema());
 ```
 
 ## Quick start
