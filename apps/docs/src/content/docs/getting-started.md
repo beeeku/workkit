@@ -12,12 +12,23 @@ workkit is distributed as individual packages. Install only what you need:
 # Core packages (most projects start here)
 bun add @workkit/types @workkit/errors @workkit/env
 
-# Add binding-specific packages as needed
+# Cloudflare binding wrappers
 bun add @workkit/d1 @workkit/kv @workkit/queue @workkit/cache
-bun add @workkit/auth @workkit/ratelimit @workkit/cron
-bun add @workkit/ai @workkit/ai-gateway
 bun add @workkit/do @workkit/r2 @workkit/crypto
-bun add @workkit/logger
+bun add @workkit/auth @workkit/ratelimit @workkit/cron
+bun add @workkit/logger @workkit/health @workkit/turnstile @workkit/features
+
+# AI & agents
+bun add @workkit/ai @workkit/ai-gateway @workkit/agent @workkit/memory @workkit/mcp
+
+# Orchestration & human-in-the-loop
+bun add @workkit/workflow @workkit/approval
+
+# Communication
+bun add @workkit/mail @workkit/notify @workkit/chat
+
+# Browser & PDF
+bun add @workkit/browser @workkit/pdf
 
 # Testing utilities
 bun add -d @workkit/testing

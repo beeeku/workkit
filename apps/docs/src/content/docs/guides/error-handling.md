@@ -286,3 +286,16 @@ export default {
   },
 }
 ```
+
+## Domain-specific error codes
+
+`@workkit/errors` is the base. Higher-level packages add their own codes that extend the same hierarchy:
+
+| Package | Codes |
+|---|---|
+| `@workkit/agent` | `WORKKIT_AGENT_HANDOFF_CYCLE`, `WORKKIT_AGENT_BUDGET` |
+| `@workkit/memory` | `STORAGE_ERROR`, `EMBEDDING_ERROR`, `VECTORIZE_ERROR`, `CACHE_ERROR`, `ENCRYPTION_ERROR`, `COMPACTION_ERROR`, `NOT_FOUND`, `IDEMPOTENCY_ERROR` (returned via the `MemoryResult<T>` discriminated union, not thrown) |
+| `@workkit/workflow` | `WorkflowError` carries `executionId`, `failedStep`, `stepAttempt`, plus the full journal |
+| `@workkit/turnstile` | `WORKKIT_TURNSTILE` |
+
+Use `serializeError(err)` for log emission and `errorToResponse(err)` for HTTP responses regardless of which package raised the error.

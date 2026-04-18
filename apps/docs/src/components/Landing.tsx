@@ -45,7 +45,7 @@ export default function Landing() {
 			<section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
 				<div className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/50 px-4 py-1.5 text-xs text-slate-400 mb-8">
 					<span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-					v0.1.0 — now in public beta
+					v1.0 stable — 32 packages on npm
 				</div>
 
 				<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
@@ -58,7 +58,8 @@ export default function Landing() {
 
 				<p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
 					Type-safe, composable utilities for every Cloudflare Workers binding. KV, D1, R2, Queues,
-					Durable Objects, AI — all with consistent APIs and zero runtime overhead.
+					Durable Objects, Browser Rendering, AI — plus higher-level primitives for agents, memory,
+					MCP servers, durable workflows, and approval flows.
 				</p>
 
 				<div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -106,7 +107,7 @@ export default function Landing() {
 
 			{/* Package Grid */}
 			<section className="max-w-6xl mx-auto px-6 py-16">
-				<h2 className="text-2xl font-bold text-white mb-2">19 packages. One ecosystem.</h2>
+				<h2 className="text-2xl font-bold text-white mb-2">32 packages. One ecosystem.</h2>
 				<p className="text-slate-400 mb-8">
 					Install only what you need. Every package works standalone or composes with others.
 				</p>
