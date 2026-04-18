@@ -33,10 +33,10 @@ export const margin = {
 } as const;
 
 /** Default for the Indian market (entryexit's primary audience). */
-export const defaults = {
+export const defaults: { page: PageSize; margin: PageMargin } = {
 	page: pageSize.A4,
 	margin: margin.normal,
-} as const;
+};
 
 /**
  * Coerce a user-supplied margin shape into a `PageMargin`. Accepts a single
