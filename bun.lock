@@ -20,6 +20,7 @@
         "@workkit/kv": "workspace:*",
         "@workkit/ratelimit": "workspace:*",
         "@workkit/testing": "workspace:*",
+        "@workkit/vitest-config": "workspace:*",
         "bunup": "0.16.31",
         "picocolors": "^1.1.1",
         "turbo": "^2.9.5",
@@ -474,6 +475,10 @@
     },
     "tooling/tsconfig": {
       "name": "@workkit/tsconfig",
+      "version": "0.0.0",
+    },
+    "tooling/vitest": {
+      "name": "@workkit/vitest-config",
       "version": "0.0.0",
     },
   },
@@ -1199,6 +1204,8 @@
     "@workkit/turnstile": ["@workkit/turnstile@workspace:packages/turnstile"],
 
     "@workkit/types": ["@workkit/types@workspace:packages/types"],
+
+    "@workkit/vitest-config": ["@workkit/vitest-config@workspace:tooling/vitest"],
 
     "@workkit/workflow": ["@workkit/workflow@workspace:packages/workflow"],
 

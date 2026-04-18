@@ -14,7 +14,9 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo build && node scripts/resolve-workspace-deps.js && changeset publish && node scripts/resolve-workspace-deps.js --restore",
-    "test:e2e": "vitest run --config e2e/vitest.config.ts"
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
+    "test:scripts": "vitest run --config scripts/vitest.config.ts",
+    "constitution:check": "bun run scripts/constitution-check.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
@@ -32,6 +34,7 @@
     "@workkit/kv": "workspace:*",
     "@workkit/ratelimit": "workspace:*",
     "@workkit/testing": "workspace:*",
+    "@workkit/vitest-config": "workspace:*",
     "bunup": "0.16.31",
     "picocolors": "^1.1.1",
     "turbo": "^2.9.5",

@@ -71,3 +71,27 @@ maina status      # branch health overview
 - No `console.log` in production code
 - Diff-only: only fix issues on changed lines
 - TDD always — write tests first
+
+## Constitution
+
+Nine load-bearing rules live in `.maina/constitution.md` and are enforced
+mechanically by `bun run constitution:check` (CI-gated in diff-only mode):
+
+1. **Zero runtime overhead** — heavy direct deps need a `dep-justification:` line in the changeset.
+2. **Standard Schema only** for validation in public signatures (no `ZodType<T>`).
+3. **Every package wires `@workkit/testing`** in devDependencies (or opts out via `"//constitution-allow"`).
+4. **Single `src/index.ts` export** per package; subpaths via `exports` map only.
+5. **No cross-package imports** unless the target is in `dependencies`/`peerDependencies`.
+6. **Changeset required** when `packages/*/src/**` changes (private packages exempt).
+7. **No `console.log`** in `packages/*/src/**` (use `@workkit/logger`).
+8. **Diff-only fixes** — change only the lines on the diff.
+9. **TDD always** — tests precede implementation.
+
+Escape hatches: `// constitution-allow:<rule> reason="..."` on the offending line. The CI report counts opt-outs so accumulated debt is visible.
+
+Run locally before pushing:
+
+```bash
+bun run constitution:check                # full repo
+bun run constitution:check -- --diff-only # only files changed since master
+```

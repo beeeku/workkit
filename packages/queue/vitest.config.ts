@@ -1,7 +1,5 @@
-import { defineConfig } from "vitest/config";
+import { defineWorkkitVitest } from "@workkit/vitest-config";
 
-export default defineConfig({
-	test: {
-		include: ["tests/**/*.test.ts"],
-	},
+export default defineWorkkitVitest({
+	include: ["tests/**/*.test.ts"],
 });
