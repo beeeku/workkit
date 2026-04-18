@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/pdf",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Render HTML to PDF in Cloudflare Workers via @workkit/browser; R2 storage and presign helpers",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",
@@ -36,7 +36,7 @@
 	},
 	"dependencies": {
 		"@workkit/browser": "workspace:*",
-		"@workkit/errors": "^1.0.2"
+		"@workkit/errors": "^1.0.3"
 	},
 	"peerDependencies": {
 		"@cloudflare/puppeteer": ">=0.0.14"

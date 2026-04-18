@@ -1,6 +1,6 @@
 {
   "name": "@workkit/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hono for MCP — type-safe MCP servers on Cloudflare Workers with REST + OpenAPI from one definition",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
@@ -20,7 +20,9 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
@@ -42,7 +44,13 @@
     "zod": "^4.3.6"
   },
   "keywords": [
-    "cloudflare", "workers", "mcp", "model-context-protocol",
-    "ai", "tools", "openapi", "workkit"
+    "cloudflare",
+    "workers",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "tools",
+    "openapi",
+    "workkit"
   ]
 }
