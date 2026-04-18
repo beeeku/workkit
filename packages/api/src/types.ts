@@ -203,6 +203,34 @@ export interface OpenAPIConfig {
 	apis: ApiDefinition<any, any, any, any, any, any, any>[];
 }
 
+export type LlmsGroupBy = "tag" | "resource" | "none";
+
+export interface LlmsGenerationOptions {
+	siteBlurb?: string;
+	groupBy?: LlmsGroupBy;
+	includePaths?: string[];
+	excludePaths?: string[];
+	inlineSchemas?: boolean;
+	schemaRefBaseUrl?: string;
+}
+
+export type OpenAPISpecSource =
+	| Record<string, unknown>
+	| (() => Record<string, unknown> | Promise<Record<string, unknown>>);
+
+export interface LlmsRoutesConfig {
+	openapiSpec: OpenAPISpecSource;
+	llmsPath?: string;
+	llmsFullPath?: string;
+	llmsOptions?: LlmsGenerationOptions;
+	llmsFullOptions?: LlmsGenerationOptions;
+}
+
+export type LlmsRoutePair<TEnv = unknown> = [
+	ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>,
+	ApiDefinition<"GET", string, undefined, undefined, undefined, undefined, TEnv>,
+];
+
 // --- Client ---
 
 /** Client configuration */

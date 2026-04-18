@@ -9,6 +9,7 @@ export { parsePath, matchPath, buildPath, toOpenAPIPath, parseQuery } from "./pa
 
 // OpenAPI generation
 export { generateOpenAPI } from "./openapi";
+export { createLlmsRoutes, generateLlmsTxt, generateLlmsFullTxt } from "./llms";
 
 // Validation helpers
 export { validate, validateSync, tryValidate, isStandardSchema } from "./validation";
@@ -40,6 +41,11 @@ export type {
 	PathParamRecord,
 	// OpenAPI
 	OpenAPIConfig,
+	LlmsGroupBy,
+	LlmsGenerationOptions,
+	OpenAPISpecSource,
+	LlmsRoutesConfig,
+	LlmsRoutePair,
 	// Client
 	ClientConfig,
 } from "./types";

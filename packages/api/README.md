@@ -82,7 +82,10 @@ Works with any Standard Schema provider: Zod, Valibot, ArkType.
 
 ### OpenAPI
 
-- **`generateOpenAPI(info, definitions)`** — Generate an OpenAPI 3.0 spec from API definitions
+- **`generateOpenAPI(info, definitions)`** — Generate an OpenAPI 3.1 spec from API definitions
+- **`generateLlmsTxt(openapiSpec, options?)`** — Generate a concise `llms.txt` endpoint index
+- **`generateLlmsFullTxt(openapiSpec, options?)`** — Generate a detailed `llms-full.txt` API corpus
+- **`createLlmsRoutes(config)`** — Add built-in `GET /llms.txt` and `GET /llms-full.txt` handlers
 
 ### Validation
 
