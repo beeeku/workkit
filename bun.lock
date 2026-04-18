@@ -366,6 +366,17 @@
         "@workkit/types": "workspace:*",
       },
     },
+    "packages/notify": {
+      "name": "@workkit/notify",
+      "version": "0.0.0",
+      "dependencies": {
+        "@standard-schema/spec": "^1.1.0",
+        "@workkit/errors": "^1.0.2",
+      },
+      "devDependencies": {
+        "zod": "^3.23.0",
+      },
+    },
     "packages/pdf": {
       "name": "@workkit/pdf",
       "version": "0.0.0",
@@ -1158,6 +1169,8 @@
     "@workkit/mcp": ["@workkit/mcp@workspace:packages/mcp"],
 
     "@workkit/memory": ["@workkit/memory@workspace:packages/memory"],
+
+    "@workkit/notify": ["@workkit/notify@workspace:packages/notify"],
 
     "@workkit/pdf": ["@workkit/pdf@workspace:packages/pdf"],
 

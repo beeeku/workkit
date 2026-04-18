@@ -1,23 +1,40 @@
-# Task Breakdown
+# Task Breakdown — @workkit/notify (core)
 
-## Tasks
+## Tasks (linear, TDD)
 
-Each task should be completable in one commit. Test tasks precede implementation tasks.
-
-- [ ] [NEEDS CLARIFICATION] Define tasks.
-
-## Dependencies
-
-Which tasks block which? Draw the critical path.
-
-- [NEEDS CLARIFICATION]
+1. scaffold (package.json, tsconfig, bunup, vitest, README stub)
+2. impl:errors (small, used everywhere)
+3. test:idempotency → impl:idempotency
+4. test:quiet-hours → impl:quiet-hours
+5. impl:adapters (registry + types)
+6. test:define → impl:define + impl:config (priority allowlist)
+7. impl:preferences + impl:opt-out + impl:records (D1 query helpers)
+8. test:dispatch → impl:dispatch (orchestrator)
+9. impl:send (enqueue) + impl:consumer (createNotifyConsumer)
+10. impl:webhooks
+11. test:forget → impl:forget
+12. wire src/index.ts
+13. README + cost/security notes
+14. lint + typecheck + scoped tests
+15. maina verify
+16. changeset
+17. maina commit + push + PR
+18. request review
 
 ## Definition of Done
 
-How do we know this feature is complete?
-
-- [ ] All tests pass
-- [ ] Biome lint clean
-- [ ] TypeScript compiles
-- [ ] maina analyze shows no errors
-- [ ] [NEEDS CLARIFICATION] Feature-specific criteria
+- [ ] All tests green
+- [ ] Typecheck + lint clean
+- [ ] maina verify clean
+- [ ] LOC budget ≤900 source
+- [ ] D1 schema documented
+- [ ] Adapter interface stable + tested via mock adapter
+- [ ] Opt-out re-checked at dispatch (test)
+- [ ] Quiet-hours midnight wrap (test)
+- [ ] Idempotency UNIQUE collision returns `duplicate` (test)
+- [ ] All-channel-opted-out → `skipped` (test)
+- [ ] forgetUser cascade (test)
+- [ ] Single src/index.ts export
+- [ ] Changeset
+- [ ] PR opened, links #26
+- [ ] Review requested
