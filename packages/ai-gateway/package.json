@@ -1,6 +1,6 @@
 {
   "name": "@workkit/ai-gateway",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "AI Gateway patterns for Cloudflare Workers — model routing, caching, rate limiting, cost tracking, provider abstraction",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
