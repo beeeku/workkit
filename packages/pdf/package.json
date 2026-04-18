@@ -1,0 +1,60 @@
+{
+	"name": "@workkit/pdf",
+	"version": "0.0.0",
+	"description": "Render HTML to PDF in Cloudflare Workers via @workkit/browser; R2 storage and presign helpers",
+	"license": "MIT",
+	"author": "Bikash Dash <beeeku>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/beeeku/workkit.git",
+		"directory": "packages/pdf"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		}
+	},
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "bunup",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@workkit/browser": "workspace:*",
+		"@workkit/errors": "^1.0.2"
+	},
+	"peerDependencies": {
+		"@cloudflare/puppeteer": ">=0.0.14"
+	},
+	"peerDependenciesMeta": {
+		"@cloudflare/puppeteer": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@cloudflare/puppeteer": "^0.0.14"
+	},
+	"keywords": [
+		"cloudflare",
+		"workers",
+		"pdf",
+		"browser-rendering",
+		"r2",
+		"workkit"
+	]
+}
