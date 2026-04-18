@@ -1,9 +1,43 @@
 # @workkit/ai
 
+> **⚠️ Deprecated — use [`@workkit/ai-gateway`](../ai-gateway) instead.**
+>
+> Per [ADR-001](../../.maina/decisions/001-ai-package-consolidation.md), this package is being folded into `@workkit/ai-gateway`. Existing APIs still work today but are marked `@deprecated`; the shim is tracked in [#63](https://github.com/beeeku/workkit/issues/63) and the package will be removed at `@workkit/ai@2.0`.
+
 > Typed Workers AI client with streaming, fallback chains, and retry
 
 [![npm](https://img.shields.io/npm/v/@workkit/ai)](https://www.npmjs.com/package/@workkit/ai)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@workkit/ai)](https://bundlephobia.com/package/@workkit/ai)
+
+## Migration
+
+Replace `@workkit/ai` imports with `@workkit/ai-gateway` and construct a gateway over your `env.AI` binding:
+
+| Before (`@workkit/ai`) | After (`@workkit/ai-gateway`) |
+|---|---|
+| `ai(env.AI).run(model, input)` | `gateway.run(model, input)` |
+| `streamAI(env.AI, model, input)` | `gateway.stream!(model, input)` (typed `GatewayStreamEvent`) |
+| `fallback(env.AI, [{model, timeout}], input)` | `gateway.runFallback!(entries, input)` (server-side via CF Universal Endpoint) |
+| `withRetry(env.AI, model, input, { maxRetries })` | `withRetry(gateway, { maxAttempts }).run(model, input)` |
+| `structuredAI(env.AI, model, input, { schema })` | `gateway.run(model, input, { responseFormat: { jsonSchema } })` |
+| `aiWithTools(env.AI, model, input, { tools }, handler)` | `gateway.run(model, input, { toolOptions: { tools } })` + manual dispatch |
+
+```ts
+// Before
+import { ai } from "@workkit/ai"
+const client = ai(env.AI)
+const result = await client.run("@cf/meta/llama-3.1-8b-instruct", { messages })
+
+// After
+import { createGateway } from "@workkit/ai-gateway"
+const gateway = createGateway({
+  providers: { ai: { type: "workers-ai", binding: env.AI } },
+  defaultProvider: "ai",
+})
+const result = await gateway.run("@cf/meta/llama-3.1-8b-instruct", { messages })
+```
+
+`StructuredOutputError` and `estimateTokens` remain in `@workkit/ai` and aren't deprecated.
 
 ## Install
 

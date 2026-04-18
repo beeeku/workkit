@@ -84,6 +84,11 @@ export function defaultIsRetryable(error: unknown): boolean {
  *   backoff: 'exponential',
  * })
  * ```
+ *
+ * @deprecated Use `withRetry(gateway, { maxAttempts })` from `@workkit/ai-gateway`.
+ * That wrapper retries the unified gateway (covering Workers AI + OpenAI +
+ * Anthropic + custom) and uses each `WorkkitError`'s own `retryStrategy`.
+ * See ADR-001; tracked in #63.
  */
 export async function withRetry<T = unknown>(
 	binding: AiBinding,

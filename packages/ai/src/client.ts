@@ -31,6 +31,11 @@ export interface WorkkitAiClient {
 /**
  * Create a typed AI client from a Cloudflare Workers AI binding.
  *
+ * @deprecated Use `createGateway({ providers: { ai: { type: "workers-ai", binding } }, defaultProvider: "ai" })`
+ * from `@workkit/ai-gateway`. See ADR-001 (`.maina/decisions/001-ai-package-consolidation.md`).
+ * `@workkit/ai` will be removed at v2.0; track migration via
+ * [#63](https://github.com/beeeku/workkit/issues/63).
+ *
  * @param binding - The AI binding from the worker environment (env.AI)
  * @returns A typed AI client
  * @throws {BindingNotFoundError} If the binding is nullish
