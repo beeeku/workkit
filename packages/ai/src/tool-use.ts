@@ -118,6 +118,10 @@ function toWorkersAiTools(tools: ToolUseOptions["tools"]): Array<{
  * )
  * // result.toolCalls contains the model's requested calls
  * ```
+ *
+ * @deprecated Use `gateway.run(model, input, { toolOptions: { tools, toolChoice } })`
+ * from `@workkit/ai-gateway` — unified tool-call normalization across Workers AI,
+ * OpenAI, and Anthropic. See ADR-001; tracked in #63.
  */
 export async function aiWithTools(
 	binding: AiBinding,

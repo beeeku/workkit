@@ -28,6 +28,11 @@ export interface FallbackOptions extends RunOptions {
  *   messages: [{ role: 'user', content: 'Hello' }],
  * })
  * ```
+ *
+ * @deprecated Use `gateway.runFallback(entries, input, options)` from
+ * `@workkit/ai-gateway` for server-side fallback via the Cloudflare Universal
+ * Endpoint. For client-side Workers-AI-only fallback, chain calls manually
+ * with try/catch. See ADR-001; tracked in #63.
  */
 export async function fallback<T = unknown>(
 	binding: AiBinding,

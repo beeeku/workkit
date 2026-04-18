@@ -50,6 +50,9 @@ export interface ToolRegistry {
  *   (call) => registry.execute(call),
  * );
  * ```
+ *
+ * @deprecated Use `createToolRegistry` from `@workkit/ai-gateway` (same shape,
+ * works with any gateway provider). See ADR-001; tracked in #63.
  */
 export function createToolRegistry(): ToolRegistry {
 	const handlers = new Map<string, ToolHandler>();

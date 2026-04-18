@@ -27,6 +27,9 @@ export interface StreamOptions extends RunOptions {
  *   headers: { 'Content-Type': 'text/event-stream' },
  * })
  * ```
+ *
+ * @deprecated Use `gateway.stream(model, input, options)` from `@workkit/ai-gateway`
+ * (returns typed `GatewayStreamEvent`s). See ADR-001; tracked in #63.
  */
 export async function streamAI(
 	binding: AiBinding,

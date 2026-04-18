@@ -80,6 +80,10 @@ const DEFAULT_MAX_RETRIES = 1;
  * );
  * // result.data.colors → ["red", "green", "blue"]
  * ```
+ *
+ * @deprecated Use `gateway.run(model, input, { responseFormat: { jsonSchema } })`
+ * from `@workkit/ai-gateway` — normalizes JSON mode across Workers AI, OpenAI,
+ * and Anthropic. See ADR-001; tracked in #63.
  */
 export async function structuredAI<T>(
 	binding: AiBinding,
