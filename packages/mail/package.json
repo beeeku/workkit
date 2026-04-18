@@ -1,6 +1,6 @@
 {
   "name": "@workkit/mail",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed email client for Cloudflare Workers — send, receive, route, parse",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
@@ -20,7 +20,9 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
