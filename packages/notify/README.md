@@ -6,7 +6,7 @@ Adapters ship as **subpath imports** in this same package — bring the runtime 
 
 | Subpath | Adapter | Optional peer |
 |---|---|---|
-| `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
+| `@workkit/notify/email` | Pluggable provider — Cloudflare `send_email` (default) or Resend HTTP API + React Email | `@workkit/mail`, `@react-email/render` |
 | `@workkit/notify/inapp` | D1-backed feed + SSE streaming | — |
 | `@workkit/notify/whatsapp` | Meta WA Cloud API (default) + Twilio/Gupshup stubs | — |
 
@@ -142,33 +142,72 @@ Adapters are stateless objects. The dispatcher feeds them validated args; they r
 
 ### Email — `@workkit/notify/email`
 
+Provider-pluggable. **Cloudflare `send_email` is the default** (zero config, ships with every Worker deployment). Resend is the first-class alternative when you want delivery webhooks, hard/soft bounce tracking, and auto-opt-out.
+
+#### Default: Cloudflare `send_email` binding
+
+```toml
+# wrangler.toml
+[[send_email]]
+name = "SEND_EMAIL"
+```
+
 ```ts
-import { emailAdapter } from "@workkit/notify/email";
+import { emailAdapter, cloudflareEmailProvider } from "@workkit/notify/email";
+
+const email = emailAdapter({
+  provider: cloudflareEmailProvider({
+    binding: env.SEND_EMAIL,
+    from: "Reports <reports@entryexit.ai>",
+    replyTo: "support@entryexit.ai",                // optional
+  }),
+  bucket: env.REPORTS,                              // optional, only for attachments
+  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+});
+```
+
+- Delegates to `@workkit/mail`'s `mail()` — zero MIME duplication.
+- Requires `@workkit/mail` (optional peer dep) — `bun add @workkit/mail`.
+- No delivery webhooks on the binding → `autoOptOut` is not available on this provider; bounce synthesis from inbound DSN routing is tracked in the roadmap (#54).
+- Plain-text fallback auto-generated.
+- Attachments forwarded as raw bytes; attachment cap default 40MB; bounded R2 fetch concurrency 4.
+
+#### Alternative: Resend
+
+```ts
+import { emailAdapter, resendEmailProvider } from "@workkit/notify/email";
 import { optOut } from "@workkit/notify";
 
 const email = emailAdapter({
-  apiKey: env.RESEND_API_KEY,
-  from: "Reports <reports@entryexit.ai>",
-  bucket: env.REPORTS,                              // optional, only for attachments
-  webhook: { maxAgeMs: 5 * 60 * 1000 },
-  autoOptOut: {
-    enabled: true,
-    hook: async (emailAddress, channel, _notificationId, reason) => {
-      // Webhook payload doesn't carry your internal id — resolve it.
-      const userId = await lookupUserIdByEmail(emailAddress);
-      if (userId) await optOut(env.DB, userId, channel, null, reason);
+  provider: resendEmailProvider({
+    apiKey: env.RESEND_API_KEY,
+    from: "Reports <reports@entryexit.ai>",
+    webhook: { maxAgeMs: 5 * 60 * 1000 },
+    autoOptOut: {
+      enabled: true,
+      hook: async (emailAddress, channel, _notificationId, reason) => {
+        const userId = await lookupUserIdByEmail(emailAddress);
+        if (userId) await optOut(env.DB, userId, channel, null, reason);
+      },
     },
-  },
-  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+  }),
+  bucket: env.REPORTS,
+  markUnsubscribable: ["pre-market-brief"],
 });
 ```
 
 - Direct `fetch` to Resend (no SDK).
 - Optional `@react-email/render` for React Email components.
-- Plain-text fallback auto-generated.
 - Svix-format webhook verification (`v1,<base64>` HMAC-SHA256), 5-min replay window.
 - Hard bounce + complaint → auto opt-out (configurable, default on).
 - Attachment cap default 40MB; bounded R2 fetch concurrency 4.
+
+#### Migrating from the pre-provider shape
+
+```diff
+- emailAdapter({ apiKey: env.RESEND_API_KEY, from: "…", autoOptOut: { hook } })
++ emailAdapter({ provider: resendEmailProvider({ apiKey: env.RESEND_API_KEY, from: "…", autoOptOut: { hook } }) })
+```
 
 ### In-app — `@workkit/notify/inapp`
 

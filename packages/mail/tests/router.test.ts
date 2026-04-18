@@ -1,6 +1,6 @@
+import { createMockForwardableEmail } from "@workkit/testing";
 import { describe, expect, it, vi } from "vitest";
 import { createEmailRouter } from "../src/router";
-import { createMockForwardableEmail } from "./helpers/mock-email";
 
 const ctx = { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any;
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type EmailPayload, emailAdapter } from "../../../src/adapters/email/adapter";
-import { FromDomainError } from "../../../src/adapters/email/errors";
+import { FromDomainError, ProviderMissingError } from "../../../src/adapters/email/errors";
+import { resendEmailProvider } from "../../../src/adapters/email/providers/resend";
 import type { AdapterSendArgs, ChannelTemplate } from "../../../src/types";
 
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -27,61 +28,78 @@ function callArgs(template: ChannelTemplate<EmailPayload>): AdapterSendArgs<Emai
 }
 
 describe("emailAdapter()", () => {
-	it("rejects an invalid `from` at construction", () => {
-		expect(() => emailAdapter({ apiKey: "x", from: "not-an-email" })).toThrow(FromDomainError);
+	it("throws ProviderMissingError when provider is absent", () => {
+		expect(() => emailAdapter({} as never)).toThrow(ProviderMissingError);
 	});
 
-	it("posts to Resend with rendered HTML + text and returns providerId on 200", async () => {
+	it("propagates FromDomainError from the Resend provider constructor", () => {
+		expect(() => resendEmailProvider({ apiKey: "x", from: "not-an-email" })).toThrow(
+			FromDomainError,
+		);
+	});
+
+	it("delegates send to the provider and returns its result", async () => {
 		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
 			new Response(JSON.stringify({ id: "resend_id_1" }), {
 				status: 200,
 				headers: { "content-type": "application/json" },
 			}),
 		);
-		const adapter = emailAdapter({ apiKey: "k", from: "Reports <reports@x.example.com>" });
+		const adapter = emailAdapter({
+			provider: resendEmailProvider({ apiKey: "k", from: "Reports <reports@x.example.com>" }),
+		});
 		const result = await adapter.send(
 			callArgs({ title: () => "NIFTY", body: () => "<p>hi</p>" } as ChannelTemplate<EmailPayload>),
 		);
 		expect(result.status).toBe("sent");
 		expect(result.providerId).toBe("resend_id_1");
+	});
+
+	it("attaches List-Unsubscribe headers for notification ids in markUnsubscribable", async () => {
+		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+			new Response(JSON.stringify({ id: "i" }), { status: 200 }),
+		);
+		const adapter = emailAdapter({
+			provider: resendEmailProvider({ apiKey: "k", from: "x@example.com" }),
+			markUnsubscribable: ["pre-market-brief"],
+		});
+		await adapter.send(callArgs({ body: () => "<p>x</p>" }));
 		const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
 		const [, opts] = fetchMock.mock.calls[0] ?? [];
 		const body = JSON.parse((opts as RequestInit).body as string);
-		expect(body.to).toEqual(["user@example.com"]);
-		expect(body.subject).toBe("NIFTY");
-		expect(body.html).toBe("<p>hi</p>");
-		expect(body.text).toBe("hi");
+		expect(body.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+		expect(body.headers["X-Entity-Ref-ID"]).toBe("d1");
 	});
 
-	it("returns failed when Resend returns 4xx", async () => {
-		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-			new Response(JSON.stringify({ error: { message: "from-domain not verified" } }), {
-				status: 403,
-				headers: { "content-type": "application/json" },
-			}),
-		);
-		const adapter = emailAdapter({ apiKey: "k", from: "x@example.com" });
-		const result = await adapter.send(callArgs({ body: () => "<p>x</p>" }));
-		expect(result.status).toBe("failed");
-		expect(result.error).toContain("from-domain");
+	it("omits parseWebhook when provider does not implement it", () => {
+		const adapter = emailAdapter({
+			provider: {
+				name: "cloudflare",
+				async send() {
+					return { status: "sent", providerId: "id" };
+				},
+			},
+		});
+		expect(adapter.parseWebhook).toBeUndefined();
+		expect(adapter.verifySignature).toBeUndefined();
 	});
 
-	it("returns failed when fetch throws", async () => {
-		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-			new Error("ENOTFOUND"),
-		);
-		const adapter = emailAdapter({ apiKey: "k", from: "x@example.com" });
-		const result = await adapter.send(callArgs({ body: () => "<p>x</p>" }));
-		expect(result.status).toBe("failed");
-		expect(result.error).toContain("ENOTFOUND");
+	it("exposes parseWebhook / verifySignature when the provider implements them", () => {
+		const adapter = emailAdapter({
+			provider: resendEmailProvider({ apiKey: "k", from: "x@example.com" }),
+		});
+		expect(typeof adapter.parseWebhook).toBe("function");
+		expect(typeof adapter.verifySignature).toBe("function");
 	});
 
-	it("invokes the auto-opt-out hook on a complaint webhook", async () => {
+	it("delegates parseWebhook to the provider (auto-opt-out hook fires)", async () => {
 		const hook = vi.fn().mockResolvedValue(undefined);
 		const adapter = emailAdapter({
-			apiKey: "k",
-			from: "x@example.com",
-			autoOptOut: { hook },
+			provider: resendEmailProvider({
+				apiKey: "k",
+				from: "x@example.com",
+				autoOptOut: { hook },
+			}),
 		});
 		const req = new Request("https://example.com/webhook", {
 			method: "POST",
@@ -95,73 +113,5 @@ describe("emailAdapter()", () => {
 		});
 		await adapter.parseWebhook!(req);
 		expect(hook).toHaveBeenCalledWith("user@example.com", "email", null, "complaint");
-	});
-
-	it("invokes the auto-opt-out hook on a hard bounce", async () => {
-		const hook = vi.fn().mockResolvedValue(undefined);
-		const adapter = emailAdapter({
-			apiKey: "k",
-			from: "x@example.com",
-			autoOptOut: { hook },
-		});
-		const req = new Request("https://example.com/webhook", {
-			method: "POST",
-			body: JSON.stringify({
-				type: "email.bounced",
-				created_at: "2026-04-18T05:00:00Z",
-				data: { email_id: "id1", to: ["user@example.com"], bounce: { type: "hard" } },
-			}),
-		});
-		await adapter.parseWebhook!(req);
-		expect(hook).toHaveBeenCalledWith("user@example.com", "email", null, "hard-bounce");
-	});
-
-	it("does NOT invoke hook on transient bounce", async () => {
-		const hook = vi.fn().mockResolvedValue(undefined);
-		const adapter = emailAdapter({
-			apiKey: "k",
-			from: "x@example.com",
-			autoOptOut: { hook },
-		});
-		const req = new Request("https://example.com/webhook", {
-			method: "POST",
-			body: JSON.stringify({
-				type: "email.bounced",
-				data: { email_id: "id1", to: ["user@example.com"], bounce: { type: "transient" } },
-			}),
-		});
-		await adapter.parseWebhook!(req);
-		expect(hook).not.toHaveBeenCalled();
-	});
-
-	it("parseWebhook does not throw on malformed JSON when autoOptOut is enabled", async () => {
-		const hook = vi.fn();
-		const adapter = emailAdapter({
-			apiKey: "k",
-			from: "x@example.com",
-			autoOptOut: { hook },
-		});
-		const req = new Request("https://example.com/webhook", {
-			method: "POST",
-			body: "{not-json",
-		});
-		await expect(adapter.parseWebhook!(req)).resolves.toEqual([]);
-		expect(hook).not.toHaveBeenCalled();
-	});
-
-	it("attaches List-Unsubscribe header for notification ids in markUnsubscribable", async () => {
-		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-			new Response(JSON.stringify({ id: "i" }), { status: 200 }),
-		);
-		const adapter = emailAdapter({
-			apiKey: "k",
-			from: "x@example.com",
-			markUnsubscribable: ["pre-market-brief"],
-		});
-		await adapter.send(callArgs({ body: () => "<p>x</p>" }));
-		const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
-		const [, opts] = fetchMock.mock.calls[0] ?? [];
-		const body = JSON.parse((opts as RequestInit).body as string);
-		expect(body.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
 	});
 });

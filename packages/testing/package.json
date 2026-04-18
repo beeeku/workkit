@@ -46,6 +46,12 @@
         "types": "./dist/src/do.d.ts",
         "default": "./dist/src/do.js"
       }
+    },
+    "./email": {
+      "import": {
+        "types": "./dist/src/email.d.ts",
+        "default": "./dist/src/email.js"
+      }
     }
   },
   "module": "./dist/src/index.js",
@@ -70,6 +76,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0"
   },
+  "//constitution-allow": "no-testing reason=self-package; @workkit/testing cannot depend on itself",
   "keywords": [
     "cloudflare",
     "workers",
@@ -80,6 +87,8 @@
     "r2",
     "queue",
     "durable-objects",
+    "email",
+    "send-email",
     "workkit"
   ]
 }

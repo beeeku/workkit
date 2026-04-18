@@ -341,10 +341,13 @@
         "mimetext": "^3.0.24",
         "postal-mime": "^2.4.1",
       },
+      "devDependencies": {
+        "@workkit/testing": "workspace:*",
+      },
     },
     "packages/mcp": {
       "name": "@workkit/mcp",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "hono": "^4.7.10",
@@ -357,7 +360,7 @@
     },
     "packages/memory": {
       "name": "@workkit/memory",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -372,18 +375,22 @@
       "version": "0.1.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
-        "@workkit/errors": "^1.0.2",
+        "@workkit/errors": "^1.0.3",
       },
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
+        "@workkit/mail": "workspace:*",
+        "@workkit/testing": "workspace:*",
         "better-sqlite3": "^12.9.0",
         "zod": "^3.23.0",
       },
       "peerDependencies": {
         "@react-email/render": ">=1.0.0",
+        "@workkit/mail": "workspace:*",
       },
       "optionalPeers": [
         "@react-email/render",
+        "@workkit/mail",
       ],
     },
     "packages/pdf": {

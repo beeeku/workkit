@@ -16,10 +16,20 @@ export class AttachmentTooLargeError extends ValidationError {
 	}
 }
 
+export type EmailProviderName = "resend" | "cloudflare" | (string & {});
+
 export class WebhookSignatureError extends ValidationError {
-	constructor(reason: string) {
-		super(`Resend webhook signature verification failed: ${reason}`, [
+	constructor(provider: EmailProviderName, reason: string) {
+		super(`${provider} webhook signature verification failed: ${reason}`, [
 			{ path: ["webhook"], message: reason },
 		]);
+	}
+}
+
+export class ProviderMissingError extends ConfigError {
+	constructor() {
+		super(
+			"emailAdapter: `provider` is required — pass cloudflareEmailProvider() or resendEmailProvider()",
+		);
 	}
 }

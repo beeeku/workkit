@@ -38,6 +38,9 @@
     "mimetext": "^3.0.24",
     "postal-mime": "^2.4.1"
   },
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  },
   "keywords": [
     "cloudflare",
     "workers",
