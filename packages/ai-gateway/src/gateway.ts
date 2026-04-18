@@ -2,6 +2,7 @@ import { ConfigError, ServiceUnavailableError, ValidationError } from "@workkit/
 import { buildFallbackBodyEntry, normalizeFallbackResponse } from "./fallback";
 import { executeAnthropic } from "./providers/anthropic";
 import { executeCustom } from "./providers/custom";
+import { executeEmbed } from "./providers/embed";
 import { executeOpenAi } from "./providers/openai";
 import { cfGatewayHeaders, resolveBaseUrl, withTimeoutSignal } from "./providers/shared";
 import { executeWorkersAi } from "./providers/workers-ai";
@@ -10,6 +11,8 @@ import type {
 	AiInput,
 	AiOutput,
 	CfGatewayConfig,
+	EmbedInput,
+	EmbedOutput,
 	FallbackEntry,
 	Gateway,
 	GatewayConfig,
@@ -226,6 +229,34 @@ export function createGateway<P extends ProviderMap>(config: GatewayConfig<P>): 
 					),
 				cfGatewayHeaders,
 			);
+		},
+
+		async embed(model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput> {
+			if (!model) {
+				throw new ValidationError("Model name is required", [
+					{ path: ["model"], message: "Model name cannot be empty" },
+				]);
+			}
+			const providerKey = options?.provider ?? config.defaultProvider;
+			const providerConfig = config.providers[providerKey];
+			if (!providerConfig) {
+				throw new ConfigError(`Provider "${providerKey}" not found`, {
+					context: { provider: providerKey, available: providerNames },
+				});
+			}
+			const { signal, cleanup } = withTimeoutSignal(options);
+			try {
+				return await executeEmbed(
+					providerKey,
+					providerConfig,
+					model,
+					input,
+					signal ? { ...options, signal } : options,
+					config.cfGateway,
+				);
+			} finally {
+				cleanup();
+			}
 		},
 
 		providers(): string[] {

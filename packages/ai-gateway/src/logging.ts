@@ -1,6 +1,8 @@
 import type {
 	AiInput,
 	AiOutput,
+	EmbedInput,
+	EmbedOutput,
 	FallbackEntry,
 	Gateway,
 	LoggedGateway,
@@ -26,6 +28,7 @@ import type {
 export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGateway {
 	const innerFallback = gateway.runFallback?.bind(gateway);
 	const innerStream = gateway.stream?.bind(gateway);
+	const innerEmbed = gateway.embed?.bind(gateway);
 
 	return {
 		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
@@ -70,6 +73,22 @@ export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGate
 					config.onRequest?.(model, input);
 					try {
 						return await innerStream(model, input, options);
+					} catch (err) {
+						config.onError?.(model, err);
+						throw err;
+					}
+				}
+			: undefined,
+
+		// Embedding calls log errors only — `onRequest` and `onResponse` in
+		// `LoggingConfig` are typed for `AiInput`/`AiOutput`, so feeding them
+		// `EmbedInput`/`EmbedOutput` would require an unsafe cast. Callers who
+		// want embedding-request observability can wrap the gateway themselves
+		// or subscribe via a future `onEmbedRequest` hook.
+		embed: innerEmbed
+			? async (model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput> => {
+					try {
+						return await innerEmbed(model, input, options);
 					} catch (err) {
 						config.onError?.(model, err);
 						throw err;

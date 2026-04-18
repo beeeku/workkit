@@ -1,5 +1,5 @@
 import { getRetryDelay, getRetryStrategy, isRetryable } from "@workkit/errors";
-import type { AiInput, FallbackEntry, Gateway, RunOptions } from "./types";
+import type { AiInput, EmbedInput, FallbackEntry, Gateway, RunOptions } from "./types";
 
 /** Options for `withRetry`. */
 export interface RetryConfig {
@@ -39,6 +39,7 @@ export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 
 	const innerFallback = gateway.runFallback?.bind(gateway);
 	const innerStream = gateway.stream?.bind(gateway);
+	const innerEmbed = gateway.embed?.bind(gateway);
 
 	return {
 		run: (model, input, options) =>
@@ -53,6 +54,10 @@ export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 		stream: innerStream
 			? (model: string, input: AiInput, options?: RunOptions) =>
 					retry(() => innerStream(model, input, options), options?.signal)
+			: undefined,
+		embed: innerEmbed
+			? (model: string, input: EmbedInput, options?: RunOptions) =>
+					retry(() => innerEmbed(model, input, options), options?.signal)
 			: undefined,
 		providers: () => gateway.providers(),
 		defaultProvider: () => gateway.defaultProvider(),

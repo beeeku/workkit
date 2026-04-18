@@ -1,9 +1,23 @@
 import { ConfigError } from "@workkit/errors";
-import type { AiInput, AiOutput, CacheConfig, CachedGateway, Gateway, RunOptions } from "./types";
+import type {
+	AiInput,
+	AiOutput,
+	CacheConfig,
+	CachedGateway,
+	EmbedInput,
+	EmbedOutput,
+	Gateway,
+	RunOptions,
+} from "./types";
 
 /** Default hash function: deterministic JSON stringify */
 function defaultHashFn(model: string, input: AiInput): string {
 	return `ai-cache:${model}:${stableStringify(input)}`;
+}
+
+/** Dedicated cache-key namespace for embeddings (separate from `run` outputs). */
+function embedCacheKey(model: string, input: EmbedInput): string {
+	return `ai-embed-cache:${model}:${stableStringify(input)}`;
 }
 
 /** Stable JSON.stringify — sorts object keys for determinism */
@@ -93,6 +107,27 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 
 		// Streams are not cached — each call hits the upstream gateway.
 		stream: gateway.stream?.bind(gateway),
+
+		// Embedding cache — keyed on (model, input) with its own namespace so
+		// completion and embedding responses never collide.
+		embed: gateway.embed
+			? async (model, input, options) => {
+					const cacheKey = embedCacheKey(model, input);
+					const cached = await config.storage.get(cacheKey, { type: "text" });
+					if (cached !== null) {
+						try {
+							return JSON.parse(cached) as EmbedOutput;
+						} catch {
+							// Corrupted cache entry — fall through to provider.
+						}
+					}
+					const result = await gateway.embed!(model, input, options);
+					await config.storage.put(cacheKey, JSON.stringify(result), {
+						expirationTtl: ttl,
+					});
+					return result;
+				}
+			: undefined,
 
 		providers(): string[] {
 			return gateway.providers();

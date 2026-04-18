@@ -34,6 +34,8 @@ export type {
 	CfGatewayConfig,
 	FallbackEntry,
 	GatewayStreamEvent,
+	EmbedInput,
+	EmbedOutput,
 	AiInput,
 	AiOutput,
 	ChatMessage,
