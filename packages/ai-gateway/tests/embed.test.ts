@@ -1,6 +1,23 @@
-import { ValidationError } from "@workkit/errors";
+import { ServiceUnavailableError, ValidationError } from "@workkit/errors";
 import { describe, expect, it, vi } from "vitest";
+import { withCache } from "../src/cache";
 import { createGateway } from "../src/gateway";
+import { withRetry } from "../src/retry";
+import type { CacheStorage } from "../src/types";
+
+function createMockStorage(): CacheStorage & { _store: Map<string, string> } {
+	const store = new Map<string, string>();
+	return {
+		_store: store,
+		get: vi.fn(async (key: string) => store.get(key) ?? null),
+		put: vi.fn(async (key: string, value: string) => {
+			store.set(key, value);
+		}),
+		delete: vi.fn(async (key: string) => {
+			store.delete(key);
+		}),
+	};
+}
 
 function mockHttp(body: Record<string, unknown>, status = 200) {
 	return vi.fn().mockResolvedValue({
@@ -94,6 +111,53 @@ describe("gateway.embed() — OpenAI", () => {
 		expect(fetchMock.mock.calls[0][0]).toBe(
 			"https://gateway.ai.cloudflare.com/v1/ACCT/GW/openai/embeddings",
 		);
+	});
+});
+
+describe("gateway.embed() — withCache", () => {
+	it("caches embedding responses by (model, input) with a dedicated namespace", async () => {
+		const run = vi.fn().mockResolvedValue({ shape: [1, 3], data: [[0.1, 0.2, 0.3]] });
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+		const storage = createMockStorage();
+		const cached = withCache(gw, { storage, ttl: 60 });
+
+		const first = await cached.embed!("@cf/baai/bge-base-en-v1.5", { text: "hi" });
+		const second = await cached.embed!("@cf/baai/bge-base-en-v1.5", { text: "hi" });
+
+		expect(run).toHaveBeenCalledTimes(1); // 2nd call hit cache
+		expect(second.vectors).toEqual(first.vectors);
+		// Embedding cache uses its own key namespace (prevents collision with run/).
+		const keys = [...storage._store.keys()];
+		expect(keys.every((k) => k.startsWith("ai-embed-cache:"))).toBe(true);
+	});
+});
+
+describe("gateway.embed() — withRetry", () => {
+	it("retries retryable embed errors and succeeds", async () => {
+		let calls = 0;
+		const gw = createGateway({
+			providers: {
+				ai: {
+					type: "workers-ai",
+					binding: {
+						run: vi.fn(async () => {
+							calls++;
+							if (calls === 1) throw new ServiceUnavailableError("boom");
+							return { shape: [1, 1], data: [[0.9]] };
+						}),
+					},
+				},
+			},
+			defaultProvider: "ai",
+		});
+
+		const result = await withRetry(gw, { maxAttempts: 2 }).embed!("m", { text: "hi" });
+
+		expect(calls).toBe(2);
+		expect(result.vectors).toEqual([[0.9]]);
 	});
 });
 

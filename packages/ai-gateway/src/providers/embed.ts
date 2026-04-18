@@ -1,4 +1,4 @@
-import { ServiceUnavailableError, ValidationError } from "@workkit/errors";
+import { ServiceUnavailableError, TimeoutError, ValidationError } from "@workkit/errors";
 import type {
 	AnthropicProviderConfig,
 	CfGatewayConfig,
@@ -79,6 +79,7 @@ async function embedOpenAi(
 		"https://api.openai.com/v1",
 	);
 	const texts = toArray(input);
+	const signal = options?.signal;
 	try {
 		const response = await fetch(`${baseUrl}/embeddings`, {
 			method: "POST",
@@ -88,7 +89,7 @@ async function embedOpenAi(
 				...cfGatewayHeaders(cfGateway),
 			},
 			body: JSON.stringify({ model, input: texts }),
-			signal: options?.signal,
+			signal,
 		});
 
 		if (!response.ok) {
@@ -100,12 +101,17 @@ async function embedOpenAi(
 
 		const raw = (await response.json()) as Record<string, unknown>;
 		const data = raw.data as Array<{ embedding: number[]; index?: number }> | undefined;
-		// Sort by index when provided so vectors stay aligned with inputs even
-		// if the provider returns them out of order.
-		const sorted = Array.isArray(data)
-			? [...data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+		// If every item has an `index`, sort by it so vectors stay aligned even
+		// when a provider returns them out of order. If any item lacks `index`,
+		// preserve response order (treating "missing" as 0 would reorder items
+		// ahead of legitimately-indexed ones).
+		const allIndexed = Array.isArray(data) && data.every((d) => typeof d.index === "number");
+		const ordered = Array.isArray(data)
+			? allIndexed
+				? [...data].sort((a, b) => (a.index as number) - (b.index as number))
+				: data
 			: [];
-		const vectors = sorted.map((d) => d.embedding);
+		const vectors = ordered.map((d) => d.embedding);
 		const usage = raw.usage as Record<string, unknown> | undefined;
 		const inputTokens =
 			usage && typeof usage.prompt_tokens === "number" ? usage.prompt_tokens : undefined;
@@ -118,6 +124,18 @@ async function embedOpenAi(
 		};
 	} catch (err) {
 		if (err instanceof ServiceUnavailableError) throw err;
+		// Match executeOpenAi's abort handling: only classify as TimeoutError
+		// when the caller set a timeout; rethrow bare user-aborts as-is so
+		// withRetry doesn't treat user cancellations as retryable.
+		if (signal?.aborted) {
+			if (options?.timeout !== undefined) {
+				throw new TimeoutError(`openai embed for ${model}`, options.timeout, {
+					cause: err,
+					context: { provider: providerName, model },
+				});
+			}
+			throw err;
+		}
 		throw new ServiceUnavailableError("openai embed", {
 			cause: err,
 			context: { provider: providerName, model },

@@ -80,28 +80,15 @@ export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGate
 				}
 			: undefined,
 
+		// Embedding calls log errors only — `onRequest` and `onResponse` in
+		// `LoggingConfig` are typed for `AiInput`/`AiOutput`, so feeding them
+		// `EmbedInput`/`EmbedOutput` would require an unsafe cast. Callers who
+		// want embedding-request observability can wrap the gateway themselves
+		// or subscribe via a future `onEmbedRequest` hook.
 		embed: innerEmbed
 			? async (model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput> => {
-					config.onRequest?.(model, input as unknown as AiInput);
-					const start = Date.now();
 					try {
-						const result = await innerEmbed(model, input, options);
-						// Log via onResponse using a synthetic AiOutput-shaped object so
-						// existing handlers keep working. usage is preserved.
-						config.onResponse?.(
-							model,
-							{
-								text: undefined,
-								raw: result.raw,
-								usage: result.usage
-									? { inputTokens: result.usage.inputTokens, outputTokens: 0 }
-									: undefined,
-								provider: result.provider,
-								model: result.model,
-							},
-							Date.now() - start,
-						);
-						return result;
+						return await innerEmbed(model, input, options);
 					} catch (err) {
 						config.onError?.(model, err);
 						throw err;

@@ -239,10 +239,17 @@ export interface Gateway {
 	/**
 	 * Generate embeddings for one or more strings.
 	 *
-	 * Returns a `vectors` array with one embedding per input, in order. Optional —
-	 * present on gateways returned by `createGateway` when the chosen provider
-	 * supports embeddings (Workers AI, OpenAI). Anthropic throws a
-	 * `ValidationError` since it has no public embeddings endpoint.
+	 * Returns a `vectors` array with one embedding per input, in order. Always
+	 * present on gateways from `createGateway`. Whether a given call succeeds
+	 * depends on the target provider:
+	 *  - Workers AI and OpenAI — supported.
+	 *  - Anthropic — throws `ValidationError` (no public embeddings endpoint).
+	 *  - Custom — delegates to `CustomProviderConfig.embed?`; throws
+	 *    `ValidationError` if the provider config doesn't supply one.
+	 *
+	 * Optional on the `Gateway` interface so third-party implementers aren't
+	 * forced to add it; wrappers (`withRetry`, `withCache`, `withLogging`)
+	 * conditionally expose it when the underlying gateway does.
 	 */
 	embed?(model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput>;
 	/** List configured providers */

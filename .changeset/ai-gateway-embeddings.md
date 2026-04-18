@@ -22,6 +22,11 @@ Provider coverage:
 - **Anthropic** — throws `ValidationError` (no public embeddings endpoint).
 - **Custom** — delegates to user-supplied `embed?(model, input)` on the provider config; throws `ValidationError` if not implemented.
 
-Single-string input is normalized to a one-element array so callers can use either shape. `withCache`, `withLogging`, and `withRetry` each conditionally expose `embed` when the underlying gateway does. Additive — no breaking changes.
+Single-string input is normalized to a one-element array so callers can use either shape.
 
-This unblocks [#63](https://github.com/beeeku/workkit/issues/63) (`@workkit/ai` deprecation shim) and future `@workkit/memory` consolidation onto the gateway.
+**Wrapper integration:**
+- `withCache` — caches embeddings under a dedicated `ai-embed-cache:` key namespace so embedding and completion responses never collide. Keyed on `(model, input)`.
+- `withRetry` — retries retryable embed errors using the same error-driven strategy as `run`/`stream`.
+- `withLogging` — currently wires `onError` only for embeds; `onRequest` / `onResponse` are typed for `AiInput`/`AiOutput` and would need embed-specific callbacks to safely log embedding traffic (follow-up).
+
+Additive — no breaking changes. Unblocks future `@workkit/memory` consolidation onto the gateway.
