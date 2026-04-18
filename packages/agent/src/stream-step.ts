@@ -55,7 +55,10 @@ export async function runStep(
 
 	return {
 		text: text.length > 0 ? text : undefined,
-		raw,
+		// `AiOutput.raw` is required. Streams don't always surface a raw payload
+		// on the terminal `done` event (providers vary), so fall back to an
+		// empty object rather than violating the contract.
+		raw: raw ?? {},
 		usage,
 		provider: currentAgent.provider.defaultProvider(),
 		model: currentAgent.model,

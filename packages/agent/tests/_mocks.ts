@@ -86,9 +86,11 @@ export interface MockStreamStep {
 }
 
 /**
- * Mock gateway that implements `stream()`. Each `run()` call consumes one
- * step from `steps` and surfaces it as a `ReadableStream<GatewayStreamEvent>`
- * with per-chunk `text` events followed by `tool_use` events and a final `done`.
+ * Mock gateway that implements both `stream()` and `run()`. Each call consumes
+ * one step from `steps`; `stream()` surfaces it as a
+ * `ReadableStream<GatewayStreamEvent>` with per-chunk `text` events followed by
+ * `tool_use` events and a final `done`, while `run()` concatenates the chunks
+ * into a single `text` field.
  */
 export function mockStreamingGateway(steps: MockStreamStep[]): {
 	gateway: Gateway;

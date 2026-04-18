@@ -18,6 +18,10 @@ const DEFAULT_MAX_DELAY = 30000;
  * @param baseDelay - Base delay in milliseconds
  * @param maxDelay - Maximum delay in milliseconds
  * @returns Delay in milliseconds
+ *
+ * @deprecated Internal helper for the deprecated `withRetry`. Use
+ * `withRetry(gateway, { maxAttempts })` from `@workkit/ai-gateway`, which
+ * drives retry delays from each `WorkkitError`'s own `retryStrategy`.
  */
 export function calculateDelay(
 	strategy: BackoffStrategy,
@@ -47,6 +51,9 @@ export function calculateDelay(
 /**
  * Default check for whether an error is retryable.
  * Retries on timeout, rate limit, and service unavailable errors.
+ *
+ * @deprecated Internal helper for the deprecated `withRetry`. Use
+ * `isRetryable` from `@workkit/errors` (checks `WorkkitError.retryable`).
  */
 export function defaultIsRetryable(error: unknown): boolean {
 	if (error instanceof TimeoutError) return true;
