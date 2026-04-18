@@ -34,6 +34,8 @@ await env.DB.exec(getSchema());
 
 ## Quick start
 
+Every storage method returns a `MemoryResult<T>` discriminated union — `{ ok: true; value }` on success, `{ ok: false; error }` otherwise. Always branch on `.ok`.
+
 ```ts
 import { createMemory } from "@workkit/memory";
 
@@ -46,37 +48,45 @@ const memory = createMemory({
   decayHalfLifeDays: 30,
 });
 
-await memory.remember("Alice prefers dark mode", {
+const stored = await memory.remember("Alice prefers dark mode", {
   subject: "user:alice",
   tags: ["preferences", "ui"],
   confidence: 0.95,
 });
+if (!stored.ok) throw new Error(stored.error.message);
 
-const results = await memory.recall("what does alice prefer", {
+const recalled = await memory.recall("what does alice prefer", {
   subject: "user:alice",
   limit: 5,
 });
+if (recalled.ok) {
+  for (const result of recalled.value) {
+    console.log(result.fact.text, result.score);
+  }
+}
 ```
 
 ## Facts
 
-A `Fact` has rich metadata:
+A `Fact` has rich metadata. Most fields are non-optional but explicitly nullable:
 
 ```ts
 type Fact = {
   id: string;
   text: string;
-  subject?: string;        // owner / scope
-  source?: string;         // provenance
-  tags?: string[];
-  confidence?: number;     // 0..1
-  encrypted?: boolean;
+  subject: string | null;        // owner / scope
+  source: string | null;         // provenance
+  tags: string[];
+  confidence: number;            // 0..1
+  encrypted: boolean;
   createdAt: number;
-  validFrom?: number;
-  validUntil?: number;
-  supersededBy?: string;
-  forgottenAt?: number;
-  embeddingStatus: "pending" | "ready" | "failed";
+  validFrom: number;
+  validUntil: number | null;
+  supersededBy: string | null;
+  forgottenAt: number | null;
+  forgottenReason: string | null;
+  embeddingStatus: "complete" | "pending" | "failed";
+  ttl: number | null;
 };
 ```
 
@@ -110,45 +120,56 @@ const factsAsOfThen = await past.recall("user preferences");
 ```ts
 const conv = memory.conversation("thread-42", {
   tokenBudget: 8000,
-  compaction: "summary",
-  summaryModel: "@cf/meta/llama-3.1-8b-instruct",
 });
 
 await conv.add({ role: "user", content: "Plan a trip to Tokyo" });
 await conv.add({ role: "assistant", content: "..." });
 
-const window = await conv.get({ format: "messages" });
+const snapshot = await conv.get({ tokenBudget: 4000, includeCompacted: false });
+if (snapshot.ok) {
+  for (const message of snapshot.value.messages) {
+    console.log(message.role, message.content);
+  }
+}
 ```
 
-Compaction strategies: `sliding-window`, `token-budget`, `summary`. The `summary` strategy uses Workers AI to compress older turns into a summary message that stays in the context.
+`Conversation.get(options?)` accepts `{ tokenBudget?, includeCompacted? }` and returns `MemoryResult<ConversationSnapshot>`. List individual messages with `messages(options?)`.
+
+> **v0.1.0 limitation:** `summarize()` currently returns `{ ok: false, error: { code: "COMPACTION_ERROR", message: "Summary compaction not yet implemented" } }`. Conversation compaction is on the roadmap; track via the package CHANGELOG.
 
 ## Encryption
 
 ```ts
-import { generateEncryptionKey } from "@workkit/crypto";
+import { generateKey, exportKey, importKey } from "@workkit/crypto";
+
+// Generate once, persist exported base64 as a secret
+const key = await importKey(env.MEMORY_KEY_BASE64);
 
 const memory = createMemory({
   db: env.DB,
-  encryptionKey: await generateEncryptionKey(env.MEMORY_KEY_MATERIAL),
+  encryptionKey: key,
 });
 
 await memory.remember("Alice's SSN is ...", { encrypted: true });
 ```
 
-Encrypted facts are AES-GCM at rest. Only callers with the `encryptionKey` can decrypt — recall transparently decrypts if the key is present, returns ciphertext placeholder otherwise.
+Encrypted facts are AES-256-GCM at rest. `encryptionKey` must be a `CryptoKey` — generate one with `generateKey()`, export to base64 with `exportKey()`, store as a Worker secret, then re-hydrate with `importKey()`.
 
 ## Maintenance
 
 ```ts
-// Drop facts past their validUntil and forgotten facts older than 30 days
-await memory.compact({ olderThan: "30d", dryRun: false });
+// Run TTL-based cleanup of expired facts
+const compact = await memory.compact({ batchSize: 500, dryRun: false });
 
-// Backfill embeddings for facts that arrived without Vectorize wired up
-await memory.reembed({ status: "pending", limit: 1000 });
+// Backfill embeddings for facts whose embeddingStatus is "pending"
+const reembed = await memory.reembed({ batchSize: 100 });
 
 // Stats for ops dashboards
-const { totalFacts, byStatus, vectorBacklog } = await memory.stats();
+const stats = await memory.stats();
+if (stats.ok) console.log(stats.value);
 ```
+
+`compact()` in v0.1.0 performs TTL-based expiry only — `mergedCount` returns 0 until merging lands. `reembed()` requires the `embeddings` (Workers AI) binding; otherwise it returns `{ ok: false, error: { code: "EMBEDDING_ERROR", message: "No AI binding configured" } }`. Every `MemoryError` carries both `code` and `message` — branch on the code, log the message.
 
 ## Errors
 

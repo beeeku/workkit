@@ -1,16 +1,28 @@
+import { decryptText, encryptText } from "./encryption";
 import type { Fact, FactMetadata, MemoryResult } from "./types";
 import { generateFactId } from "./utils";
 
-export function createFactStore(db: D1Database) {
-	function parseFact(row: any): Fact {
+export class EncryptionConfigError extends Error {
+	readonly code = "ENCRYPTION_ERROR" as const;
+}
+
+export function createFactStore(db: D1Database, encryptionKey?: CryptoKey) {
+	async function parseFact(row: any): Promise<Fact> {
+		const encrypted = Boolean(row.encrypted);
+		if (encrypted && !encryptionKey) {
+			throw new EncryptionConfigError(
+				`fact ${row.id} is encrypted at rest but no encryptionKey was passed to createMemory()`,
+			);
+		}
+		const text = encrypted ? await decryptText(row.text, encryptionKey!) : row.text;
 		return {
 			id: row.id,
-			text: row.text,
+			text,
 			subject: row.subject ?? null,
 			source: row.source ?? null,
 			tags: row.tags ? JSON.parse(row.tags) : [],
 			confidence: row.confidence ?? 1.0,
-			encrypted: Boolean(row.encrypted),
+			encrypted,
 			createdAt: row.created_at,
 			validFrom: row.valid_from,
 			validUntil: row.valid_until ?? null,
@@ -27,6 +39,17 @@ export function createFactStore(db: D1Database) {
 			try {
 				const id = generateFactId();
 				const now = Date.now();
+				const wantsEncrypt = Boolean(metadata?.encrypted);
+				if (wantsEncrypt && !encryptionKey) {
+					return {
+						ok: false,
+						error: {
+							code: "ENCRYPTION_ERROR",
+							message: "metadata.encrypted=true but no encryptionKey configured on createMemory()",
+						},
+					};
+				}
+				const storedText = wantsEncrypt ? await encryptText(text, encryptionKey!) : text;
 				const fact: Fact = {
 					id,
 					text,
@@ -34,7 +57,7 @@ export function createFactStore(db: D1Database) {
 					source: metadata?.source ?? null,
 					tags: metadata?.tags ?? [],
 					confidence: metadata?.confidence ?? 1.0,
-					encrypted: metadata?.encrypted ?? false,
+					encrypted: wantsEncrypt,
 					createdAt: now,
 					validFrom: metadata?.validFrom ?? now,
 					validUntil: null,
@@ -52,7 +75,7 @@ export function createFactStore(db: D1Database) {
 					)
 					.bind(
 						fact.id,
-						fact.text,
+						storedText,
 						fact.subject,
 						fact.source,
 						JSON.stringify(fact.tags),
@@ -109,8 +132,11 @@ export function createFactStore(db: D1Database) {
 		async get(factId: string): Promise<MemoryResult<Fact | null>> {
 			try {
 				const row = await db.prepare("SELECT * FROM facts WHERE id = ?").bind(factId).first();
-				return { ok: true, value: row ? parseFact(row) : null };
+				return { ok: true, value: row ? await parseFact(row) : null };
 			} catch (error: any) {
+				if (error instanceof EncryptionConfigError) {
+					return { ok: false, error: { code: "ENCRYPTION_ERROR", message: error.message } };
+				}
 				return { ok: false, error: { code: "STORAGE_ERROR", message: error.message } };
 			}
 		},

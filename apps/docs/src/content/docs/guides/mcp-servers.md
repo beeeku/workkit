@@ -9,8 +9,10 @@ title: "MCP Servers"
 ## Install
 
 ```bash
-bun add @workkit/mcp @workkit/errors hono
+bun add @workkit/mcp @workkit/errors hono zod
 ```
+
+`zod` is only required if you use it as the validator in the examples below. Any [Standard Schema](https://github.com/standard-schema/standard-schema) implementation works (Valibot, ArkType, etc.).
 
 ## Quick start
 
@@ -23,7 +25,7 @@ const server = createMCPServer({
   version: "1.0.0",
   basePath: "/api",
   mcpPath: "/mcp",
-  openapi: { enable: true, swaggerUI: "/docs" },
+  openapi: { enabled: true, swaggerUI: true },
 });
 
 server.tool("get-weather", {
@@ -40,12 +42,17 @@ server.tool("get-weather", {
 export default server.serve();
 ```
 
-That single registration gives you:
+That single registration gives you these routes:
 
-- `POST /api/mcp` — MCP JSON-RPC endpoint (`tools/list`, `tools/call`)
-- `POST /api/tools/get-weather` — REST shortcut
-- `GET /api/openapi.json` — OpenAPI spec
-- `GET /docs` — Swagger UI
+| Path | Where | What |
+|---|---|---|
+| `POST {mcpPath}` (default `/mcp`) | configurable | MCP JSON-RPC transport |
+| `POST {basePath}/tools/:toolName` (default `/api/tools/:toolName`) | configurable | REST shortcut for one tool |
+| `GET /openapi.json` | root | OpenAPI 3.1 spec (when `openapi.enabled !== false`) |
+| `GET /docs` | root | Swagger UI shell (when `openapi.swaggerUI: true`) |
+| `GET /health` | root | `{"status":"ok"}` (when `health !== false`) |
+
+Note that `openapi.json`, `/docs`, and `/health` mount at the *root* of the app — not under `basePath`. That keeps the meta-endpoints stable for tooling.
 
 ## Resources and prompts
 
@@ -78,34 +85,41 @@ Hints follow the MCP 2025-06 spec — clients use them to apply guardrails:
 
 ## Authentication
 
+`MCPAuthConfig.handler` is a Hono-style middleware: `(request, env, next) => Response | Promise<Response>`. Use it to verify the token and short-circuit unauthenticated requests; otherwise call `next()`.
+
 ```ts
 const server = createMCPServer({
   name: "secure-api",
   version: "1.0.0",
   auth: {
     type: "bearer",
-    handler: async (token) => verifyJwt(token),
+    handler: async (request, env, next) => {
+      const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+      if (!token || !(await verifyJwt(token, env))) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      return next();
+    },
     exclude: ["/openapi.json", "/docs"],
   },
 });
 ```
 
-Bearer, API key, and custom (`type: "custom"` with your own handler) are built in.
+`type` is informational metadata for clients; the actual verification lives in your `handler`. `exclude` lists paths the middleware skips.
 
-## Sessions (Durable Objects)
+## Sessions (Durable Objects) — roadmap
 
-Stateful tools (cursors, pagination, in-flight subscriptions) plug into a DO:
+Stateful tools will opt into DO-backed sessions via the `session` config:
 
 ```ts
-import { MCPSessionDO } from "@workkit/mcp";
-export { MCPSessionDO };
-
 const server = createMCPServer({
   name: "stateful",
   version: "1.0.0",
-  session: { storage: env.MCP_SESSIONS, ttl: "1h" },
+  session: { storage: "durable-object", ttl: 3600, maxSessions: 1000 },
 });
 ```
+
+The config type is reserved on `MCPServerConfig` but the runtime wiring (DO class, session lookup header, `sessionId` propagation into handler context) lands in a follow-up release — track [issue #46](https://github.com/beeeku/workkit/issues/46) for the design.
 
 ## Middleware
 
@@ -126,15 +140,19 @@ server.tool("admin-action", {
 
 ## Mounting on an existing Hono app
 
+`createMCPServer().toHono()` returns a Hono instance you can mount inside your own app:
+
 ```ts
 import { Hono } from "hono";
 
 const app = new Hono();
 app.get("/health", (c) => c.text("ok"));
-server.mount(app);  // adds the MCP + REST + OpenAPI routes
+app.route("/", server.toHono());
 
 export default app;
 ```
+
+If you need raw fetch handlers instead of a Hono app, call `server.mount()` (no args) — it returns `{ mcpHandler, restHandler, openapi }` you can wire into any router.
 
 ## See also
 

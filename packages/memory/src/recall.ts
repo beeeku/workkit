@@ -1,15 +1,25 @@
+import { decryptText } from "./encryption";
 import type { Fact, MemoryResult, RecallOptions, RecallResult } from "./types";
 import { extractSearchTerms } from "./utils";
 
-function parseFact(row: any): Fact {
+async function parseFact(row: any, encryptionKey?: CryptoKey): Promise<Fact> {
+	const encrypted = Boolean(row.encrypted);
+	if (encrypted && !encryptionKey) {
+		const err = new Error(
+			`fact ${row.id} is encrypted at rest but no encryptionKey was passed to createMemory()`,
+		) as Error & { code?: string };
+		err.code = "ENCRYPTION_ERROR";
+		throw err;
+	}
+	const text = encrypted ? await decryptText(row.text, encryptionKey!) : row.text;
 	return {
 		id: row.id,
-		text: row.text,
+		text,
 		subject: row.subject ?? null,
 		source: row.source ?? null,
 		tags: row.tags ? JSON.parse(row.tags) : [],
 		confidence: row.confidence ?? 1.0,
-		encrypted: Boolean(row.encrypted),
+		encrypted,
 		createdAt: row.created_at,
 		validFrom: row.valid_from,
 		validUntil: row.valid_until ?? null,
@@ -47,10 +57,11 @@ export function computeScore(
 export interface RecallFactoryOptions {
 	decayHalfLifeDays?: number;
 	d1ScanLimit?: number;
+	encryptionKey?: CryptoKey;
 }
 
 export function createRecall(db: D1Database, factoryOptions: RecallFactoryOptions = {}) {
-	const { decayHalfLifeDays = 30, d1ScanLimit = 500 } = factoryOptions;
+	const { decayHalfLifeDays = 30, d1ScanLimit = 500, encryptionKey } = factoryOptions;
 
 	return async function recall(
 		query: string,
@@ -146,7 +157,7 @@ export function createRecall(db: D1Database, factoryOptions: RecallFactoryOption
 			const tagsFilterActive = tags && tags.length > 0;
 
 			for (const row of rows) {
-				const fact = parseFact(row);
+				const fact = await parseFact(row, encryptionKey);
 
 				// Skip superseded facts in output even if they slipped through the WHERE
 				if (!includeSuperseded && fact.supersededBy !== null) continue;
@@ -194,6 +205,9 @@ export function createRecall(db: D1Database, factoryOptions: RecallFactoryOption
 			scored.sort((a, b) => b.score - a.score);
 			return { ok: true, value: scored.slice(0, limit) };
 		} catch (error: any) {
+			if (error?.code === "ENCRYPTION_ERROR") {
+				return { ok: false, error: { code: "ENCRYPTION_ERROR", message: error.message } };
+			}
 			return { ok: false, error: { code: "STORAGE_ERROR", message: error.message } };
 		}
 	};

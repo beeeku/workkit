@@ -281,4 +281,185 @@ describe("Integration: Full MCP Server", () => {
 		// Same handler, same result
 		expect(mcpResult).toEqual(restBody.result);
 	});
+
+	// ─── Swagger UI ────────────────────────────────────────────────
+
+	it("GET /docs returns Swagger UI when openapi.swaggerUI is enabled", async () => {
+		const server = createMCPServer({
+			name: "swagger-test",
+			version: "1.0.0",
+			openapi: { enabled: true, swaggerUI: true },
+		})
+			.tool("noop", {
+				description: "noop",
+				input: z.object({}),
+				handler: async () => ({}),
+			})
+			.serve();
+
+		const res = await server.fetch(new Request("http://localhost/docs"), env, ctx);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("content-type")).toMatch(/text\/html/);
+		const body = await res.text();
+		expect(body).toContain("swagger-ui");
+		expect(body).toContain('"/openapi.json"');
+	});
+
+	it("GET /docs returns 404 when swaggerUI is not enabled", async () => {
+		const server = createMCPServer({
+			name: "no-swagger",
+			version: "1.0.0",
+			openapi: { enabled: true },
+		})
+			.tool("noop", {
+				description: "noop",
+				input: z.object({}),
+				handler: async () => ({}),
+			})
+			.serve();
+
+		const res = await server.fetch(new Request("http://localhost/docs"), env, ctx);
+		expect(res.status).toBe(404);
+	});
+
+	// ─── Authentication ───────────────────────────────────────────
+
+	it("auth.handler rejects requests without a valid token", async () => {
+		const server = createMCPServer({
+			name: "secure",
+			version: "1.0.0",
+			auth: {
+				type: "bearer",
+				exclude: ["/health", "/openapi.json"],
+				handler: async (req, _e, next) => {
+					const auth = req.headers.get("authorization");
+					if (auth !== "Bearer good-token") {
+						return new Response("unauthorized", { status: 401 });
+					}
+					return next();
+				},
+			},
+		})
+			.tool("ping", {
+				description: "ping",
+				input: z.object({}),
+				handler: async () => ({ ok: true }),
+			})
+			.serve();
+
+		const blocked = await server.fetch(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: "{}",
+			}),
+			env,
+			ctx,
+		);
+		expect(blocked.status).toBe(401);
+
+		const allowed = await server.fetch(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json", authorization: "Bearer good-token" },
+				body: "{}",
+			}),
+			env,
+			ctx,
+		);
+		expect(allowed.status).toBe(200);
+	});
+
+	it("auth.exclude paths bypass the handler", async () => {
+		const server = createMCPServer({
+			name: "secure",
+			version: "1.0.0",
+			auth: {
+				type: "bearer",
+				exclude: ["/health"],
+				handler: async () => new Response("nope", { status: 401 }),
+			},
+		})
+			.tool("noop", {
+				description: "noop",
+				input: z.object({}),
+				handler: async () => ({}),
+			})
+			.serve();
+
+		const res = await server.fetch(new Request("http://localhost/health"), env, ctx);
+		expect(res.status).toBe(200);
+	});
+
+	it("auth.handler also wraps server.mount() handlers (no bypass via mount)", async () => {
+		const handlers = createMCPServer({
+			name: "secure-mount",
+			version: "1.0.0",
+			auth: {
+				type: "bearer",
+				handler: async (req, _e, next) => {
+					if (req.headers.get("authorization") !== "Bearer good") {
+						return new Response("unauthorized", { status: 401 });
+					}
+					return next();
+				},
+			},
+		})
+			.tool("ping", {
+				description: "ping",
+				input: z.object({}),
+				handler: async () => ({ ok: true }),
+			})
+			.mount();
+
+		const blocked = await handlers.restHandler(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: "{}",
+			}),
+			env,
+		);
+		expect(blocked.status).toBe(401);
+
+		const allowed = await handlers.restHandler(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json", authorization: "Bearer good" },
+				body: "{}",
+			}),
+			env,
+		);
+		expect(allowed.status).toBe(200);
+	});
+
+	it("openapi.swaggerUI rejects unsupported variants at config time", () => {
+		expect(() =>
+			createMCPServer({
+				name: "no-cdn",
+				version: "1.0.0",
+				openapi: { enabled: true, swaggerUI: { cdn: false } },
+			})
+				.tool("noop", {
+					description: "noop",
+					input: z.object({}),
+					handler: async () => ({}),
+				})
+				.serve(),
+		).toThrow(/cdn=false/);
+
+		expect(() =>
+			createMCPServer({
+				name: "bundled",
+				version: "1.0.0",
+				openapi: { enabled: true, swaggerUI: { bundle: true } },
+			})
+				.tool("noop", {
+					description: "noop",
+					input: z.object({}),
+					handler: async () => ({}),
+				})
+				.serve(),
+		).toThrow(/bundle=true/);
+	});
 });

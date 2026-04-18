@@ -4,7 +4,9 @@ title: "Durable Workflows"
 
 # Durable Workflows
 
-`@workkit/workflow` is durable workflow execution on Cloudflare Workers — checkpoint-and-replay multi-step orchestrations, automatic retry with backoff, saga compensation handlers, and pause/resume via external events. Backed by a Durable Object so each execution survives Worker restarts and CPU limits.
+`@workkit/workflow` is durable workflow execution on Cloudflare Workers — checkpoint-and-replay multi-step orchestrations, automatic retry with backoff, and saga compensation handlers. Backed by a Durable Object so each execution survives Worker restarts and CPU limits.
+
+> **v0.1.0 status:** the DO backend is implemented. Cloudflare Workflows (`cf-workflows`) backend and external pause/resume (`ExecutionHandle.resume()`) are stubbed and throw "Not supported in v0.1.0". Track the package CHANGELOG for when they land.
 
 ## Install
 
@@ -33,7 +35,7 @@ import { createDurableWorkflow } from "@workkit/workflow";
 
 const orderFlow = createDurableWorkflow("order-flow", {
   backend: { type: "do", namespace: env.WORKFLOW_DO },
-  retry: { maxAttempts: 3, initialDelay: "1s", maxDelay: "30s", backoffMultiplier: 2 },
+  retry: { maxAttempts: 3, initialDelay: 1_000, maxDelay: 30_000, backoffMultiplier: 2 },
   timeout: "10m",
 })
   .step("reserve-inventory", async (input, _prev, ctx) => {
@@ -51,8 +53,12 @@ const orderFlow = createDurableWorkflow("order-flow", {
   });
 
 const handle = await orderFlow.run({ orderId: "o-1", userId: "u-1", amount: 99.99, items: [...] });
-const result = await handle.result();  // resolves when the workflow terminates
+const result = await handle.result();
+if (result.ok) console.log("done", result.value);
+else console.error(result.error.failedStep, result.error.message);
 ```
+
+In v0.1.x `run()` itself awaits the DO `/execute` call until the workflow terminates — by the time it resolves, the journal is final. `result()` then reads the current status and returns `{ ok: true; value }` for `completed` or `{ ok: false; error }` for `failed` / `cancelled` without further polling. Use `handle.status()` directly if you want to inspect intermediate state from another caller (e.g. a separate request inspecting an `executionId`).
 
 ## Step semantics
 
@@ -80,23 +86,15 @@ type CompensationContext = {
 
 Use it to undo committed work in reverse order. Compensation itself is not retried — wrap external calls in try/catch and log structured failures.
 
-## Pause / resume
+## Pause / resume (roadmap)
 
-```ts
-.step("await-approval", async (input, _prev, ctx) => {
-  ctx.waitFor({ event: "approval-decision", timeout: "24h" });
-  // execution suspends; the DO releases the request CPU
-})
-```
+External pause/resume is not in v0.1.0. `ExecutionHandle.resume(event, payload)` exists in the type signature but throws "Not supported in v0.1.0" at runtime. For now, model human-in-the-loop steps by:
 
-Resume from outside:
+- Returning the in-flight `executionId` to the caller and storing it.
+- Letting the user act (approve in `@workkit/approval`, click a link, etc.).
+- Starting a new follow-up workflow keyed on the original execution.
 
-```ts
-const handle = orderFlow.execution(executionId);
-await handle.resume("approval-decision", { approved: true });
-```
-
-The journal records `waiting` state so cold-start replay knows to skip past the suspended step.
+When `resume()` lands, the journal will gain a `waiting` state so cold-start replay can skip past suspended steps.
 
 ## Status, journal, cancel
 
@@ -110,13 +108,14 @@ await handle.cancel();   // marks cancelled; compensation runs
 
 ## Errors
 
-All terminal failures throw `WorkflowError`:
+Terminal failures surface through the `result()` discriminated union as `WorkflowError`:
 
 ```ts
-type WorkflowError = Error & {
+type WorkflowError = {
   executionId: string;
   failedStep: string;
   stepAttempt: number;
+  message: string;
   journal: StepJournalEntry[];
 };
 ```
@@ -135,20 +134,12 @@ Always set `idempotencyKey` on steps that POST money, send messages, or write to
 
 The key is hashed and stored on the journal entry. On replay, the handler is skipped and the previous result returned — even if the original request reached the external system but the response was lost.
 
-## Cloudflare Workflows backend
+## Cloudflare Workflows backend (roadmap)
 
-If you'd rather use the native Cloudflare Workflows product:
-
-```ts
-const flow = createDurableWorkflow("order-flow", {
-  backend: { type: "cf-workflows", binding: env.WORKFLOWS },
-});
-```
-
-Same builder API, different storage substrate. DO backend gives you fine-grained control; `cf-workflows` gives you longer step durations and managed retention.
+`backend: { type: "cf-workflows", binding }` is reserved in the type but not yet implemented — instantiating a workflow with that backend throws "Only DO backend supported in v0.1.0". Track the package CHANGELOG.
 
 ## See also
 
 - [Durable Objects](/workkit/guides/durable-objects/) — `@workkit/do` primitives that the DO backend builds on.
-- [Approval Workflows](/workkit/guides/approval-workflows/) — pair `await-approval` steps with `@workkit/approval` for human-in-the-loop.
+- [Approval Workflows](/workkit/guides/approval-workflows/) — model human-in-the-loop by chaining a follow-up workflow from an approval decision.
 - [Queues and Crons](/workkit/guides/queues-and-crons/) — schedule workflow runs from cron triggers or queue messages.

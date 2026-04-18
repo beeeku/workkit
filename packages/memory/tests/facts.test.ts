@@ -174,4 +174,123 @@ describe("createFactStore", () => {
 			expect(result.value).toHaveLength(2);
 		}
 	});
+
+	describe("encryption", () => {
+		async function makeKey(): Promise<CryptoKey> {
+			return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+				"encrypt",
+				"decrypt",
+			]);
+		}
+
+		it("encrypts text on insert when metadata.encrypted=true", async () => {
+			const db = createMockD1();
+			const key = await makeKey();
+			const store = createFactStore(db, key);
+
+			const result = await store.remember("super secret", { encrypted: true });
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.text).toBe("super secret");
+				expect(result.value.encrypted).toBe(true);
+			}
+
+			const insertCall = db._calls.find((c: any) => c.sql.includes("INSERT INTO facts"));
+			const stored = insertCall.binds[1] as string;
+			expect(stored).not.toBe("super secret");
+			expect(stored.length).toBeGreaterThan(16);
+		});
+
+		it("get decrypts text transparently when row.encrypted=1", async () => {
+			const db = createMockD1();
+			const key = await makeKey();
+			const store = createFactStore(db, key);
+
+			await store.remember("decrypt me", { encrypted: true });
+			const insertCall = db._calls.find((c: any) => c.sql.includes("INSERT INTO facts"));
+			const ciphertext = insertCall.binds[1] as string;
+
+			db._setNextResult({
+				id: "fact_x",
+				text: ciphertext,
+				subject: null,
+				source: null,
+				tags: null,
+				confidence: 1.0,
+				encrypted: 1,
+				created_at: 1,
+				valid_from: 1,
+				valid_until: null,
+				superseded_by: null,
+				forgotten_at: null,
+				forgotten_reason: null,
+				embedding_status: "pending",
+				ttl: null,
+			});
+
+			const got = await store.get("fact_x");
+			expect(got.ok).toBe(true);
+			if (got.ok && got.value) {
+				expect(got.value.text).toBe("decrypt me");
+				expect(got.value.encrypted).toBe(true);
+			}
+		});
+
+		it("rejects encrypted=true when no encryptionKey configured", async () => {
+			const db = createMockD1();
+			const store = createFactStore(db);
+
+			const result = await store.remember("oops", { encrypted: true });
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("ENCRYPTION_ERROR");
+				expect(result.error.message).toMatch(/encryptionKey/);
+			}
+		});
+
+		it("get returns ENCRYPTION_ERROR when row is encrypted but no key configured", async () => {
+			const db = createMockD1();
+			const store = createFactStore(db); // no key
+
+			db._setNextResult({
+				id: "fact_secret",
+				text: "AAAA-base64-ciphertext-AAAA",
+				subject: null,
+				source: null,
+				tags: null,
+				confidence: 1.0,
+				encrypted: 1,
+				created_at: 1,
+				valid_from: 1,
+				valid_until: null,
+				superseded_by: null,
+				forgotten_at: null,
+				forgotten_reason: null,
+				embedding_status: "pending",
+				ttl: null,
+			});
+
+			const got = await store.get("fact_secret");
+			expect(got.ok).toBe(false);
+			if (!got.ok) {
+				expect(got.error.code).toBe("ENCRYPTION_ERROR");
+				expect(got.error.message).toMatch(/encrypted at rest/);
+			}
+		});
+
+		it("plaintext writes still work when encryptionKey configured but encrypted=false", async () => {
+			const db = createMockD1();
+			const key = await makeKey();
+			const store = createFactStore(db, key);
+
+			const result = await store.remember("public info");
+			expect(result.ok).toBe(true);
+
+			const insertCall = db._calls.find((c: any) => c.sql.includes("INSERT INTO facts"));
+			expect(insertCall.binds[1]).toBe("public info");
+			expect(insertCall.binds[6]).toBe(0);
+		});
+	});
 });
