@@ -26,7 +26,7 @@ You also need an Ed25519 keypair for token signing — generate it once with `ge
 
 ```ts
 import { createApprovalGate, ApprovalRequestDO } from "@workkit/approval";
-import { importSigningKey, importVerifyingKey } from "@workkit/crypto";
+import { importSigningKey } from "@workkit/crypto";
 
 // Re-export the DO from your worker so the binding can find it.
 export { ApprovalRequestDO };
@@ -38,8 +38,8 @@ export default {
       audit: env.DB,
       notificationQueue: env.APPROVAL_QUEUE,
       signingKey: {
-        privateKey: await importSigningKey(env.APPROVAL_PRIVATE_KEY),
-        publicKey: await importVerifyingKey(env.APPROVAL_PUBLIC_KEY),
+        privateKey: await importSigningKey(env.APPROVAL_PRIVATE_KEY, "private"),
+        publicKey: await importSigningKey(env.APPROVAL_PUBLIC_KEY, "public"),
       },
       baseUrl: "https://api.example.com",
     });

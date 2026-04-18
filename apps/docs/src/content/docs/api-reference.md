@@ -276,45 +276,57 @@ Quick reference of all exported functions, types, and classes per package.
 | Export | Kind | Description |
 |--------|------|-------------|
 | `r2(bucket, options?)` | function | Typed R2 client wrapper |
-| `presign(bucket, key, options)` | function | Generate presigned PUT/GET URLs |
-| `streamUpload(bucket, key, stream)` | function | Streaming multipart upload |
+| `createPresignedUrl(bucket, options)` | function | Generate presigned PUT/GET URLs |
+| `multipartUpload(bucket, key, options?)` | function | Start a multipart upload session |
+| `streamToBuffer(stream)` / `streamToText(stream)` / `streamToJson<T>(stream)` | function | Body stream helpers |
+| `fromS3Key(key)` / `toS3Key(key)` | function | S3 ↔ R2 key migration helpers |
+| `validateR2Key(key)` / `assertR2Binding(b)` / `wrapR2Error(err, ctx)` | function | Defensive helpers |
 
 ## `@workkit/cache`
 
 | Export | Kind | Description |
 |--------|------|-------------|
-| `cache(kv, options?)` | function | Cache-aside helper backed by KV |
+| `cache(kv, options?)` | function | Typed KV-backed cache client |
 | `swr(kv, key, fetcher, options?)` | function | Stale-while-revalidate read-through |
-| `tagged(kv, options?)` | function | Tagged invalidation client |
-| `memoryCache(options?)` | function | In-process LRU cache |
+| `cacheAside(kv, options?)` | function | Cache-aside pattern helper |
+| `taggedCache(kv, options?)` | function | Tagged invalidation client |
+| `createMemoryCache(options?)` | function | In-process LRU cache |
+| `buildCacheUrl(key)` | function | Compose cache key URL |
 
 ## `@workkit/crypto`
 
 | Export | Kind | Description |
 |--------|------|-------------|
-| `aesGcmEncrypt(plaintext, key)` | function | AES-256-GCM encrypt |
-| `aesGcmDecrypt(ciphertext, key)` | function | AES-256-GCM decrypt |
-| `hash(input, algo?)` | function | SHA-2 / SHA-3 hashing |
-| `hmac(input, key, algo?)` | function | HMAC signature |
-| `generateSigningKey()` | function | Ed25519 keypair generator |
-| `importSigningKey(jwk)` | function | Import private signing key |
-| `importVerifyingKey(jwk)` | function | Import public verifying key |
+| `encrypt(key, data)` / `decrypt(key, ciphertext)` | function | AES-256-GCM encrypt / decrypt |
+| `encryptWithAAD(key, data, aad)` / `decryptWithAAD(key, ciphertext, aad)` | function | AES-GCM with additional authenticated data |
+| `generateKey()` / `exportKey(key)` / `importKey(base64)` | function | AES-256-GCM key lifecycle |
+| `deriveKey(source, context)` | function | PBKDF2 (string) or HKDF (CryptoKey) key derivation |
+| `envelope.seal / open / rotate` | object | Envelope encryption (DEK + master key) |
+| `hash(algo, data)` | function | SHA-1 / SHA-256 / SHA-384 / SHA-512 |
+| `hmac(secret, data)` / `hmac.verify(secret, data, mac)` | function | HMAC sign + constant-time verify |
+| `generateSigningKeyPair(algo?)` | function | Ed25519 (default) or ECDSA keypair |
+| `exportSigningKey(key)` / `importSigningKey(base64, type, algo?)` | function | Public/private signing key serialization |
+| `sign(privateKey, data)` / `sign.verify(publicKey, data, signature)` | function | Detached signature + verify |
+| `randomBytes(n)` / `randomHex(n)` / `randomUUID()` | function | Crypto-secure random |
 
 ## `@workkit/api`
 
 | Export | Kind | Description |
 |--------|------|-------------|
-| `route(method, path, handler)` | function | OpenAPI-aware route definition |
-| `generateOpenAPI(routes)` | function | Build OpenAPI 3.1 spec from routes |
-| `swaggerUI(spec)` | function | Inline Swagger UI handler |
+| `api(config)` | function | Define a typed API surface |
+| `createRouter(config)` | function | Build a router from API definitions |
+| `generateOpenAPI(api)` | function | Build OpenAPI 3.1 spec from definitions |
+| `parsePath` / `matchPath` / `buildPath` / `toOpenAPIPath` / `parseQuery` | function | Path utilities |
+| `validate` / `validateSync` / `tryValidate` / `isStandardSchema` | function | Standard Schema validation helpers |
+| `createLlmsRoutes` / `generateLlmsTxt` / `generateLlmsFullTxt` | function | `llms.txt` generation |
 
 ## `@workkit/health`
 
 | Export | Kind | Description |
 |--------|------|-------------|
-| `health(checks)` | function | Compose binding health probes |
-| `kvProbe(kv)` / `d1Probe(db)` / `r2Probe(bucket)` / `queueProbe(q)` | function | Built-in dependency probes |
-| `healthHandler(checks, options?)` | function | Hono-style `/health` handler |
+| `createHealthCheck(probes, options?)` | function | Compose probes into a `HealthChecker` |
+| `healthHandler(probes, options?)` | function | Hono-style `/health` handler |
+| `kvProbe(kv)` / `d1Probe(db)` / `r2Probe(bucket)` / `doProbe(ns)` / `aiProbe(ai)` / `queueProbe(q)` | function | Built-in binding probes |
 
 ## `@workkit/turnstile`
 
@@ -334,9 +346,13 @@ Quick reference of all exported functions, types, and classes per package.
 
 | Export | Kind | Description |
 |--------|------|-------------|
-| `mail(transport, options?)` | function | Typed email send client |
-| `parseInbound(raw)` | function | Parse Email Routing inbound message |
-| `route(rules)` | function | Inbound routing helper |
+| `mail(binding, options?)` | function | Typed email send client over `SendEmail` binding |
+| `parseEmail(raw)` | function | Parse Email Routing inbound message |
+| `createEmailHandler(opts)` | function | Build an inbound email handler |
+| `createEmailRouter(routes)` | function | Route inbound emails to handlers |
+| `composeMessage(opts)` | function | Compose a `MailMessage` from address/subject/body parts |
+| `validateAddress(addr)` / `isValidAddress(addr)` | function | Address validation helpers |
+| `MailError` / `InvalidAddressError` / `DeliveryError` | class | Domain errors |
 
 ## `@workkit/chat`
 
@@ -422,7 +438,9 @@ Subpath imports: `@workkit/notify/email`, `@workkit/notify/inapp`, `@workkit/not
 | `generateApprovalToken` / `verifyApprovalToken` / `generateApprovalKeys` | function | Ed25519 signed approval tokens |
 | `createAuditProjection(db)` | function | Append-only audit projection over D1 |
 
-## CLI commands (`bunx workkit <cmd>`)
+## `@workkit/cli`
+
+The `workkit` CLI is published as a single binary. Run via `bunx workkit <cmd>`.
 
 | Command | Description |
 |---------|-------------|
