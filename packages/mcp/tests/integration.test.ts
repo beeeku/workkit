@@ -390,4 +390,76 @@ describe("Integration: Full MCP Server", () => {
 		const res = await server.fetch(new Request("http://localhost/health"), env, ctx);
 		expect(res.status).toBe(200);
 	});
+
+	it("auth.handler also wraps server.mount() handlers (no bypass via mount)", async () => {
+		const handlers = createMCPServer({
+			name: "secure-mount",
+			version: "1.0.0",
+			auth: {
+				type: "bearer",
+				handler: async (req, _e, next) => {
+					if (req.headers.get("authorization") !== "Bearer good") {
+						return new Response("unauthorized", { status: 401 });
+					}
+					return next();
+				},
+			},
+		})
+			.tool("ping", {
+				description: "ping",
+				input: z.object({}),
+				handler: async () => ({ ok: true }),
+			})
+			.mount();
+
+		const blocked = await handlers.restHandler(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: "{}",
+			}),
+			env,
+		);
+		expect(blocked.status).toBe(401);
+
+		const allowed = await handlers.restHandler(
+			new Request("http://localhost/api/tools/ping", {
+				method: "POST",
+				headers: { "content-type": "application/json", authorization: "Bearer good" },
+				body: "{}",
+			}),
+			env,
+		);
+		expect(allowed.status).toBe(200);
+	});
+
+	it("openapi.swaggerUI rejects unsupported variants at config time", () => {
+		expect(() =>
+			createMCPServer({
+				name: "no-cdn",
+				version: "1.0.0",
+				openapi: { enabled: true, swaggerUI: { cdn: false } },
+			})
+				.tool("noop", {
+					description: "noop",
+					input: z.object({}),
+					handler: async () => ({}),
+				})
+				.serve(),
+		).toThrow(/cdn=false/);
+
+		expect(() =>
+			createMCPServer({
+				name: "bundled",
+				version: "1.0.0",
+				openapi: { enabled: true, swaggerUI: { bundle: true } },
+			})
+				.tool("noop", {
+					description: "noop",
+					input: z.object({}),
+					handler: async () => ({}),
+				})
+				.serve(),
+		).toThrow(/bundle=true/);
+	});
 });

@@ -250,6 +250,36 @@ describe("createFactStore", () => {
 			}
 		});
 
+		it("get returns ENCRYPTION_ERROR when row is encrypted but no key configured", async () => {
+			const db = createMockD1();
+			const store = createFactStore(db); // no key
+
+			db._setNextResult({
+				id: "fact_secret",
+				text: "AAAA-base64-ciphertext-AAAA",
+				subject: null,
+				source: null,
+				tags: null,
+				confidence: 1.0,
+				encrypted: 1,
+				created_at: 1,
+				valid_from: 1,
+				valid_until: null,
+				superseded_by: null,
+				forgotten_at: null,
+				forgotten_reason: null,
+				embedding_status: "pending",
+				ttl: null,
+			});
+
+			const got = await store.get("fact_secret");
+			expect(got.ok).toBe(false);
+			if (!got.ok) {
+				expect(got.error.code).toBe("ENCRYPTION_ERROR");
+				expect(got.error.message).toMatch(/encrypted at rest/);
+			}
+		});
+
 		it("plaintext writes still work when encryptionKey configured but encrypted=false", async () => {
 			const db = createMockD1();
 			const key = await makeKey();

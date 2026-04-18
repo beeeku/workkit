@@ -2,10 +2,19 @@ import { decryptText, encryptText } from "./encryption";
 import type { Fact, FactMetadata, MemoryResult } from "./types";
 import { generateFactId } from "./utils";
 
+export class EncryptionConfigError extends Error {
+	readonly code = "ENCRYPTION_ERROR" as const;
+}
+
 export function createFactStore(db: D1Database, encryptionKey?: CryptoKey) {
 	async function parseFact(row: any): Promise<Fact> {
 		const encrypted = Boolean(row.encrypted);
-		const text = encrypted && encryptionKey ? await decryptText(row.text, encryptionKey) : row.text;
+		if (encrypted && !encryptionKey) {
+			throw new EncryptionConfigError(
+				`fact ${row.id} is encrypted at rest but no encryptionKey was passed to createMemory()`,
+			);
+		}
+		const text = encrypted ? await decryptText(row.text, encryptionKey!) : row.text;
 		return {
 			id: row.id,
 			text,
@@ -125,6 +134,9 @@ export function createFactStore(db: D1Database, encryptionKey?: CryptoKey) {
 				const row = await db.prepare("SELECT * FROM facts WHERE id = ?").bind(factId).first();
 				return { ok: true, value: row ? await parseFact(row) : null };
 			} catch (error: any) {
+				if (error instanceof EncryptionConfigError) {
+					return { ok: false, error: { code: "ENCRYPTION_ERROR", message: error.message } };
+				}
 				return { ok: false, error: { code: "STORAGE_ERROR", message: error.message } };
 			}
 		},

@@ -42,7 +42,17 @@ server.tool("get-weather", {
 export default server.serve();
 ```
 
-That single registration gives you the MCP JSON-RPC endpoint, a REST shortcut, the OpenAPI spec, and Swagger UI all under `basePath`. Use the dev server's request log to discover the exact paths the server registers — they follow the [Hono](https://hono.dev) router conventions.
+That single registration gives you these routes:
+
+| Path | Where | What |
+|---|---|---|
+| `POST {mcpPath}` (default `/mcp`) | configurable | MCP JSON-RPC transport |
+| `POST {basePath}/tools/:toolName` (default `/api/tools/:toolName`) | configurable | REST shortcut for one tool |
+| `GET /openapi.json` | root | OpenAPI 3.1 spec (when `openapi.enabled !== false`) |
+| `GET /docs` | root | Swagger UI shell (when `openapi.swaggerUI: true`) |
+| `GET /health` | root | `{"status":"ok"}` (when `health !== false`) |
+
+Note that `openapi.json`, `/docs`, and `/health` mount at the *root* of the app — not under `basePath`. That keeps the meta-endpoints stable for tooling.
 
 ## Resources and prompts
 

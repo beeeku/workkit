@@ -134,16 +134,28 @@ export function createMCPServer<
 			});
 
 			// Swagger UI: serve a small HTML shell that loads swagger-ui-dist from the CDN
-			// and points it at /openapi.json. Opt-in via openapi.swaggerUI: true | { cdn?: boolean }.
+			// and points it at /openapi.json. Opt-in via openapi.swaggerUI: true.
+			//
+			// `{ cdn: false }` (self-host the assets) and `{ bundle: true }` (inline the JS)
+			// are reserved on the type but not yet implemented — we throw at config time
+			// rather than silently 404 so callers don't ship a broken /docs route.
 			const swaggerOpt = config.openapi?.swaggerUI;
 			if (swaggerOpt) {
-				const cdn =
-					typeof swaggerOpt === "object" && swaggerOpt.cdn === false
-						? null
-						: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5";
-				if (cdn) {
-					app.get("/docs", (c) => {
-						const html = `<!doctype html>
+				if (typeof swaggerOpt === "object") {
+					if (swaggerOpt.cdn === false) {
+						throw new Error(
+							"openapi.swaggerUI.cdn=false (self-hosted Swagger UI assets) is not yet implemented — see https://github.com/beeeku/workkit/issues",
+						);
+					}
+					if (swaggerOpt.bundle === true) {
+						throw new Error(
+							"openapi.swaggerUI.bundle=true (inlined Swagger UI bundle) is not yet implemented — see https://github.com/beeeku/workkit/issues",
+						);
+					}
+				}
+				const cdn = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5";
+				app.get("/docs", (c) => {
+					const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -164,9 +176,8 @@ window.onload = () => {
 </script>
 </body>
 </html>`;
-						return c.html(html);
-					});
-				}
+					return c.html(html);
+				});
 			}
 		}
 
@@ -245,21 +256,43 @@ window.onload = () => {
 				middleware: config.middleware,
 			});
 
+			// Auth wrapper — applies the same auth.handler / exclude logic as the Hono app
+			// build path so consumers using mount() get protected handlers, not bypass.
+			const authHandler = config.auth?.handler;
+			const authExclude = new Set(config.auth?.exclude ?? []);
+			async function applyAuth(
+				request: Request,
+				env: TEnv,
+				inner: () => Promise<Response>,
+			): Promise<Response> {
+				if (!authHandler) return inner();
+				const path = new URL(request.url).pathname;
+				if (authExclude.has(path)) return inner();
+				let innerResponse: Response | undefined;
+				const decision = await authHandler(request, env as any, async () => {
+					innerResponse = await inner();
+					return innerResponse;
+				});
+				return innerResponse ?? decision;
+			}
+
 			return {
 				mcpHandler: async (request: Request, env: TEnv): Promise<Response> => {
 					const ctx = {
 						waitUntil: () => {},
 						passThroughOnException: () => {},
 					} as unknown as ExecutionContext;
-					return transport.handleRequest(request, env, ctx);
+					return applyAuth(request, env, () => transport.handleRequest(request, env, ctx));
 				},
 				restHandler: async (request: Request, env: TEnv): Promise<Response> => {
 					const ctx = {
 						waitUntil: () => {},
 						passThroughOnException: () => {},
 					} as unknown as ExecutionContext;
-					const response = await rest.handleRequest(request, env, ctx);
-					return response ?? new Response("Not Found", { status: 404 });
+					return applyAuth(request, env, async () => {
+						const response = await rest.handleRequest(request, env, ctx);
+						return response ?? new Response("Not Found", { status: 404 });
+					});
 				},
 				openapi: () => getOpenAPISpec(),
 			};

@@ -4,7 +4,14 @@ import { extractSearchTerms } from "./utils";
 
 async function parseFact(row: any, encryptionKey?: CryptoKey): Promise<Fact> {
 	const encrypted = Boolean(row.encrypted);
-	const text = encrypted && encryptionKey ? await decryptText(row.text, encryptionKey) : row.text;
+	if (encrypted && !encryptionKey) {
+		const err = new Error(
+			`fact ${row.id} is encrypted at rest but no encryptionKey was passed to createMemory()`,
+		) as Error & { code?: string };
+		err.code = "ENCRYPTION_ERROR";
+		throw err;
+	}
+	const text = encrypted ? await decryptText(row.text, encryptionKey!) : row.text;
 	return {
 		id: row.id,
 		text,
@@ -116,6 +123,9 @@ export function createSearch(db: D1Database, encryptionKey?: CryptoKey) {
 			const parsed = await Promise.all((results ?? []).map((r) => parseFact(r, encryptionKey)));
 			return { ok: true, value: parsed };
 		} catch (error: any) {
+			if (error?.code === "ENCRYPTION_ERROR") {
+				return { ok: false, error: { code: "ENCRYPTION_ERROR", message: error.message } };
+			}
 			return { ok: false, error: { code: "STORAGE_ERROR", message: error.message } };
 		}
 	};
