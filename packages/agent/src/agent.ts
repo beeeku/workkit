@@ -130,10 +130,3 @@ async function* streamRun(internal: InternalAgentDef, args: RunArgs): AsyncGener
 	await promise;
 	if (error) throw error;
 }
-
-/** Test-only — clears the shared agent registry between tests. */
-export function __resetAgentRegistry(): void {
-	(sharedRegistry as unknown as { _internal?: Map<string, InternalAgentDef> })._internal?.clear();
-	// The sharedRegistry's actual map is closed-over; recreate by reassigning module state
-	// would require export reshape. Tests should use unique agent names instead.
-}

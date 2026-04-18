@@ -2,6 +2,7 @@ import type { ChatMessage, GatewayToolCall, RunOptions, TokenUsage } from "@work
 import { ToolValidationError } from "./errors";
 import type { AgentEvent } from "./events";
 import { HANDOFF_HOP_LIMIT } from "./handoff";
+import { toJsonSchema } from "./schema";
 import { runTool } from "./tool";
 import type {
 	Agent,
@@ -126,7 +127,7 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 							tools: currentAgent.tools.map((t) => ({
 								name: t.name,
 								description: t.description,
-								parameters: { type: "object", additionalProperties: true },
+								parameters: toJsonSchema(t.input).schema,
 							})),
 							toolChoice: "auto",
 						}
@@ -142,16 +143,14 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			);
 		} catch (error) {
 			emit({ type: "error", error: { kind: "provider", message: errorMessage(error) } });
+			// Default behaviour: stopReason:"error", rethrow. Provider failures
+			// silently swallowed would mask outages; require an explicit hook
+			// opt-in via `{ abort: false }` to recover with stopReason:"stop".
 			const decision = await currentAgent.hooks.onError?.(
 				{ kind: "provider", error },
-				{
-					...ctx,
-					agentPath,
-					usage,
-				},
+				{ ...ctx, agentPath, usage },
 			);
 			if (decision && decision.abort === false) {
-				// Treat as benign — break with stop.
 				emit({ type: "done", stopReason: "stop", usage });
 				return { messages, usage, stopReason: "stop", finalText };
 			}
@@ -260,14 +259,23 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			if (tool.kind === "handoff" && tool.handoffTarget) {
 				const target = args.resolveAgent(tool.handoffTarget);
 				if (!target) {
-					emit({
-						type: "error",
-						error: {
-							kind: "config",
-							message: `handoff target "${tool.handoffTarget}" not registered`,
-						},
-					});
-				} else {
+					const msg = `handoff target "${tool.handoffTarget}" not registered`;
+					emit({ type: "error", error: { kind: "config", message: msg } });
+					// Replace the misleading "handing off to <target>" tool message
+					// with a real error and stop the loop — leaving the model to
+					// keep retrying an impossible handoff is worse than a clear stop.
+					const lastIndex = messages.length - 1;
+					const last = messages[lastIndex];
+					if (last && last.role === "tool" && last.tool_call_id === call.id) {
+						messages = [
+							...messages.slice(0, lastIndex),
+							{ ...last, content: `[handoff failed: ${msg}]`, isError: true },
+						];
+					}
+					emit({ type: "done", stopReason: "error", usage });
+					return { messages, usage, stopReason: "error", finalText };
+				}
+				{
 					const occurrences = agentPath.filter((n) => n === target.name).length;
 					if (occurrences >= HANDOFF_HOP_LIMIT) {
 						const { HandoffCycleError } = await import("./errors");

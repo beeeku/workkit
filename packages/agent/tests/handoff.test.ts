@@ -69,4 +69,22 @@ describe("assertNoToolCollisions()", () => {
 		const h = handoff({ name: "specialist" });
 		expect(() => assertNoToolCollisions([t, h])).toThrow(ToolNameCollisionError);
 	});
+
+	it("throws when an own tool collides with a tool carried by a handoff target", () => {
+		const targetTool = tool({
+			name: "shared",
+			description: "target's tool",
+			input: z.object({}),
+			handler: async () => "x",
+		});
+		const ownTool = tool({
+			name: "shared",
+			description: "owner's tool",
+			input: z.object({}),
+			handler: async () => "x",
+		});
+		// Pass a stub agent shape carrying tools so handoff can record target names.
+		const h = handoff({ name: "specialist", tools: [targetTool] });
+		expect(() => assertNoToolCollisions([ownTool, h])).toThrow(ToolNameCollisionError);
+	});
 });

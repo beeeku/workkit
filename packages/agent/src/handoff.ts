@@ -35,17 +35,18 @@ export interface HandoffOptions {
 
 /**
  * Create a synthetic handoff tool that, when called by the model, yields
- * control to `target`. The actual switch is performed by the loop based on
- * the tool's `kind` and `handoffTarget`.
+ * control to `target`. Accepts either the full `Agent` (preferred — lets
+ * `defineAgent` reject collisions against the target's tools) or a name-
+ * only stub for forward references.
  */
 export function handoff(
-	target: Pick<Agent, "name">,
+	target: Pick<Agent, "name"> & Partial<Pick<Agent, "tools">>,
 	options: HandoffOptions = {},
 ): Tool<HandoffInput, string> {
 	const description =
 		options.description ??
 		`Hand off to the "${target.name}" agent${options.when ? ` when: ${options.when}` : ""}.`;
-	return {
+	const tool: Tool<HandoffInput, string> = {
 		name: `${HANDOFF_PREFIX}${target.name}`,
 		description,
 		input: handoffInputSchema,
@@ -55,22 +56,41 @@ export function handoff(
 		kind: "handoff",
 		handoffTarget: target.name,
 	};
+	if (target.tools) {
+		(
+			tool as Tool<HandoffInput, string> & { handoffTargetToolNames?: readonly string[] }
+		).handoffTargetToolNames = target.tools.map((t) => t.name);
+	}
+	return tool;
 }
 
 export const HANDOFF_HOP_LIMIT: number = DEFAULT_HOP_LIMIT;
 
 /**
- * Throws ToolNameCollisionError if any tool name appears more than once in
- * the union of own tools + handoff target tools (transitively shallow:
- * we only inspect direct targets, not their nested handoffs).
+ * Throws ToolNameCollisionError if any tool name appears more than once
+ * across own tools AND across the tools carried by handoff targets (when
+ * `handoff()` was called with the full `Agent`). Forward-reference
+ * handoffs (name-only) cannot be checked here.
  */
 export function assertNoToolCollisions(tools: ReadonlyArray<Tool>): void {
-	const seen = new Map<string, "self" | "handoff">();
+	const seen = new Map<string, "self" | "handoff" | "handoff-target">();
 	for (const t of tools) {
-		const source = t.kind === "handoff" ? "handoff" : "self";
+		const source: "self" | "handoff" = t.kind === "handoff" ? "handoff" : "self";
 		if (seen.has(t.name)) {
 			throw new ToolNameCollisionError(t.name, source);
 		}
 		seen.set(t.name, source);
+		if (t.kind === "handoff") {
+			const targetNames = (t as Tool & { handoffTargetToolNames?: readonly string[] })
+				.handoffTargetToolNames;
+			if (targetNames) {
+				for (const targetName of targetNames) {
+					if (seen.has(targetName)) {
+						throw new ToolNameCollisionError(targetName, "handoff");
+					}
+					seen.set(targetName, "handoff-target");
+				}
+			}
+		}
 	}
 }

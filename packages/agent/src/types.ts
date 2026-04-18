@@ -26,13 +26,17 @@ export interface StopWhen {
 	maxTokens?: number;
 }
 
+export interface OnErrorDecision {
+	abort?: boolean;
+}
+
 export interface AgentHooks {
 	beforeModel?(ctx: RunContext): void | Promise<void>;
 	afterTool?(call: GatewayToolCall, result: string, ctx: RunContext): void | Promise<void>;
 	onError?(
 		err: { kind: "tool" | "provider" | "hook"; toolName?: string; error: unknown },
 		ctx: RunContext,
-	): void | Promise<void> | { abort?: boolean };
+	): undefined | OnErrorDecision | Promise<undefined | OnErrorDecision>;
 }
 
 export interface ToolCtx extends RunContext {
@@ -64,8 +68,6 @@ export interface DefineAgentOptions {
 	tools?: Tool[];
 	stopWhen?: StopWhen;
 	hooks?: AgentHooks;
-	/** Per-tool timeout default for tools without their own. */
-	defaultToolTimeoutMs?: number;
 }
 
 export interface RunArgs {
