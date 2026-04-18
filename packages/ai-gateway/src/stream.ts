@@ -101,7 +101,7 @@ async function streamAnthropic(
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("anthropic", providerConfig.baseUrl);
 	const body = { ...buildAnthropicBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
-	const { signal, abort } = linkedAbort(options?.signal);
+	const { signal, abort, dispose } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/messages`, {
 		method: "POST",
@@ -117,33 +117,39 @@ async function streamAnthropic(
 
 	if (!response.ok || !response.body) {
 		const errorBody = await response.text().catch(() => "unknown error");
+		dispose();
 		throw new ServiceUnavailableError(`anthropic-stream (${response.status})`, {
 			context: { status: response.status, model, body: errorBody },
 		});
 	}
 
 	let finalUsage: TokenUsage | undefined;
-	return transformSse(response.body, abort, (event, emit, finish) => {
-		const obj = tryParseJson(event.data);
-		if (!obj) return;
-		const t = obj.type;
-		if (t === "content_block_delta") {
-			const delta = obj.delta as Record<string, unknown> | undefined;
-			if (delta?.type === "text_delta" && typeof delta.text === "string") {
-				emit({ type: "text", delta: delta.text });
+	return transformSse(
+		response.body,
+		abort,
+		(event, emit, finish) => {
+			const obj = tryParseJson(event.data);
+			if (!obj) return;
+			const t = obj.type;
+			if (t === "content_block_delta") {
+				const delta = obj.delta as Record<string, unknown> | undefined;
+				if (delta?.type === "text_delta" && typeof delta.text === "string") {
+					emit({ type: "text", delta: delta.text });
+				}
+			} else if (t === "message_delta") {
+				const usage = obj.usage as Record<string, unknown> | undefined;
+				if (usage && typeof usage.output_tokens === "number") {
+					finalUsage = {
+						inputTokens: 0,
+						outputTokens: usage.output_tokens,
+					};
+				}
+			} else if (t === "message_stop") {
+				finish({ type: "done", usage: finalUsage });
 			}
-		} else if (t === "message_delta") {
-			const usage = obj.usage as Record<string, unknown> | undefined;
-			if (usage && typeof usage.output_tokens === "number") {
-				finalUsage = {
-					inputTokens: 0,
-					outputTokens: usage.output_tokens,
-				};
-			}
-		} else if (t === "message_stop") {
-			finish({ type: "done", usage: finalUsage });
-		}
-	});
+		},
+		dispose,
+	);
 }
 
 // ─── OpenAI ──────────────────────────────────────────────────
@@ -162,7 +168,7 @@ async function streamOpenAi(
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("openai", providerConfig.baseUrl);
 	const body = { ...buildOpenAiBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
-	const { signal, abort } = linkedAbort(options?.signal);
+	const { signal, abort, dispose } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/chat/completions`, {
 		method: "POST",
@@ -177,34 +183,40 @@ async function streamOpenAi(
 
 	if (!response.ok || !response.body) {
 		const errorBody = await response.text().catch(() => "unknown error");
+		dispose();
 		throw new ServiceUnavailableError(`openai-stream (${response.status})`, {
 			context: { status: response.status, model, body: errorBody },
 		});
 	}
 
 	let finalUsage: TokenUsage | undefined;
-	return transformSse(response.body, abort, (event, emit, finish) => {
-		if (event.data === "[DONE]") {
-			finish({ type: "done", usage: finalUsage });
-			return;
-		}
-		const obj = tryParseJson(event.data);
-		if (!obj) return;
+	return transformSse(
+		response.body,
+		abort,
+		(event, emit, finish) => {
+			if (event.data === "[DONE]") {
+				finish({ type: "done", usage: finalUsage });
+				return;
+			}
+			const obj = tryParseJson(event.data);
+			if (!obj) return;
 
-		const choices = obj.choices as Array<Record<string, unknown>> | undefined;
-		const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
-		if (typeof delta?.content === "string" && delta.content.length > 0) {
-			emit({ type: "text", delta: delta.content });
-		}
+			const choices = obj.choices as Array<Record<string, unknown>> | undefined;
+			const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
+			if (typeof delta?.content === "string" && delta.content.length > 0) {
+				emit({ type: "text", delta: delta.content });
+			}
 
-		const usage = obj.usage as Record<string, unknown> | undefined;
-		if (usage) {
-			finalUsage = {
-				inputTokens: typeof usage.prompt_tokens === "number" ? usage.prompt_tokens : 0,
-				outputTokens: typeof usage.completion_tokens === "number" ? usage.completion_tokens : 0,
-			};
-		}
-	});
+			const usage = obj.usage as Record<string, unknown> | undefined;
+			if (usage) {
+				finalUsage = {
+					inputTokens: typeof usage.prompt_tokens === "number" ? usage.prompt_tokens : 0,
+					outputTokens: typeof usage.completion_tokens === "number" ? usage.completion_tokens : 0,
+				};
+			}
+		},
+		dispose,
+	);
 }
 
 // ─── SSE parser + helpers ────────────────────────────────────
@@ -229,6 +241,7 @@ function transformSse(
 	source: ReadableStream<Uint8Array>,
 	onCancel: () => void,
 	translate: (event: SseEvent, emit: EmitFn, finish: FinishFn) => void,
+	onFinish: () => void = noop,
 ): ReadableStream<GatewayStreamEvent> {
 	const reader = source.getReader();
 
@@ -264,7 +277,12 @@ function transformSse(
 				controller.enqueue(finishEvent ?? { type: "done" });
 				controller.close();
 			} catch (err) {
+				// Release the source reader before erroring the output stream so
+				// the lock doesn't linger awaiting GC.
+				reader.cancel().catch(noop);
 				controller.error(err);
+			} finally {
+				onFinish();
 			}
 		},
 		cancel() {
@@ -272,6 +290,7 @@ function transformSse(
 			// consumer has already walked away from. Swallow cancel errors.
 			onCancel();
 			reader.cancel().catch(noop);
+			onFinish();
 		},
 	});
 }
@@ -280,21 +299,34 @@ function transformSse(
  * Build an AbortController whose signal is linked to an optional external
  * signal (aborts cascade in). `abort()` aborts our signal; if the external
  * signal is already aborted, our signal starts aborted too.
+ *
+ * `dispose()` removes our listener from the external signal — callers must
+ * invoke it when the stream finishes (normally or via error) so the listener
+ * doesn't leak on long-lived external signals.
  */
 function linkedAbort(external: AbortSignal | undefined): {
 	signal: AbortSignal;
 	abort: () => void;
+	dispose: () => void;
 } {
 	const controller = new AbortController();
+	let dispose: () => void = noop;
 	if (external) {
-		if (external.aborted) controller.abort(external.reason);
-		else external.addEventListener("abort", () => controller.abort(external.reason), { once: true });
+		if (external.aborted) {
+			controller.abort(external.reason);
+		} else {
+			const onExternal = () => controller.abort(external.reason);
+			external.addEventListener("abort", onExternal, { once: true });
+			dispose = () => external.removeEventListener("abort", onExternal);
+		}
 	}
 	return {
 		signal: controller.signal,
 		abort: () => {
-			if (!controller.signal.aborted) controller.abort(new DOMException("stream cancelled", "AbortError"));
+			if (!controller.signal.aborted)
+				controller.abort(new DOMException("stream cancelled", "AbortError"));
 		},
+		dispose,
 	};
 }
 

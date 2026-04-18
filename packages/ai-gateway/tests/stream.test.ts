@@ -208,6 +208,34 @@ describe("gateway.stream() — plumbing", () => {
 		expect(text).toBe("AB");
 	});
 
+	it("removes the abort listener from the external signal on normal completion", async () => {
+		const fetchMock = mockHttpStream(["data: [DONE]\n\n"]);
+		globalThis.fetch = fetchMock;
+
+		// Count listeners via our own counter wrapped around add/removeEventListener.
+		const controller = new AbortController();
+		let listenerCount = 0;
+		const realAdd = controller.signal.addEventListener.bind(controller.signal);
+		const realRemove = controller.signal.removeEventListener.bind(controller.signal);
+		controller.signal.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject, opts?: AddEventListenerOptions | boolean) => {
+			if (type === "abort") listenerCount++;
+			return realAdd(type, listener, opts);
+		}) as typeof controller.signal.addEventListener;
+		controller.signal.removeEventListener = ((type: string, listener: EventListenerOrEventListenerObject, opts?: EventListenerOptions | boolean) => {
+			if (type === "abort") listenerCount--;
+			return realRemove(type, listener, opts);
+		}) as typeof controller.signal.removeEventListener;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		await collect(await gw.stream!("gpt-4o", { prompt: "hi" }, { signal: controller.signal }));
+
+		expect(listenerCount).toBe(0);
+	});
+
 	it("aborts the underlying fetch when the consumer cancels the event stream", async () => {
 		let capturedSignal: AbortSignal | undefined;
 		const fetchMock = vi.fn().mockImplementation((_url: string, init: { signal?: AbortSignal }) => {

@@ -208,6 +208,11 @@ export interface Gateway {
 	 * Returns a `ReadableStream` of `GatewayStreamEvent`s. Every stream ends
 	 * with exactly one `done` event. Optional — present on gateways returned
 	 * by `createGateway` and on wrappers around them.
+	 *
+	 * Note on `options.responseFormat`: when set on a streaming call, providers
+	 * add a system prompt asking for JSON only, but the output is still a
+	 * token-by-token `text` stream. Consumers must buffer and parse the
+	 * concatenated deltas themselves; streamed JSON validation is not performed.
 	 */
 	stream?(
 		model: string,
