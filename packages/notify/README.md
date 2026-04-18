@@ -2,7 +2,13 @@
 
 Unified notification dispatch for Cloudflare Workers. One API, pluggable transport adapters. Owns the cross-cutting concerns once: recipient resolution, channel preferences, opt-out registry, quiet hours, idempotency, fallback chains, delivery records, test mode.
 
-This package is the **core** — adapters live in separate packages (#27 email, #28 in-app, #29 WhatsApp).
+Adapters ship as **subpath imports** in this same package — bring the runtime cost of an adapter only when you import it.
+
+| Subpath | Adapter | Optional peer |
+|---|---|---|
+| `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
+| `@workkit/notify/inapp` | D1-backed feed + SSE streaming | — |
+| `@workkit/notify/whatsapp` | Meta WA Cloud API + Twilio + Gupshup _(landing in #29)_ | _(see issue)_ |
 
 ## Install
 
@@ -132,6 +138,78 @@ interface Adapter<P> {
 
 Adapters are stateless objects. The dispatcher feeds them validated args; they return a status (`sent | delivered | read | failed | bounced`) and an optional `providerId`.
 
+## Adapters
+
+### Email — `@workkit/notify/email`
+
+```ts
+import { emailAdapter } from "@workkit/notify/email";
+import { optOut } from "@workkit/notify";
+
+const email = emailAdapter({
+  apiKey: env.RESEND_API_KEY,
+  from: "Reports <reports@entryexit.ai>",
+  bucket: env.REPORTS,                              // optional, only for attachments
+  webhook: { maxAgeMs: 5 * 60 * 1000 },
+  autoOptOut: {
+    enabled: true,
+    hook: async (emailAddress, channel, _notificationId, reason) => {
+      // Webhook payload doesn't carry your internal id — resolve it.
+      const userId = await lookupUserIdByEmail(emailAddress);
+      if (userId) await optOut(env.DB, userId, channel, null, reason);
+    },
+  },
+  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+});
+```
+
+- Direct `fetch` to Resend (no SDK).
+- Optional `@react-email/render` for React Email components.
+- Plain-text fallback auto-generated.
+- Svix-format webhook verification (`v1,<base64>` HMAC-SHA256), 5-min replay window.
+- Hard bounce + complaint → auto opt-out (configurable, default on).
+- Attachment cap default 40MB; bounded R2 fetch concurrency 4.
+
+### In-app — `@workkit/notify/inapp`
+
+```ts
+import {
+  inAppAdapter,
+  SseRegistry,
+  createSseHandler,
+  feed,
+  markRead,
+  forgetInAppUser,
+  INAPP_MIGRATION_SQL,
+} from "@workkit/notify/inapp";
+
+await env.DB.exec(INAPP_MIGRATION_SQL); // adds in_app_notifications table
+const registry = new SseRegistry();
+
+const inApp = inAppAdapter({ db: env.DB, registry });
+
+// Mount the SSE route in your router
+const sse = createSseHandler({
+  db: env.DB,
+  registry,
+  auth: async (req) => /* return { userId } | null */,
+  originAllowlist: ["https://app.example.com"],
+  maxConnPerUser: 5,
+});
+
+// Feed queries (UI calls these from your API routes)
+const page = await feed(env.DB, { userId, cursor, limit: 20 });
+await markRead(env.DB, { userId, ids: ["..."] });
+```
+
+- `feed/markRead/dismiss/unreadCount` query helpers.
+- Composite `(created_at, id)` opaque cursor; cross-user enumeration blocked.
+- `markRead` only updates rows owned by `userId`.
+- SSE handler **requires** an `auth` callback (no anonymous default).
+- Per-user connection cap, origin allowlist, body cap (~2KB).
+- `safeLink` rejects `javascript:`/`data:`/`file:` schemes.
+- `forgetInAppUser(db, userId, registry?)` cascades + drops active SSE subs.
+
 ## Security & compliance
 
 - **Opt-out re-checked at dispatch** (not just at enqueue) so a `STOP` between request and queue worker is honored.
@@ -146,12 +224,12 @@ Adapters are stateless objects. The dispatcher feeds them validated args; they r
 
 ## Out of scope (separate issues)
 
-- WhatsApp adapter (#29) — Meta direct + Twilio + Gupshup.
-- Email adapter (#27) — Resend + React Email.
-- In-app adapter (#28) — D1 + SSE.
+- WhatsApp adapter (#29) — Meta direct + Twilio + Gupshup. Will land as `@workkit/notify/whatsapp`.
 - Per-provider rate limiting (lands with each adapter).
 - Queue-side draining of pending messages on `forgetUser` (gap in `@workkit/queue`).
 - D1/R2-backed editable template registry.
+- Cross-isolate SSE fan-out (DO-backed adapter — future).
+- Push notifications (FCM/APNs — future).
 
 ## Versioning
 

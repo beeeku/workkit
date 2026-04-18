@@ -1,7 +1,7 @@
 {
 	"name": "@workkit/notify",
 	"version": "0.0.0",
-	"description": "Unified notification dispatch for Cloudflare Workers — preferences, opt-out, quiet hours, idempotency, fallback chains. Pluggable transport adapters.",
+	"description": "Unified notification dispatch for Cloudflare Workers — preferences, opt-out, quiet hours, idempotency, fallback chains, pluggable adapters (email, in-app).",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",
 	"repository": {
@@ -15,6 +15,18 @@
 			"import": {
 				"types": "./dist/index.d.ts",
 				"default": "./dist/index.js"
+			}
+		},
+		"./email": {
+			"import": {
+				"types": "./dist/adapters/email/index.d.ts",
+				"default": "./dist/adapters/email/index.js"
+			}
+		},
+		"./inapp": {
+			"import": {
+				"types": "./dist/adapters/inapp/index.d.ts",
+				"default": "./dist/adapters/inapp/index.js"
 			}
 		}
 	},
@@ -38,7 +50,17 @@
 		"@standard-schema/spec": "^1.1.0",
 		"@workkit/errors": "^1.0.2"
 	},
+	"peerDependencies": {
+		"@react-email/render": ">=1.0.0"
+	},
+	"peerDependenciesMeta": {
+		"@react-email/render": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.13",
+		"better-sqlite3": "^12.9.0",
 		"zod": "^3.23.0"
 	},
 	"keywords": [
@@ -46,6 +68,10 @@
 		"workers",
 		"notify",
 		"notifications",
+		"email",
+		"resend",
+		"sse",
+		"in-app",
 		"workkit"
 	]
 }
