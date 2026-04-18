@@ -1,4 +1,6 @@
 import { ServiceUnavailableError } from "@workkit/errors";
+import { buildAnthropicBody } from "./providers/anthropic";
+import { buildOpenAiBody } from "./providers/openai";
 import type {
 	AiInput,
 	AnthropicProviderConfig,
@@ -66,7 +68,8 @@ async function streamWorkersAi(
 		return singleEventStream(text);
 	}
 
-	return transformSse(raw, (event, emit) => {
+	// Workers AI stream has no underlying fetch to abort on cancel.
+	return transformSse(raw, noop, (event, emit) => {
 		if (event.data === "[DONE]") return;
 		const obj = tryParseJson(event.data);
 		const delta = typeof obj?.response === "string" ? obj.response : undefined;
@@ -97,7 +100,8 @@ async function streamAnthropic(
 	cfGatewayHeaders: (cf: CfGatewayConfig | undefined) => Record<string, string>,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("anthropic", providerConfig.baseUrl);
-	const body = anthropicStreamBody(model, input);
+	const body = { ...buildAnthropicBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
+	const { signal, abort } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/messages`, {
 		method: "POST",
@@ -108,7 +112,7 @@ async function streamAnthropic(
 			...cfGatewayHeaders(cfGateway),
 		},
 		body: JSON.stringify(body),
-		signal: options?.signal,
+		signal,
 	});
 
 	if (!response.ok || !response.body) {
@@ -119,7 +123,7 @@ async function streamAnthropic(
 	}
 
 	let finalUsage: TokenUsage | undefined;
-	return transformSse(response.body, (event, emit, finish) => {
+	return transformSse(response.body, abort, (event, emit, finish) => {
 		const obj = tryParseJson(event.data);
 		if (!obj) return;
 		const t = obj.type;
@@ -142,33 +146,6 @@ async function streamAnthropic(
 	});
 }
 
-function anthropicStreamBody(model: string, input: AiInput): Record<string, unknown> {
-	// Match buildAnthropicBody's message shaping but simpler — streaming callers
-	// rarely use responseFormat/tools here; follow-up PRs extend this.
-	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
-		const msgs = (input as { messages: Array<{ role: string; content: string }> }).messages;
-		const systemMsg = msgs.find((m) => m.role === "system");
-		const nonSystem = msgs.filter((m) => m.role !== "system");
-		const body: Record<string, unknown> = {
-			model,
-			messages: nonSystem,
-			max_tokens: 1024,
-			stream: true,
-		};
-		if (systemMsg) body.system = systemMsg.content;
-		return body;
-	}
-	if ("prompt" in input) {
-		return {
-			model,
-			messages: [{ role: "user", content: (input as { prompt: string }).prompt }],
-			max_tokens: 1024,
-			stream: true,
-		};
-	}
-	return { model, max_tokens: 1024, stream: true, ...(input as Record<string, unknown>) };
-}
-
 // ─── OpenAI ──────────────────────────────────────────────────
 
 async function streamOpenAi(
@@ -184,7 +161,8 @@ async function streamOpenAi(
 	cfGatewayHeaders: (cf: CfGatewayConfig | undefined) => Record<string, string>,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
 	const baseUrl = baseUrlResolver("openai", providerConfig.baseUrl);
-	const body = openAiStreamBody(model, input);
+	const body = { ...buildOpenAiBody(model, input, options?.responseFormat, options?.toolOptions), stream: true };
+	const { signal, abort } = linkedAbort(options?.signal);
 
 	const response = await fetch(`${baseUrl}/chat/completions`, {
 		method: "POST",
@@ -194,7 +172,7 @@ async function streamOpenAi(
 			...cfGatewayHeaders(cfGateway),
 		},
 		body: JSON.stringify(body),
-		signal: options?.signal,
+		signal,
 	});
 
 	if (!response.ok || !response.body) {
@@ -205,7 +183,7 @@ async function streamOpenAi(
 	}
 
 	let finalUsage: TokenUsage | undefined;
-	return transformSse(response.body, (event, emit, finish) => {
+	return transformSse(response.body, abort, (event, emit, finish) => {
 		if (event.data === "[DONE]") {
 			finish({ type: "done", usage: finalUsage });
 			return;
@@ -229,25 +207,6 @@ async function streamOpenAi(
 	});
 }
 
-function openAiStreamBody(model: string, input: AiInput): Record<string, unknown> {
-	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
-		const msgs = (input as { messages: Array<{ role: string; content: string }> }).messages;
-		return {
-			model,
-			messages: msgs.map(({ role, content }) => ({ role, content })),
-			stream: true,
-		};
-	}
-	if ("prompt" in input) {
-		return {
-			model,
-			messages: [{ role: "user", content: (input as { prompt: string }).prompt }],
-			stream: true,
-		};
-	}
-	return { model, stream: true, ...(input as Record<string, unknown>) };
-}
-
 // ─── SSE parser + helpers ────────────────────────────────────
 
 interface SseEvent {
@@ -268,6 +227,7 @@ type FinishFn = (event: GatewayStreamEvent) => void;
  */
 function transformSse(
 	source: ReadableStream<Uint8Array>,
+	onCancel: () => void,
 	translate: (event: SseEvent, emit: EmitFn, finish: FinishFn) => void,
 ): ReadableStream<GatewayStreamEvent> {
 	const reader = source.getReader();
@@ -289,10 +249,12 @@ function transformSse(
 					if (done) break;
 					buffer += decoder.decode(value, { stream: true });
 
-					let idx: number;
-					while ((idx = buffer.indexOf("\n\n")) !== -1) {
-						const record = buffer.slice(0, idx);
-						buffer = buffer.slice(idx + 2);
+					// SSE spec allows either "\n\n" or "\r\n\r\n" as record separator.
+					while (true) {
+						const boundary = findRecordBoundary(buffer);
+						if (!boundary) break;
+						const record = buffer.slice(0, boundary.index);
+						buffer = buffer.slice(boundary.index + boundary.length);
 						const parsed = parseSseRecord(record);
 						if (parsed) translate(parsed, emit, finish);
 					}
@@ -306,22 +268,57 @@ function transformSse(
 			}
 		},
 		cancel() {
-			// Swallow cancel errors — consumer already walked away.
+			// Abort the upstream fetch so we don't keep downloading tokens the
+			// consumer has already walked away from. Swallow cancel errors.
+			onCancel();
 			reader.cancel().catch(noop);
 		},
 	});
+}
+
+/**
+ * Build an AbortController whose signal is linked to an optional external
+ * signal (aborts cascade in). `abort()` aborts our signal; if the external
+ * signal is already aborted, our signal starts aborted too.
+ */
+function linkedAbort(external: AbortSignal | undefined): {
+	signal: AbortSignal;
+	abort: () => void;
+} {
+	const controller = new AbortController();
+	if (external) {
+		if (external.aborted) controller.abort(external.reason);
+		else external.addEventListener("abort", () => controller.abort(external.reason), { once: true });
+	}
+	return {
+		signal: controller.signal,
+		abort: () => {
+			if (!controller.signal.aborted) controller.abort(new DOMException("stream cancelled", "AbortError"));
+		},
+	};
 }
 
 function parseSseRecord(record: string): SseEvent | undefined {
 	if (!record.trim()) return undefined;
 	let event: string | undefined;
 	const dataLines: string[] = [];
-	for (const line of record.split("\n")) {
+	// Split on either "\n" or "\r\n" line terminators.
+	for (const rawLine of record.split(/\r?\n/)) {
+		const line = rawLine;
 		if (line.startsWith("event:")) event = line.slice(6).trim();
 		else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
 	}
 	if (dataLines.length === 0) return undefined;
 	return { event, data: dataLines.join("\n") };
+}
+
+function findRecordBoundary(buffer: string): { index: number; length: number } | undefined {
+	const lf = buffer.indexOf("\n\n");
+	const crlf = buffer.indexOf("\r\n\r\n");
+	// Use whichever boundary appears first.
+	if (crlf !== -1 && (lf === -1 || crlf < lf)) return { index: crlf, length: 4 };
+	if (lf !== -1) return { index: lf, length: 2 };
+	return undefined;
 }
 
 function tryParseJson(s: string): Record<string, unknown> | undefined {

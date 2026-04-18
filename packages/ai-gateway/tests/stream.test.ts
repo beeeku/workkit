@@ -187,6 +187,58 @@ describe("gateway.stream() — plumbing", () => {
 		expect(events[events.length - 1].type).toBe("done");
 	});
 
+	it("parses SSE records separated by \\r\\n\\r\\n as well as \\n\\n", async () => {
+		const fetchMock = mockHttpStream([
+			'data: {"choices":[{"delta":{"content":"A"}}]}\r\n\r\n',
+			'data: {"choices":[{"delta":{"content":"B"}}]}\r\n\r\n',
+			"data: [DONE]\r\n\r\n",
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const events = await collect(await gw.stream!("gpt-4o", { prompt: "hi" }));
+		const text = events
+			.filter((e) => e.type === "text")
+			.map((e) => (e as { delta: string }).delta)
+			.join("");
+		expect(text).toBe("AB");
+	});
+
+	it("aborts the underlying fetch when the consumer cancels the event stream", async () => {
+		let capturedSignal: AbortSignal | undefined;
+		const fetchMock = vi.fn().mockImplementation((_url: string, init: { signal?: AbortSignal }) => {
+			capturedSignal = init.signal;
+			return Promise.resolve({
+				ok: true,
+				status: 200,
+				body: new ReadableStream<Uint8Array>({
+					start(controller) {
+						const enc = new TextEncoder();
+						controller.enqueue(enc.encode('data: {"choices":[{"delta":{"content":"A"}}]}\n\n'));
+						// Don't close — wait for cancel.
+					},
+				}),
+			});
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const stream = await gw.stream!("gpt-4o", { prompt: "hi" });
+		const reader = stream.getReader();
+		await reader.read(); // consume one token
+		await reader.cancel();
+
+		expect(capturedSignal?.aborted).toBe(true);
+	});
+
 	it("routes openai through CF AI Gateway when cfGateway is configured", async () => {
 		const fetchMock = mockHttpStream(["data: [DONE]\n\n"]);
 		globalThis.fetch = fetchMock;
