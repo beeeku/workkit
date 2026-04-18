@@ -33,6 +33,28 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
 
+  constitution:
+    name: Constitution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.8"
+      - run: bun install --frozen-lockfile
+      - name: Run constitution checks (diff-only against base)
+        env:
+          CONSTITUTION_DIFF_ONLY: "1"
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+          bun run scripts/constitution-check.ts --diff-only --base="$BASE"
+
   test:
     name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
