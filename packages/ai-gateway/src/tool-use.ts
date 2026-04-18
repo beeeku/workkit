@@ -137,7 +137,15 @@ export async function aiWithTools(
 	return { content: "", toolCalls: allToolCalls, provider: lastProvider, model: lastModel, turns };
 }
 
-/** Flatten `ToolMessage[]` into gateway-compatible `ChatMessage[]`. */
+/**
+ * Flatten `ToolMessage[]` into gateway-compatible `ChatMessage[]`.
+ *
+ * The gateway's `ChatMessage` type supports `system | user | assistant` only,
+ * so tool-result messages become `role: "user"` notes and assistant messages
+ * with `tool_calls` get their call summary inlined into `content` — otherwise
+ * the model would lose context of its own prior requests and could re-issue
+ * the same calls in the next turn.
+ */
 function toChatMessages(messages: ToolMessage[]): ChatMessage[] {
 	return messages.map((m) => {
 		if (m.role === "tool") {
@@ -146,6 +154,18 @@ function toChatMessages(messages: ToolMessage[]): ChatMessage[] {
 				role: "user",
 				content: `[tool result id=${m.tool_call_id ?? ""}] ${m.content}`,
 			};
+		}
+		// Assistant turns with tool_calls: append a compact summary so the model
+		// can see what it already requested in its own prior turn. Preserves
+		// the multi-turn loop semantics of the original @workkit/ai helper.
+		if (m.role === "assistant" && m.tool_calls && m.tool_calls.length > 0) {
+			const summary = m.tool_calls
+				.map((c) => `${c.name}(${JSON.stringify(c.arguments)}) [id=${c.id}]`)
+				.join(", ");
+			const body = m.content
+				? `${m.content}\n[tool_calls: ${summary}]`
+				: `[tool_calls: ${summary}]`;
+			return { role: "assistant", content: body };
 		}
 		return { role: m.role, content: m.content };
 	});

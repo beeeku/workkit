@@ -1,6 +1,6 @@
-import { ConfigError } from "@workkit/errors";
+import { ConfigError, ValidationError } from "@workkit/errors";
 import { standardSchemaToJsonSchema } from "./schema";
-import type { ChatMessage, Gateway } from "./types";
+import type { AiInput, ChatMessage, Gateway } from "./types";
 
 // ─── Standard Schema V1 types (inlined to avoid a hard dep) ────
 
@@ -72,9 +72,12 @@ const DEFAULT_MAX_RETRIES = 1;
  * validation errors included in the conversation so the model can self-correct.
  * Throws {@link StructuredOutputError} if all attempts fail.
  *
- * Adds `responseFormat: { jsonSchema }` to the gateway call so providers that
- * support strict JSON-schema enforcement (OpenAI, Workers AI JSON mode) can do
- * their part; Anthropic uses instruction-based JSON mode.
+ * Passes `responseFormat: { jsonSchema }` to the gateway call. Only OpenAI
+ * enforces the schema natively today (via `response_format: { type: "json_schema" }`).
+ * Workers AI (`{ type: "json_object" }`) and Anthropic (instruction-based) both
+ * use prompt-level hints, so the validation + retry loop here does the real
+ * work — invalid responses are fed back to the model with the validation
+ * errors inlined for self-correction.
  *
  * @example
  * ```ts
@@ -88,7 +91,7 @@ const DEFAULT_MAX_RETRIES = 1;
 export async function structuredAI<T>(
 	gateway: Gateway,
 	model: string,
-	input: { messages: ChatMessage[] },
+	input: AiInput,
 	structured: StructuredOptions<T>,
 ): Promise<StructuredResult<T>> {
 	if (!gateway) {
@@ -102,8 +105,11 @@ export async function structuredAI<T>(
 		structured.schema as unknown as Parameters<typeof standardSchemaToJsonSchema>[0],
 	);
 
-	// Clone the caller's messages so repeated attempts can append without mutating.
-	const messages: ChatMessage[] = [...input.messages];
+	// Normalize the various `AiInput` shapes into a mutable `messages` array we
+	// can append to across retry attempts. `{ prompt }` becomes a single user
+	// message; arbitrary input shapes without `messages` or `prompt` error out
+	// since we need somewhere to append the self-correction feedback.
+	const messages: ChatMessage[] = toMessages(input);
 
 	let lastRaw = "";
 	let lastIssues: unknown[] = [];
@@ -169,4 +175,17 @@ export async function structuredAI<T>(
 	}
 
 	throw new StructuredOutputError(lastRaw, lastIssues);
+}
+
+function toMessages(input: AiInput): ChatMessage[] {
+	if ("messages" in input && Array.isArray((input as { messages: unknown }).messages)) {
+		return [...(input as { messages: ChatMessage[] }).messages];
+	}
+	if ("prompt" in input && typeof (input as { prompt: unknown }).prompt === "string") {
+		return [{ role: "user", content: (input as { prompt: string }).prompt }];
+	}
+	throw new ValidationError(
+		"structuredAI requires input with `messages` or `prompt` so self-correction feedback can be appended",
+		[{ path: ["input"], message: "Expected { messages: ChatMessage[] } or { prompt: string }" }],
+	);
 }

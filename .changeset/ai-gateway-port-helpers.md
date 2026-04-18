@@ -2,13 +2,13 @@
 "@workkit/ai-gateway": minor
 ---
 
-**Port `@workkit/ai` helpers into `@workkit/ai-gateway`** — phase 2 of [ADR-001](../packages/../.maina/decisions/001-ai-package-consolidation.md). All additive; no breaking changes.
+**Port `@workkit/ai` helpers into `@workkit/ai-gateway`** — phase 2 of [ADR-001](../.maina/decisions/001-ai-package-consolidation.md). All additive; no breaking changes.
 
 New public exports:
 
 - **`createToolRegistry()`** + `ToolHandler` / `ToolRegistry` types — `Map<name, handler>` helper for dispatching tool calls. Drop-in replacement for the same-named helper in `@workkit/ai`, but typed against `GatewayToolDefinition` / `GatewayToolCall`.
 - **`aiWithTools(gateway, model, input, options)`** — multi-turn tool-use session. When `options.handler` is supplied, the model's tool calls are auto-dispatched and results fed back for another turn (up to `maxTurns`). When absent, the first set of tool calls is returned for manual dispatch. Operates on `gateway.run()` with normalized tool-call handling across Workers AI / OpenAI / Anthropic.
-- **`structuredAI(gateway, model, input, { schema })`** + `StructuredOutputError` — JSON-mode output with Standard Schema validation and self-correcting retry. Calls `gateway.run(…, { responseFormat: { jsonSchema } })` so providers with strict schema support (OpenAI, Workers AI) can enforce natively, with Anthropic falling back to instruction-based JSON mode.
+- **`structuredAI(gateway, model, input, { schema })`** + `StructuredOutputError` — JSON-mode output with Standard Schema validation and self-correcting retry. Calls `gateway.run(…, { responseFormat: { jsonSchema } })`; only OpenAI enforces the schema natively (via `response_format: { type: "json_schema" }`). Workers AI and Anthropic use instruction-based JSON mode — the schema is included in a system prompt, and `structuredAI` validates the response client-side and retries with the validation errors fed back to the model.
 - **`standardSchemaToJsonSchema(schema)`** — Zod / Valibot / ArkType → JSON Schema converter (prefers the schema's own `toJSONSchema()`, falls back to Zod internals, `{type:"object"}` as a permissive default).
 - **`estimateTokens(text | messages)`** — rough heuristic for capacity/cost planning.
 
