@@ -6,7 +6,7 @@ Adapters ship as **subpath imports** in this same package — bring the runtime 
 
 | Subpath | Adapter | Optional peer |
 |---|---|---|
-| `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
+| `@workkit/notify/email` | Pluggable provider — Cloudflare `send_email` (default) or Resend HTTP API + React Email | `@workkit/mail`, `@react-email/render` |
 | `@workkit/notify/inapp` | D1-backed feed + SSE streaming | — |
 | `@workkit/notify/whatsapp` | Meta WA Cloud API (default) + Twilio/Gupshup stubs | — |
 

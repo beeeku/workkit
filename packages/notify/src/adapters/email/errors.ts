@@ -16,16 +16,12 @@ export class AttachmentTooLargeError extends ValidationError {
 	}
 }
 
-export type EmailProviderName = "resend" | "cloudflare";
+export type EmailProviderName = "resend" | "cloudflare" | (string & {});
 
 export class WebhookSignatureError extends ValidationError {
-	constructor(providerOrReason: EmailProviderName | string, reason?: string) {
-		const [provider, detail] =
-			reason === undefined
-				? (["resend", providerOrReason] as const)
-				: ([providerOrReason as EmailProviderName, reason] as const);
-		super(`${provider} webhook signature verification failed: ${detail}`, [
-			{ path: ["webhook"], message: detail },
+	constructor(provider: EmailProviderName, reason: string) {
+		super(`${provider} webhook signature verification failed: ${reason}`, [
+			{ path: ["webhook"], message: reason },
 		]);
 	}
 }

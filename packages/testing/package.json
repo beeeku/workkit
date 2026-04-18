@@ -76,6 +76,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0"
   },
+  "//constitution-allow": "no-testing reason=self-package; @workkit/testing cannot depend on itself",
   "keywords": [
     "cloudflare",
     "workers",

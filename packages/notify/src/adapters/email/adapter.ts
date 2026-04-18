@@ -1,4 +1,4 @@
-import type { Adapter, AdapterSendArgs, AdapterSendResult, WebhookEvent } from "../../types";
+import type { Adapter, AdapterSendArgs, AdapterSendResult } from "../../types";
 import { type AttachmentLoadOptions, type AttachmentSpec, loadAttachments } from "./attachments";
 import { ProviderMissingError } from "./errors";
 import type { EmailAttachmentWire, EmailProvider } from "./provider";
@@ -86,20 +86,10 @@ export function emailAdapter(options: EmailAdapterOptions): Adapter<EmailPayload
 			});
 		},
 
-		...(provider.parseWebhook
-			? {
-					async parseWebhook(req: Request): Promise<WebhookEvent[]> {
-						return provider.parseWebhook!(req);
-					},
-				}
-			: {}),
+		...(provider.parseWebhook ? { parseWebhook: provider.parseWebhook.bind(provider) } : {}),
 
 		...(provider.verifySignature
-			? {
-					async verifySignature(req: Request, secret: string): Promise<boolean> {
-						return provider.verifySignature!(req, secret);
-					},
-				}
+			? { verifySignature: provider.verifySignature.bind(provider) }
 			: {}),
 	};
 }

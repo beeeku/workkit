@@ -30,7 +30,13 @@ export interface EmailProviderSendArgs {
  * must catch and convert.
  */
 export interface EmailProvider {
-	readonly name: "cloudflare" | "resend";
+	/**
+	 * Provider identifier. Known names: `"cloudflare"`, `"resend"`. The
+	 * `(string & {})` branch preserves autocomplete while letting community
+	 * / follow-up providers (SES, Postmark, etc.) implement this interface
+	 * without editing the core type.
+	 */
+	readonly name: "cloudflare" | "resend" | (string & {});
 	send(args: EmailProviderSendArgs): Promise<AdapterSendResult>;
 	parseWebhook?(req: Request): Promise<WebhookEvent[]>;
 	verifySignature?(req: Request, secret: string): Promise<boolean>;
