@@ -54,6 +54,9 @@
     "dist"
   ],
   "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -63,6 +66,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   },
   "keywords": [
     "cloudflare",
