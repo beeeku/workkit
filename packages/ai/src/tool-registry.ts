@@ -54,7 +54,7 @@ export interface ToolRegistry {
  * @deprecated `@workkit/ai-gateway` doesn't re-export this helper — it's a
  * thin ~40-line Map wrapper. After migrating to the gateway, either keep
  * using this function from `@workkit/ai` until the v2.0 removal, or inline
- * the equivalent (a `Map<string, ToolHandler>` with `register`/`get`/
+ * the equivalent (a `Map<string, ToolHandler>` with `register`/`getTools()`/
  * `execute`). See ADR-001; tracked in #63.
  */
 export function createToolRegistry(): ToolRegistry {
