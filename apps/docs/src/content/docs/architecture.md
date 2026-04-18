@@ -49,7 +49,11 @@ These build on Layer 1 for higher-level patterns:
 | `@workkit/ratelimit` | Fixed window, sliding window, token bucket, composite rate limiting (KV-backed) |
 | `@workkit/ai` | Workers AI client, streaming, fallback chains, retry, token estimation |
 | `@workkit/ai-gateway` | Multi-provider AI gateway (Workers AI, OpenAI, Anthropic, custom), routing, cost tracking, caching |
+| `@workkit/agent` | Agent loop primitives — typed tools (Standard Schema), handoffs, streaming events, hooks. Provider-agnostic via `@workkit/ai-gateway` |
 | `@workkit/api` | API definition, routing, OpenAPI generation, validation |
+| `@workkit/browser` | Cloudflare Browser Rendering primitive — session/page lifecycle, font loading, normalized errors |
+| `@workkit/pdf` | HTML → PDF rendering via `@workkit/browser`, R2 storage, presign helpers, header/footer composer |
+| `@workkit/notify` | Unified notification dispatch — preferences, opt-out, quiet hours, idempotency, fallback chains. Adapters via subpath imports (`/email`, `/inapp`, `/whatsapp`) |
 
 ### Layer 3: Integrations
 
