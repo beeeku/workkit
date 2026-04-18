@@ -41,4 +41,4 @@ export async function withinSessionWindow(
 	return now - row.last_inbound_at < TWENTY_FOUR_HOURS_MS;
 }
 
-export const SESSION_WINDOW_MS = TWENTY_FOUR_HOURS_MS;
+export const SESSION_WINDOW_MS: number = TWENTY_FOUR_HOURS_MS;

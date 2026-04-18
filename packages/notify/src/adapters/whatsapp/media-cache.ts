@@ -82,4 +82,4 @@ export async function purgeExpiredMedia(deps: MediaCacheDeps): Promise<{ deleted
 	return { deleted: r.meta?.changes ?? 0 };
 }
 
-export const DEFAULT_MEDIA_TTL_MS = DEFAULT_TTL_MS;
+export const DEFAULT_MEDIA_TTL_MS: number = DEFAULT_TTL_MS;
