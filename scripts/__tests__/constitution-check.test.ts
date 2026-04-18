@@ -10,6 +10,7 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { maskCommentsAndTemplates } from "../constitution-check";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
 const SCRIPT = resolve(ROOT, "scripts", "constitution-check.ts");
@@ -58,5 +59,45 @@ describe("constitution-check (smoke)", () => {
 		expect(seen.length).toBeGreaterThan(0);
 		// Summary line is present regardless of count.
 		expect(allOutput).toMatch(/constitution-check: \d+ error\(s\), \d+ warning\(s\)/);
+	});
+});
+
+describe("maskCommentsAndTemplates", () => {
+	it("masks // line comments so console.log inside is not flagged", () => {
+		const masked = maskCommentsAndTemplates("const x = 1 // console.log(x)\n");
+		expect(masked).not.toContain("console.log");
+		expect(masked.split("\n").length).toBe(2); // preserves line count
+	});
+
+	it("masks /* */ and JSDoc blocks including @example code", () => {
+		const src = "/**\n * @example\n * console.log(\"hi\")\n */\nexport {}\n";
+		const masked = maskCommentsAndTemplates(src);
+		expect(masked).not.toContain("console.log");
+		expect(masked).toContain("export {}"); // real code survives
+	});
+
+	it("masks template-string contents so emitted imports are not flagged", () => {
+		const src = 'const code = `import { foo } from "@workkit/bar"`;\n';
+		const masked = maskCommentsAndTemplates(src);
+		expect(masked).not.toContain("@workkit/bar");
+		expect(masked).toContain("`"); // backticks retained for structure
+	});
+
+	it("preserves real string-literal imports", () => {
+		const src = 'import { foo } from "@workkit/bar";\n';
+		const masked = maskCommentsAndTemplates(src);
+		expect(masked).toContain("@workkit/bar");
+	});
+
+	it("preserves line numbers across masked regions", () => {
+		const src = 'a\n/* line2\nline3 */\nd\n';
+		const masked = maskCommentsAndTemplates(src);
+		expect(masked.split("\n")).toHaveLength(5);
+	});
+
+	it("handles ${} expressions inside template strings", () => {
+		const src = "const s = `hello ${name} world`;\n";
+		const masked = maskCommentsAndTemplates(src);
+		expect(masked).toContain("${name}");
 	});
 });

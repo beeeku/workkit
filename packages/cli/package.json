@@ -27,7 +27,9 @@
     "dist"
   ],
   "scripts": {
+    "prebuild": "bun run scripts/sync-versions.ts",
     "build": "bunup",
+    "pretest": "bun run scripts/sync-versions.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

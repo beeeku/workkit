@@ -41,10 +41,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@workkit/errors": "^1.0.1"
+    "@workkit/errors": "^1.0.1",
+    "@workkit/types": "^1.0.1"
   },
   "devDependencies": {
-    "@workkit/types": "workspace:*",
     "zod": "^4.3.6"
   },
   "keywords": [

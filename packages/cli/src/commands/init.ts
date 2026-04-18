@@ -7,6 +7,18 @@ import { generateBasicTemplate } from "../templates/basic";
 import { generateHonoTemplate } from "../templates/hono";
 import type { FileSystem } from "../utils";
 import { info, joinPath, error as logError, success } from "../utils";
+import { WORKKIT_VERSIONS } from "../versions";
+
+/**
+ * Resolve a concrete semver range for a @workkit/* package. Uses the
+ * auto-generated version map (scripts/sync-versions.ts) so scaffolded projects
+ * are pinned to the versions shipped with the current CLI build. Falls back to
+ * "latest" for unknown packages so forward-compat doesn't wedge on missing
+ * entries — but the sync script covers everything in the monorepo.
+ */
+function pinVersion(pkgName: string): string {
+	return WORKKIT_VERSIONS[pkgName] ?? "latest";
+}
 
 export type Template = "basic" | "hono" | "api";
 export type Feature =
@@ -79,11 +91,12 @@ export function buildPackageJson(name: string, features: Feature[]): string {
 	};
 
 	// Always include types and errors
-	deps["@workkit/types"] = "latest";
-	deps["@workkit/errors"] = "latest";
+	deps["@workkit/types"] = pinVersion("@workkit/types");
+	deps["@workkit/errors"] = pinVersion("@workkit/errors");
 
 	for (const feature of features) {
-		deps[`@workkit/${feature}`] = "latest";
+		const name = `@workkit/${feature}`;
+		deps[name] = pinVersion(name);
 	}
 
 	const pkg = {

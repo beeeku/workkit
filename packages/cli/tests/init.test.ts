@@ -36,14 +36,26 @@ describe("init command", () => {
 
 		it("always includes @workkit/types and @workkit/errors", () => {
 			const pkg = JSON.parse(buildPackageJson("test", []));
-			expect(pkg.dependencies["@workkit/types"]).toBe("latest");
-			expect(pkg.dependencies["@workkit/errors"]).toBe("latest");
+			expect(pkg.dependencies["@workkit/types"]).toBeDefined();
+			expect(pkg.dependencies["@workkit/errors"]).toBeDefined();
+		});
+
+		it("pins @workkit/* deps to a concrete semver range (never 'latest')", () => {
+			const pkg = JSON.parse(buildPackageJson("test", ["env", "d1", "kv"]));
+			const workkitDeps = Object.entries(pkg.dependencies as Record<string, string>).filter(
+				([name]) => name.startsWith("@workkit/"),
+			);
+			expect(workkitDeps.length).toBeGreaterThan(0);
+			for (const [name, version] of workkitDeps) {
+				expect(version, `${name} should be pinned`).not.toBe("latest");
+				expect(version, `${name} should be a semver range`).toMatch(/^\^?\d+\.\d+\.\d+/);
+			}
 		});
 
 		it("adds feature packages as dependencies", () => {
 			const pkg = JSON.parse(buildPackageJson("test", ["env", "d1"]));
-			expect(pkg.dependencies["@workkit/env"]).toBe("latest");
-			expect(pkg.dependencies["@workkit/d1"]).toBe("latest");
+			expect(pkg.dependencies["@workkit/env"]).toBeDefined();
+			expect(pkg.dependencies["@workkit/d1"]).toBeDefined();
 		});
 
 		it("includes standard dev dependencies", () => {

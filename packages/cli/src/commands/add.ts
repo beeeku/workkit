@@ -83,7 +83,7 @@ export async function executeAdd(
 	const newPackages = toAdd.filter((pkg) => !installed.has(pkg));
 
 	if (newPackages.length === 0) {
-		console.log("All specified packages are already installed.");
+		console.log("All specified packages are already installed."); // constitution-allow:console-log reason="CLI stdout emission"
 		return { added: [] };
 	}
 

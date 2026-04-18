@@ -18,9 +18,11 @@ interface UnderlyingDb {
 	close(): void;
 }
 
-const req = createRequire(import.meta.url);
-
 export function openAdapter(): SqliteAdapter {
+	// Construct `require` lazily inside the function so merely importing this
+	// module is safe in runtimes without `node:module` (e.g. workerd). The
+	// function itself still only works under Bun or Node >=22.
+	const req = createRequire(import.meta.url);
 	const bun = (globalThis as { Bun?: unknown }).Bun;
 	if (typeof bun !== "undefined") {
 		const { Database } = req("bun:sqlite") as {

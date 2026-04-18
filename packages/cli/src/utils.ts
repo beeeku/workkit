@@ -25,11 +25,11 @@ export const cyan: (s: string) => string = wrap(36, 39);
 // ── Logging ──────────────────────────────────────────────────────────────────
 
 export function log(msg: string): void {
-	console.log(msg);
+	console.log(msg); // constitution-allow:console-log reason="CLI stdout emission"
 }
 
 export function success(msg: string): void {
-	console.log(`${green("✓")} ${msg}`);
+	console.log(`${green("✓")} ${msg}`); // constitution-allow:console-log reason="CLI stdout emission"
 }
 
 export function error(msg: string): void {
@@ -37,7 +37,7 @@ export function error(msg: string): void {
 }
 
 export function info(msg: string): void {
-	console.log(`${blue("ℹ")} ${msg}`);
+	console.log(`${blue("ℹ")} ${msg}`); // constitution-allow:console-log reason="CLI stdout emission"
 }
 
 // ── Arg Parsing ──────────────────────────────────────────────────────────────

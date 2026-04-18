@@ -190,15 +190,112 @@ function checkSingleIndexExport(p: PkgInfo): Finding[] {
 	const dotImport =
 		(dot as { import?: { default?: string } }).import?.default ??
 		(typeof dot === "string" ? dot : undefined);
-	if (dotImport && dotImport !== "./dist/index.js") {
+	// Accept any path under ./dist/ that ends in /index.js. The rule's intent
+	// is "one runtime entry per package"; the exact filename under dist/ is a
+	// build-tool artifact (bunup sometimes emits dist/src/index.js for
+	// multi-entry packages with shared chunks), not a semantic boundary.
+	if (dotImport && !/^\.\/dist\/(?:.+\/)?index\.js$/.test(dotImport)) {
 		out.push({
 			rule: "single-index-export",
 			severity: "warning",
 			file: p.pkgPath,
-			message: `package "${p.pkg.name}" "."'s default is ${JSON.stringify(dotImport)}; expected "./dist/index.js"`,
+			message: `package "${p.pkg.name}" "."'s default is ${JSON.stringify(dotImport)}; expected "./dist/**/index.js"`,
 		});
 	}
 	return out;
+}
+
+/**
+ * Mask JSDoc/line/block comments and template-string contents with spaces so
+ * line-based scanners (console.log, cross-package import) don't match example
+ * code inside JSDoc `@example` blocks or CLI template string-literals. Keeps
+ * line numbers stable by replacing masked characters with a space.
+ */
+export function maskCommentsAndTemplates(src: string): string {
+	const out: string[] = [];
+	let i = 0;
+	const n = src.length;
+	while (i < n) {
+		const ch = src[i]!;
+		const next = src[i + 1];
+		// Line comment
+		if (ch === "/" && next === "/") {
+			while (i < n && src[i] !== "\n") {
+				out.push(src[i] === "\n" ? "\n" : " ");
+				i++;
+			}
+			continue;
+		}
+		// Block/JSDoc comment
+		if (ch === "/" && next === "*") {
+			while (i < n && !(src[i] === "*" && src[i + 1] === "/")) {
+				out.push(src[i] === "\n" ? "\n" : " ");
+				i++;
+			}
+			if (i < n) {
+				out.push(" ", " ");
+				i += 2;
+			}
+			continue;
+		}
+		// Template string — mask contents (preserve newlines + backticks) so
+		// embedded `import` / `console.log` in emitted-source templates don't
+		// trip import/console scanners. Handle ${...} expressions normally.
+		if (ch === "`") {
+			out.push("`");
+			i++;
+			while (i < n && src[i] !== "`") {
+				if (src[i] === "\\" && i + 1 < n) {
+					out.push(" ", " ");
+					i += 2;
+					continue;
+				}
+				if (src[i] === "$" && src[i + 1] === "{") {
+					out.push("$", "{");
+					i += 2;
+					let depth = 1;
+					while (i < n && depth > 0) {
+						const c = src[i]!;
+						if (c === "{") depth++;
+						else if (c === "}") depth--;
+						out.push(c);
+						i++;
+					}
+					continue;
+				}
+				out.push(src[i] === "\n" ? "\n" : " ");
+				i++;
+			}
+			if (i < n) {
+				out.push("`");
+				i++;
+			}
+			continue;
+		}
+		// Regular string — pass through unmodified (imports live here).
+		if (ch === '"' || ch === "'") {
+			const quote = ch;
+			out.push(ch);
+			i++;
+			while (i < n && src[i] !== quote) {
+				if (src[i] === "\\" && i + 1 < n) {
+					out.push(src[i]!, src[i + 1]!);
+					i += 2;
+					continue;
+				}
+				out.push(src[i]!);
+				i++;
+			}
+			if (i < n) {
+				out.push(quote);
+				i++;
+			}
+			continue;
+		}
+		out.push(ch);
+		i++;
+	}
+	return out.join("");
 }
 
 // Rule 3: testing-integration
@@ -232,7 +329,8 @@ function checkCrossPackageImports(p: PkgInfo, ctx: DiffCtx): Finding[] {
 	for (const file of sourceFiles) {
 		if (!isInDiff(file, ctx)) continue;
 		const content = readFileSync(file, "utf-8");
-		const lines = content.split("\n");
+		const masked = maskCommentsAndTemplates(content);
+		const lines = masked.split("\n");
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i] ?? "";
 			const m = line.match(/from\s+["'](@workkit\/[a-z0-9-]+)/);
@@ -258,11 +356,16 @@ function checkNoConsoleLog(p: PkgInfo, ctx: DiffCtx): Finding[] {
 	const sourceFiles = walk(join(p.dir, "src"), (f) => f.endsWith(".ts") || f.endsWith(".tsx"));
 	for (const file of sourceFiles) {
 		if (!isInDiff(file, ctx)) continue;
-		const lines = readFileSync(file, "utf-8").split("\n");
+		const masked = maskCommentsAndTemplates(readFileSync(file, "utf-8"));
+		// The allow-marker lives in the original source (in a comment), not the
+		// masked copy, so read both in parallel for the marker lookup.
+		const originalLines = readFileSync(file, "utf-8").split("\n");
+		const lines = masked.split("\n");
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i] ?? "";
 			if (!/\bconsole\s*\.\s*log\s*\(/.test(line)) continue;
-			if (/constitution-allow:console-log/.test(line)) continue;
+			const originalLine = originalLines[i] ?? "";
+			if (/constitution-allow:console-log/.test(originalLine)) continue;
 			out.push({
 				rule: "no-console-log",
 				severity: "error",
@@ -458,4 +561,8 @@ function main(): void {
 	process.exit(errors > 0 ? 1 : 0);
 }
 
-main();
+// Only auto-run when invoked as a script, not when imported (tests import the
+// masker helper without triggering the full check).
+if (import.meta.main) {
+	main();
+}

@@ -63,7 +63,7 @@ export async function migrate(
 
 	for (const migration of pending) {
 		try {
-			if (log) console.log(`Applying migration: ${migration.name}`);
+			if (log) console.log(`Applying migration: ${migration.name}`); // constitution-allow:console-log reason="opt-in migration trace, gated by log flag"
 
 			await db.exec(migration.sql);
 			await db.prepare(`INSERT INTO ${tableName} (name) VALUES (?)`).bind(migration.name).run();

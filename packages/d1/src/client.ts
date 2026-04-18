@@ -58,7 +58,7 @@ export function d1(binding: D1Database, options?: D1Options): TypedD1 {
 
 	function log(sql: string, params?: unknown[]) {
 		if (logQueries) {
-			console.log("[D1]", sql, params?.length ? params : "");
+			console.log("[D1]", sql, params?.length ? params : ""); // constitution-allow:console-log reason="opt-in query trace, gated by logQueries flag"
 		}
 	}
 

@@ -99,7 +99,7 @@
     },
     "packages/agent": {
       "name": "@workkit/agent",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@workkit/ai-gateway": "workspace:*",
@@ -112,7 +112,7 @@
     },
     "packages/ai": {
       "name": "@workkit/ai",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -120,7 +120,7 @@
     },
     "packages/ai-gateway": {
       "name": "@workkit/ai-gateway",
-      "version": "0.2.1",
+      "version": "0.4.0",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -131,9 +131,9 @@
       "version": "0.1.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
+        "@workkit/types": "^1.0.1",
       },
       "devDependencies": {
-        "@workkit/types": "workspace:*",
         "zod": "^4.3.6",
       },
     },
@@ -143,6 +143,7 @@
       "dependencies": {
         "@workkit/crypto": "workspace:*",
         "@workkit/errors": "workspace:*",
+        "@workkit/types": "^1.0.1",
         "hono": "^4.7.10",
       },
       "devDependencies": {
@@ -150,7 +151,6 @@
         "@workkit/d1": "workspace:*",
         "@workkit/do": "workspace:*",
         "@workkit/queue": "workspace:*",
-        "@workkit/types": "workspace:*",
       },
     },
     "packages/auth": {
@@ -208,9 +208,7 @@
       "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
-      },
-      "devDependencies": {
-        "@workkit/types": "workspace:*",
+        "@workkit/types": "^1.0.1",
       },
     },
     "packages/crypto": {
@@ -232,9 +230,7 @@
       "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
-      },
-      "devDependencies": {
-        "@workkit/types": "workspace:*",
+        "@workkit/types": "^1.0.1",
       },
     },
     "packages/env": {
@@ -334,7 +330,7 @@
     },
     "packages/mail": {
       "name": "@workkit/mail",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -350,11 +346,11 @@
       "version": "0.2.0",
       "dependencies": {
         "@workkit/errors": "workspace:*",
+        "@workkit/types": "^1.0.1",
         "hono": "^4.7.10",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^4.20250214.0",
-        "@workkit/types": "workspace:*",
         "zod": "^4.3.6",
       },
     },
@@ -372,7 +368,7 @@
     },
     "packages/notify": {
       "name": "@workkit/notify",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@workkit/errors": "^1.0.3",
@@ -436,7 +432,7 @@
     },
     "packages/testing": {
       "name": "@workkit/testing",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "devDependencies": {
         "@types/node": "^22.0.0",
       },

@@ -36,10 +36,10 @@
   },
   "dependencies": {
     "@workkit/errors": "workspace:*",
+    "@workkit/types": "^1.0.1",
     "hono": "^4.7.10"
   },
   "devDependencies": {
-    "@workkit/types": "workspace:*",
     "@cloudflare/workers-types": "^4.20250214.0",
     "zod": "^4.3.6"
   },
