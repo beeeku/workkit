@@ -48,7 +48,7 @@
     CSS-injection attempts in font URL/family, and abort-listener cleanup after
     successful and rejected handler settlement.
   - **Visual fixtures** — `basic.html` now uses an explicit `Helvetica, Arial,
-sans-serif` stack instead of `system-ui` for deterministic baselines across
+    sans-serif` stack instead of `system-ui` for deterministic baselines across
     CI vs developer machines. `font.html` ships with an inline `@font-face`
     declaration so the fixture actually exercises the Inter font path instead
     of silently falling back to system fonts.
