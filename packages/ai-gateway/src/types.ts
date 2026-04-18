@@ -51,18 +51,49 @@ export type ProviderConfig =
 /** Map of provider name → config */
 export type ProviderMap = Record<string, ProviderConfig>;
 
+/**
+ * Route HTTP-based providers (OpenAI, Anthropic) through a Cloudflare AI Gateway.
+ *
+ * When set, the effective base URL for Anthropic becomes
+ * `https://gateway.ai.cloudflare.com/v1/{accountId}/{gatewayId}/anthropic/v1`
+ * and for OpenAI `https://gateway.ai.cloudflare.com/v1/{accountId}/{gatewayId}/openai`.
+ *
+ * An explicit `baseUrl` on a provider config overrides this. Workers AI and custom
+ * providers are unaffected.
+ */
+export interface CfGatewayConfig {
+	/** Cloudflare account id */
+	accountId: string;
+	/** AI Gateway id */
+	gatewayId: string;
+	/** Bearer token for authenticated gateways (sent as `cf-aig-authorization`) */
+	authToken?: string;
+	/** Per-request cache TTL in seconds (sent as `cf-aig-cache-ttl`) */
+	cacheTtl?: number;
+	/** Bypass the gateway cache for this request (sent as `cf-aig-skip-cache`) */
+	skipCache?: boolean;
+}
+
 /** Gateway configuration */
 export interface GatewayConfig<P extends ProviderMap = ProviderMap> {
 	/** Named providers */
 	providers: P;
 	/** Default provider key (must exist in providers) */
 	defaultProvider: keyof P & string;
+	/** Route HTTP-based providers through a Cloudflare AI Gateway */
+	cfGateway?: CfGatewayConfig;
 }
 
 /** Standard chat message format */
 export interface ChatMessage {
 	role: "system" | "user" | "assistant";
 	content: string;
+	/**
+	 * Hint for provider-level prompt caching. Currently only applied by the
+	 * Anthropic provider, which wraps the message content in a content block
+	 * with `cache_control: { type: "ephemeral" }`. Other providers ignore it.
+	 */
+	cacheControl?: "ephemeral";
 }
 
 // --- Tool use types ---
@@ -121,10 +152,68 @@ export interface TokenUsage {
 	totalTokens?: number;
 }
 
+/**
+ * A single attempt in a CF Universal Endpoint fallback chain.
+ *
+ * The `provider` key must reference an `openai` or `anthropic` provider
+ * in the gateway's providers map. Workers AI and custom providers are not
+ * supported in the Universal Endpoint.
+ */
+export interface FallbackEntry {
+	/** Provider name (must match a key in the providers map) */
+	provider: string;
+	/** Model to use for this attempt */
+	model: string;
+}
+
+/**
+ * Unified streaming event shape across providers.
+ *
+ * Every stream ends with exactly one `done` event. Text generation yields
+ * zero or more `text` events with `delta` token chunks. When a provider
+ * completes a tool-use block mid-stream, it yields a `tool_use` event
+ * with the assembled arguments (tool-use emission is provider-specific;
+ * at time of writing, not yet wired for any provider — see roadmap).
+ */
+export type GatewayStreamEvent =
+	| { type: "text"; delta: string }
+	| {
+			type: "tool_use";
+			id: string;
+			name: string;
+			input: Record<string, unknown>;
+	  }
+	| { type: "done"; usage?: TokenUsage; raw?: unknown };
+
 /** Gateway instance */
 export interface Gateway {
 	/** Run a model with the given input */
 	run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput>;
+	/**
+	 * Run a chain of provider/model attempts through the Cloudflare AI Gateway
+	 * Universal Endpoint. The gateway tries each entry server-side in order
+	 * and returns the first successful response.
+	 *
+	 * Optional — present on gateways returned by `createGateway` and on
+	 * wrappers around them. Requires `cfGateway` to be configured.
+	 */
+	runFallback?(
+		entries: FallbackEntry[],
+		input: AiInput,
+		options?: RunOptions,
+	): Promise<AiOutput>;
+	/**
+	 * Stream tokens and events from a model.
+	 *
+	 * Returns a `ReadableStream` of `GatewayStreamEvent`s. Every stream ends
+	 * with exactly one `done` event. Optional — present on gateways returned
+	 * by `createGateway` and on wrappers around them.
+	 */
+	stream?(
+		model: string,
+		input: AiInput,
+		options?: RunOptions,
+	): Promise<ReadableStream<GatewayStreamEvent>>;
 	/** List configured providers */
 	providers(): string[];
 	/** Get the default provider name */
