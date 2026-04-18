@@ -122,6 +122,201 @@ describe("gateway.stream() — Anthropic", () => {
 	});
 });
 
+describe("gateway.stream() — Anthropic tool_use", () => {
+	it("accumulates input_json_delta and emits a tool_use event at content_block_stop", async () => {
+		const fetchMock = mockHttpStream([
+			'event: content_block_start\ndata: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_1","name":"get_weather","input":{}}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"location\\":"}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\\"SF\\"}"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":1}\n\n',
+			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const events = await collect(await gw.stream!("claude-sonnet-4-6", { prompt: "hi" }));
+		const toolUse = events.find((e) => e.type === "tool_use") as
+			| { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+			| undefined;
+
+		expect(toolUse).toBeDefined();
+		expect(toolUse!.id).toBe("toolu_1");
+		expect(toolUse!.name).toBe("get_weather");
+		expect(toolUse!.input).toEqual({ location: "SF" });
+	});
+
+	it("emits text and tool_use events in stream order", async () => {
+		const fetchMock = mockHttpStream([
+			'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"thinking"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+			'event: content_block_start\ndata: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_1","name":"f","input":{}}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"x\\":1}"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":1}\n\n',
+			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const events = await collect(await gw.stream!("claude-sonnet-4-6", { prompt: "hi" }));
+		const types = events.map((e) => e.type);
+		expect(types).toEqual(["text", "tool_use", "done"]);
+	});
+
+	it("emits multiple tool_use events for multiple tool blocks", async () => {
+		const fetchMock = mockHttpStream([
+			'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":"a","input":{}}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+			'event: content_block_start\ndata: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_2","name":"b","input":{}}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"y\\":2}"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":1}\n\n',
+			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const events = await collect(await gw.stream!("claude-sonnet-4-6", { prompt: "hi" }));
+		const toolUses = events.filter((e) => e.type === "tool_use") as Array<{
+			type: "tool_use";
+			id: string;
+			name: string;
+			input: Record<string, unknown>;
+		}>;
+
+		expect(toolUses).toHaveLength(2);
+		expect(toolUses[0].id).toBe("toolu_1");
+		expect(toolUses[0].input).toEqual({});
+		expect(toolUses[1].id).toBe("toolu_2");
+		expect(toolUses[1].input).toEqual({ y: 2 });
+	});
+
+	it("emits tool_use with empty input when accumulated JSON is malformed", async () => {
+		const fetchMock = mockHttpStream([
+			'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":"f","input":{}}}\n\n',
+			'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{broken"}}\n\n',
+			'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+			'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { anthropic: { type: "anthropic", apiKey: "k" } },
+			defaultProvider: "anthropic",
+		});
+
+		const events = await collect(await gw.stream!("claude-sonnet-4-6", { prompt: "hi" }));
+		const toolUse = events.find((e) => e.type === "tool_use") as
+			| { type: "tool_use"; id: string; input: Record<string, unknown> }
+			| undefined;
+		expect(toolUse?.id).toBe("toolu_1");
+		expect(toolUse?.input).toEqual({});
+	});
+});
+
+describe("gateway.stream() — OpenAI tool_use", () => {
+	it("accumulates tool_calls arguments across deltas and emits a tool_use event", async () => {
+		const fetchMock = mockHttpStream([
+			'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"get_weather","arguments":"{\\"loc"}}]}}]}\n\n',
+			'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"ation\\":\\"SF\\"}"}}]}}]}\n\n',
+			'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n\n',
+			"data: [DONE]\n\n",
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const events = await collect(await gw.stream!("gpt-4o", { prompt: "hi" }));
+		const toolUse = events.find((e) => e.type === "tool_use") as
+			| { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+			| undefined;
+
+		expect(toolUse).toBeDefined();
+		expect(toolUse!.id).toBe("call_1");
+		expect(toolUse!.name).toBe("get_weather");
+		expect(toolUse!.input).toEqual({ location: "SF" });
+	});
+
+	it("emits tool_use for each call index in a multi-call stream", async () => {
+		const fetchMock = mockHttpStream([
+			'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"a","arguments":"{}"}},{"index":1,"id":"call_2","function":{"name":"b","arguments":"{\\"y\\":2}"}}]}}]}\n\n',
+			'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n\n',
+			"data: [DONE]\n\n",
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const events = await collect(await gw.stream!("gpt-4o", { prompt: "hi" }));
+		const toolUses = events.filter((e) => e.type === "tool_use") as Array<{
+			type: "tool_use";
+			id: string;
+			name: string;
+			input: Record<string, unknown>;
+		}>;
+
+		expect(toolUses).toHaveLength(2);
+		expect(toolUses[0].id).toBe("call_1");
+		expect(toolUses[1].id).toBe("call_2");
+		expect(toolUses[1].input).toEqual({ y: 2 });
+	});
+
+	it("emits pending tool_use events at stream end if finish_reason is missing", async () => {
+		const fetchMock = mockHttpStream([
+			'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"f","arguments":"{}"}}]}}]}\n\n',
+			"data: [DONE]\n\n",
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const events = await collect(await gw.stream!("gpt-4o", { prompt: "hi" }));
+		const toolUse = events.find((e) => e.type === "tool_use");
+		expect(toolUse).toBeDefined();
+	});
+
+	it("emits tool_use with empty input when arguments JSON is malformed", async () => {
+		const fetchMock = mockHttpStream([
+			'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"f","arguments":"{broken"}}]}}]}\n\n',
+			'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n\n',
+			"data: [DONE]\n\n",
+		]);
+		globalThis.fetch = fetchMock;
+
+		const gw = createGateway({
+			providers: { openai: { type: "openai", apiKey: "k" } },
+			defaultProvider: "openai",
+		});
+
+		const events = await collect(await gw.stream!("gpt-4o", { prompt: "hi" }));
+		const toolUse = events.find((e) => e.type === "tool_use") as
+			| { type: "tool_use"; input: Record<string, unknown> }
+			| undefined;
+		expect(toolUse?.input).toEqual({});
+	});
+});
+
 describe("gateway.stream() — OpenAI", () => {
 	it("streams choices[].delta.content and emits done", async () => {
 		const fetchMock = mockHttpStream([

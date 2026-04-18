@@ -124,6 +124,10 @@ async function streamAnthropic(
 	}
 
 	let finalUsage: TokenUsage | undefined;
+	// Per-index accumulator for tool_use content blocks. Entries are seeded on
+	// content_block_start and drained on content_block_stop.
+	const toolBlocks = new Map<number, { id: string; name: string; argsText: string }>();
+
 	return transformSse(
 		response.body,
 		abort,
@@ -131,10 +135,31 @@ async function streamAnthropic(
 			const obj = tryParseJson(event.data);
 			if (!obj) return;
 			const t = obj.type;
-			if (t === "content_block_delta") {
+			const index = typeof obj.index === "number" ? obj.index : undefined;
+
+			if (t === "content_block_start" && index !== undefined) {
+				const block = obj.content_block as Record<string, unknown> | undefined;
+				if (block?.type === "tool_use" && typeof block.id === "string" && typeof block.name === "string") {
+					toolBlocks.set(index, { id: block.id, name: block.name, argsText: "" });
+				}
+			} else if (t === "content_block_delta" && index !== undefined) {
 				const delta = obj.delta as Record<string, unknown> | undefined;
 				if (delta?.type === "text_delta" && typeof delta.text === "string") {
 					emit({ type: "text", delta: delta.text });
+				} else if (delta?.type === "input_json_delta" && typeof delta.partial_json === "string") {
+					const pending = toolBlocks.get(index);
+					if (pending) pending.argsText += delta.partial_json;
+				}
+			} else if (t === "content_block_stop" && index !== undefined) {
+				const pending = toolBlocks.get(index);
+				if (pending) {
+					toolBlocks.delete(index);
+					emit({
+						type: "tool_use",
+						id: pending.id,
+						name: pending.name,
+						input: parseToolArgs(pending.argsText),
+					});
 				}
 			} else if (t === "message_delta") {
 				const usage = obj.usage as Record<string, unknown> | undefined;
@@ -190,11 +215,29 @@ async function streamOpenAi(
 	}
 
 	let finalUsage: TokenUsage | undefined;
+	// Per-call-index accumulator. OpenAI splits tool_calls arguments across
+	// deltas; id/name arrive on the first delta, arguments are appended.
+	const toolCalls = new Map<number, { id?: string; name?: string; argsText: string }>();
+
+	const flushToolCalls = (emit: EmitFn) => {
+		for (const [, call] of toolCalls) {
+			if (!call.id || !call.name) continue;
+			emit({
+				type: "tool_use",
+				id: call.id,
+				name: call.name,
+				input: parseToolArgs(call.argsText),
+			});
+		}
+		toolCalls.clear();
+	};
+
 	return transformSse(
 		response.body,
 		abort,
 		(event, emit, finish) => {
 			if (event.data === "[DONE]") {
+				flushToolCalls(emit);
 				finish({ type: "done", usage: finalUsage });
 				return;
 			}
@@ -202,9 +245,28 @@ async function streamOpenAi(
 			if (!obj) return;
 
 			const choices = obj.choices as Array<Record<string, unknown>> | undefined;
-			const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
+			const choice = choices?.[0];
+			const delta = choice?.delta as Record<string, unknown> | undefined;
+
 			if (typeof delta?.content === "string" && delta.content.length > 0) {
 				emit({ type: "text", delta: delta.content });
+			}
+
+			const rawToolCalls = delta?.tool_calls as Array<Record<string, unknown>> | undefined;
+			if (Array.isArray(rawToolCalls)) {
+				for (const raw of rawToolCalls) {
+					const idx = typeof raw.index === "number" ? raw.index : 0;
+					const pending = toolCalls.get(idx) ?? { argsText: "" };
+					if (typeof raw.id === "string") pending.id = raw.id;
+					const fn = raw.function as Record<string, unknown> | undefined;
+					if (fn && typeof fn.name === "string") pending.name = fn.name;
+					if (fn && typeof fn.arguments === "string") pending.argsText += fn.arguments;
+					toolCalls.set(idx, pending);
+				}
+			}
+
+			if (choice?.finish_reason === "tool_calls") {
+				flushToolCalls(emit);
 			}
 
 			const usage = obj.usage as Record<string, unknown> | undefined;
@@ -358,6 +420,24 @@ function tryParseJson(s: string): Record<string, unknown> | undefined {
 		return JSON.parse(s) as Record<string, unknown>;
 	} catch {
 		return undefined;
+	}
+}
+
+/**
+ * Parse accumulated tool-call arguments. Providers stream `arguments` as a
+ * JSON string built up across deltas; if the final string isn't valid JSON
+ * (provider bug, truncation, etc.), fall back to an empty object rather
+ * than failing the entire stream.
+ */
+function parseToolArgs(text: string): Record<string, unknown> {
+	if (!text) return {};
+	try {
+		const parsed = JSON.parse(text) as unknown;
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+			? (parsed as Record<string, unknown>)
+			: {};
+	} catch {
+		return {};
 	}
 }
 
