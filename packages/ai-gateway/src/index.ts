@@ -17,6 +17,24 @@ export { withLogging } from "./logging";
 export { withRetry } from "./retry";
 export type { RetryConfig } from "./retry";
 
+// Tool registry — name/handler map for dispatching tool calls.
+export { createToolRegistry } from "./tool-registry";
+export type { ToolHandler, ToolRegistry } from "./tool-registry";
+
+// Tool-use session — multi-turn execution with automatic dispatch.
+export { aiWithTools } from "./tool-use";
+export type { AiWithToolsOptions, AiWithToolsResult, ToolMessage } from "./tool-use";
+
+// Structured output — JSON mode with Standard Schema validation + retry.
+export { structuredAI, StructuredOutputError } from "./structured";
+export type { StructuredOptions, StructuredResult } from "./structured";
+
+// Schema conversion.
+export { standardSchemaToJsonSchema } from "./schema";
+
+// Token estimation — rough heuristic, not a tokenizer.
+export { estimateTokens } from "./tokens";
+
 // Types
 export type {
 	// Provider types
