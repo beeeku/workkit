@@ -1,6 +1,6 @@
 {
   "name": "@workkit/testing",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Mock factories for Cloudflare Workers bindings and test utilities",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
