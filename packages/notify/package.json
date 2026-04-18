@@ -28,6 +28,12 @@
 				"types": "./dist/adapters/inapp/index.d.ts",
 				"default": "./dist/adapters/inapp/index.js"
 			}
+		},
+		"./whatsapp": {
+			"import": {
+				"types": "./dist/adapters/whatsapp/index.d.ts",
+				"default": "./dist/adapters/whatsapp/index.js"
+			}
 		}
 	},
 	"module": "./dist/index.js",
@@ -72,6 +78,10 @@
 		"resend",
 		"sse",
 		"in-app",
+		"whatsapp",
+		"meta",
+		"twilio",
+		"gupshup",
 		"workkit"
 	]
 }

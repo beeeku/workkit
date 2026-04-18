@@ -1,7 +1,12 @@
 import { defineConfig } from "bunup";
 
 export default defineConfig({
-	entry: ["src/index.ts", "src/adapters/email/index.ts", "src/adapters/inapp/index.ts"],
+	entry: [
+		"src/index.ts",
+		"src/adapters/email/index.ts",
+		"src/adapters/inapp/index.ts",
+		"src/adapters/whatsapp/index.ts",
+	],
 	format: ["esm"],
 	dts: true,
 	sourcemap: "linked",
