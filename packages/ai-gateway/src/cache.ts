@@ -94,6 +94,10 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 		// Streams are not cached — each call hits the upstream gateway.
 		stream: gateway.stream?.bind(gateway),
 
+		// Embeddings pass through; a dedicated embedding cache keyed on
+		// (model, text) is a future enhancement.
+		embed: gateway.embed?.bind(gateway),
+
 		providers(): string[] {
 			return gateway.providers();
 		},

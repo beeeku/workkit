@@ -1,6 +1,8 @@
 import type {
 	AiInput,
 	AiOutput,
+	EmbedInput,
+	EmbedOutput,
 	FallbackEntry,
 	Gateway,
 	LoggedGateway,
@@ -26,6 +28,7 @@ import type {
 export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGateway {
 	const innerFallback = gateway.runFallback?.bind(gateway);
 	const innerStream = gateway.stream?.bind(gateway);
+	const innerEmbed = gateway.embed?.bind(gateway);
 
 	return {
 		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
@@ -70,6 +73,39 @@ export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGate
 					config.onRequest?.(model, input);
 					try {
 						return await innerStream(model, input, options);
+					} catch (err) {
+						config.onError?.(model, err);
+						throw err;
+					}
+				}
+			: undefined,
+
+		embed: innerEmbed
+			? async (
+					model: string,
+					input: EmbedInput,
+					options?: RunOptions,
+				): Promise<EmbedOutput> => {
+					config.onRequest?.(model, input as unknown as AiInput);
+					const start = Date.now();
+					try {
+						const result = await innerEmbed(model, input, options);
+						// Log via onResponse using a synthetic AiOutput-shaped object so
+						// existing handlers keep working. usage is preserved.
+						config.onResponse?.(
+							model,
+							{
+								text: undefined,
+								raw: result.raw,
+								usage: result.usage
+									? { inputTokens: result.usage.inputTokens, outputTokens: 0 }
+									: undefined,
+								provider: result.provider,
+								model: result.model,
+							},
+							Date.now() - start,
+						);
+						return result;
 					} catch (err) {
 						config.onError?.(model, err);
 						throw err;

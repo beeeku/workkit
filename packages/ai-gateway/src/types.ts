@@ -37,6 +37,8 @@ export interface AnthropicProviderConfig extends BaseProviderConfig {
 export interface CustomProviderConfig extends BaseProviderConfig {
 	type: "custom";
 	run: (model: string, input: AiInput) => Promise<AiOutput>;
+	/** Optional embedding handler. When absent, `gateway.embed()` rejects. */
+	embed?: (model: string, input: EmbedInput) => Promise<EmbedOutput>;
 }
 
 /** Union of all provider configs */
@@ -166,6 +168,23 @@ export interface FallbackEntry {
 	model: string;
 }
 
+/** Input to an embedding request — a single string or an array to batch. */
+export type EmbedInput = { text: string } | { text: string[] };
+
+/** Output from an embedding request. */
+export interface EmbedOutput {
+	/** One embedding vector per input string, in input order. */
+	vectors: number[][];
+	/** Raw provider response for debugging. */
+	raw: unknown;
+	/** Token usage if the provider reports it. */
+	usage?: { inputTokens: number };
+	/** Provider that handled the request. */
+	provider: string;
+	/** Model used. */
+	model: string;
+}
+
 /**
  * Unified streaming event shape across providers.
  *
@@ -217,6 +236,15 @@ export interface Gateway {
 		input: AiInput,
 		options?: RunOptions,
 	): Promise<ReadableStream<GatewayStreamEvent>>;
+	/**
+	 * Generate embeddings for one or more strings.
+	 *
+	 * Returns a `vectors` array with one embedding per input, in order. Optional —
+	 * present on gateways returned by `createGateway` when the chosen provider
+	 * supports embeddings (Workers AI, OpenAI). Anthropic throws a
+	 * `ValidationError` since it has no public embeddings endpoint.
+	 */
+	embed?(model: string, input: EmbedInput, options?: RunOptions): Promise<EmbedOutput>;
 	/** List configured providers */
 	providers(): string[];
 	/** Get the default provider name */
