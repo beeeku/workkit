@@ -3,16 +3,18 @@ import type { BrowserBindingLike, BrowserSessionLike, PuppeteerLike } from "./ty
 
 export interface BrowserSessionOptions {
 	/**
-	 * Keep the browser session alive between renders. Default: false.
+	 * Keep the browser session alive between renders, in milliseconds.
+	 * Forwarded to `@cloudflare/puppeteer`'s `keep_alive`. Default: omitted
+	 * (uses Cloudflare's 60s default; max 600000 / 10 minutes).
 	 *
 	 * SECURITY: Reusing a session can leak cookies/storage between renders.
 	 * Only enable for trusted, non-PII workloads.
 	 */
-	keepAlive?: number | boolean;
+	keepAlive?: number;
 
 	/**
-	 * Puppeteer launcher (`@cloudflare/puppeteer`). Optional — supply if you
-	 * want explicit control, otherwise the helper attempts a dynamic import.
+	 * Puppeteer launcher (`@cloudflare/puppeteer`). Optional — supply for
+	 * explicit control. When provided, takes precedence over `binding.launch`.
 	 */
 	puppeteer?: PuppeteerLike;
 
@@ -23,9 +25,8 @@ export interface BrowserSessionOptions {
 /**
  * Acquire a Cloudflare Browser Rendering session.
  *
- * Prefers `binding.launch(opts)` when the binding exposes it directly. Falls
- * back to a `puppeteer.launch(binding, opts)` call when an explicit puppeteer
- * shim is provided via `options.puppeteer`.
+ * Uses `options.puppeteer.launch(binding, opts)` when supplied. Otherwise,
+ * uses `binding.launch(opts)` when the binding exposes it directly.
  */
 export async function browser(
 	binding: BrowserBindingLike,

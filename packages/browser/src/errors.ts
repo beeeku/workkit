@@ -28,14 +28,22 @@ function readHeader(
 ): string | undefined {
 	if (!headers) return undefined;
 	if (headers instanceof Headers) return headers.get(name) ?? undefined;
-	const direct = headers[name] ?? headers[name.toLowerCase()];
-	return typeof direct === "string" ? direct : undefined;
+	const target = name.toLowerCase();
+	for (const [key, value] of Object.entries(headers)) {
+		if (key.toLowerCase() === target && typeof value === "string") return value;
+	}
+	return undefined;
 }
 
 function parseRetryAfterMs(value: string | undefined): number | undefined {
 	if (!value) return undefined;
-	const seconds = Number(value);
-	if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1000);
+	// Strict numeric form per RFC 7231: positive delta-seconds. Anything else
+	// (e.g. "Wed, 21 Oct 2015 07:28:00 GMT") falls through to Date.parse so we
+	// don't misread a year like "2025" as 2025 seconds.
+	if (/^\d+(\.\d+)?$/.test(value)) {
+		const seconds = Number(value);
+		if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1000);
+	}
 	const date = Date.parse(value);
 	if (Number.isFinite(date)) return Math.max(0, date - Date.now());
 	return undefined;

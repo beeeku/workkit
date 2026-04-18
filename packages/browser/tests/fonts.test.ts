@@ -47,6 +47,29 @@ describe("loadFonts", () => {
 		).rejects.toThrow(FontLoadError);
 	});
 
+	it("rejects malformed font URLs", async () => {
+		const page = mockPage();
+		await expect(loadFonts(page, [{ family: "Inter", url: "::::not-a-url" }])).rejects.toThrow(
+			FontLoadError,
+		);
+	});
+
+	it("rejects font URLs with characters that could break out of url(...)", async () => {
+		const page = mockPage();
+		await expect(
+			loadFonts(page, [
+				{ family: "Inter", url: 'https://x.example.com/a.woff2")injected{display:none}/*' },
+			]),
+		).rejects.toThrow(FontLoadError);
+	});
+
+	it("rejects font families containing quotes or control chars", async () => {
+		const page = mockPage();
+		await expect(
+			loadFonts(page, [{ family: 'Inter"; injected: "yes', url: "https://x.example.com/a.woff2" }]),
+		).rejects.toThrow(FontLoadError);
+	});
+
 	it("injects @font-face CSS when fonts are valid", async () => {
 		const page = mockPage();
 		await loadFonts(page, [
