@@ -57,9 +57,9 @@ export default function Landing() {
 				</h1>
 
 				<p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-					Type-safe, composable utilities for every Cloudflare Workers binding. KV, D1, R2,
-					Queues, Durable Objects, Browser Rendering, AI — plus higher-level primitives for
-					agents, memory, MCP servers, durable workflows, and approval flows.
+					Type-safe, composable utilities for every Cloudflare Workers binding. KV, D1, R2, Queues,
+					Durable Objects, Browser Rendering, AI — plus higher-level primitives for agents, memory,
+					MCP servers, durable workflows, and approval flows.
 				</p>
 
 				<div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
