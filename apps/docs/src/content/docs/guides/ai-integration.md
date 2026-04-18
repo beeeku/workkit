@@ -7,7 +7,7 @@ title: "AI Integration"
 workkit provides two packages for AI:
 
 - **`@workkit/ai-gateway`** (recommended) — multi-provider gateway covering Workers AI, OpenAI, Anthropic, and custom providers. Unified streaming, retry, fallback, prompt caching, routing, cost tracking, logging, and Cloudflare AI Gateway support.
-- **`@workkit/ai`** — thin Workers-AI-only client, predates the gateway. Slated to become a deprecation shim over `@workkit/ai-gateway` per [ADR-001](https://github.com/beeeku/workkit/issues/62); new code should start with `@workkit/ai-gateway`.
+- **`@workkit/ai`** — thin Workers-AI-only client, predates the gateway. Slated to become a deprecation shim over `@workkit/ai-gateway` per [ADR-001](https://github.com/beeeku/workkit/blob/master/.maina/decisions/001-ai-package-consolidation.md); new code should start with `@workkit/ai-gateway`.
 
 ## Workers AI (`@workkit/ai`)
 
@@ -334,7 +334,9 @@ Explicit `baseUrl` on a provider config overrides `cfGateway`. Workers AI and cu
 `runFallback` POSTs a provider chain to the [CF Universal Endpoint](https://developers.cloudflare.com/ai-gateway/configuration/universal-endpoint/). Cloudflare tries each entry server-side in order and returns the first success. Requires `cfGateway`.
 
 ```ts
-const result = await gateway.runFallback(
+// runFallback is an optional Gateway method — use `!` when you constructed
+// the gateway yourself via createGateway (which always implements it).
+const result = await gateway.runFallback!(
   [
     { provider: 'anthropic', model: 'claude-sonnet-4-6' },
     { provider: 'openai',    model: 'gpt-4o' },
@@ -373,7 +375,9 @@ type GatewayStreamEvent =
 Successful streams end with exactly one `done` event. Mid-stream errors reject `read()` without enqueuing a synthetic `done`. Supported across Workers AI, Anthropic SSE, and OpenAI SSE. Tool-use events are emitted when the model completes a tool call mid-stream (Anthropic `input_json_delta` accumulation; OpenAI `tool_calls` delta accumulation).
 
 ```ts
-const stream = await gateway.stream('claude-sonnet-4-6', {
+// stream is an optional Gateway method — use `!` when the gateway was built
+// via createGateway (which always implements it).
+const stream = await gateway.stream!('claude-sonnet-4-6', {
   messages: [{ role: 'user', content: 'explain quantum tunneling' }],
 })
 
@@ -423,7 +427,9 @@ export default {
       { onError: (model, err) => console.error(`AI error: ${model}`, err) },
     ), { maxAttempts: 3 })
 
-    // Streaming endpoint — typed events across providers
+    // Streaming endpoint — typed events across providers.
+    // JSON-encode each event so embedded newlines and tool_use blocks survive
+    // SSE framing; the browser-side parser decodes one JSON payload per event.
     if (body.stream) {
       const events = await gateway.stream!('claude-sonnet-4-6', {
         messages: [{ role: 'user', content: body.prompt }],
@@ -432,7 +438,7 @@ export default {
       return new Response(
         events.pipeThrough(new TransformStream({
           transform(evt, ctrl) {
-            if (evt.type === 'text') ctrl.enqueue(encoder.encode(`data: ${evt.delta}\n\n`))
+            ctrl.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`))
             if (evt.type === 'done') ctrl.enqueue(encoder.encode('data: [DONE]\n\n'))
           },
         })),
