@@ -106,7 +106,7 @@
     },
     "packages/ai-gateway": {
       "name": "@workkit/ai-gateway",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -114,7 +114,7 @@
     },
     "packages/api": {
       "name": "@workkit/api",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
       },
@@ -141,7 +141,7 @@
     },
     "packages/auth": {
       "name": "@workkit/auth",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
       },
@@ -167,7 +167,7 @@
     },
     "packages/cache": {
       "name": "@workkit/cache",
-      "version": "0.1.1",
+      "version": "0.1.2",
     },
     "packages/chat": {
       "name": "@workkit/chat",
@@ -191,7 +191,7 @@
     },
     "packages/cron": {
       "name": "@workkit/cron",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
       },
@@ -215,7 +215,7 @@
     },
     "packages/do": {
       "name": "@workkit/do",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
       },
@@ -287,7 +287,7 @@
     },
     "packages/kv": {
       "name": "@workkit/kv",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
       },
@@ -306,7 +306,7 @@
     },
     "packages/logger": {
       "name": "@workkit/logger",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "@types/node": "^25.0.0",
         "hono": "^4.7.0",
@@ -353,9 +353,26 @@
         "@workkit/types": "workspace:*",
       },
     },
+    "packages/pdf": {
+      "name": "@workkit/pdf",
+      "version": "0.0.0",
+      "dependencies": {
+        "@workkit/browser": "workspace:*",
+        "@workkit/errors": "^1.0.2",
+      },
+      "devDependencies": {
+        "@cloudflare/puppeteer": "^0.0.14",
+      },
+      "peerDependencies": {
+        "@cloudflare/puppeteer": ">=0.0.14",
+      },
+      "optionalPeers": [
+        "@cloudflare/puppeteer",
+      ],
+    },
     "packages/queue": {
       "name": "@workkit/queue",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -363,7 +380,7 @@
     },
     "packages/r2": {
       "name": "@workkit/r2",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -371,7 +388,7 @@
     },
     "packages/ratelimit": {
       "name": "@workkit/ratelimit",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -1126,6 +1143,8 @@
     "@workkit/mcp": ["@workkit/mcp@workspace:packages/mcp"],
 
     "@workkit/memory": ["@workkit/memory@workspace:packages/memory"],
+
+    "@workkit/pdf": ["@workkit/pdf@workspace:packages/pdf"],
 
     "@workkit/queue": ["@workkit/queue@workspace:packages/queue"],
 
