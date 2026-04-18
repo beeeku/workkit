@@ -480,13 +480,10 @@
     "tooling/vitest": {
       "name": "@workkit/vitest-config",
       "version": "0.0.0",
-<<<<<<< HEAD
-=======
       "peerDependencies": {
         "vite": "*",
         "vitest": "*",
       },
->>>>>>> 18be147 (fix(constitution): declare vite/vitest as peer deps of @workkit/vitest-config)
     },
   },
   "overrides": {
