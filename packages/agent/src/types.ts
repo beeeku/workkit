@@ -30,8 +30,25 @@ export interface OnErrorDecision {
 	abort?: boolean;
 }
 
+export interface AfterModelDecision {
+	/** Reject the assistant message and re-run the model for this step. */
+	retry?: boolean;
+	/** Optional system-style reminder appended (as a `user` message) before the retry. */
+	reminder?: string;
+}
+
 export interface AgentHooks {
 	beforeModel?(ctx: RunContext): void | Promise<void>;
+	/**
+	 * Fires after every assistant turn — text-only, tool-call, or mixed.
+	 * Returning `{ retry: true }` rejects the assistant message and re-runs
+	 * the model for the step. Tools from a rejected turn do NOT execute.
+	 * See `DefineAgentOptions.maxAfterModelRetries` for the per-step cap.
+	 */
+	afterModel?(
+		assistant: Extract<Message, { role: "assistant" }>,
+		ctx: RunContext,
+	): undefined | AfterModelDecision | Promise<undefined | AfterModelDecision>;
 	afterTool?(call: GatewayToolCall, result: string, ctx: RunContext): void | Promise<void>;
 	onError?(
 		err: { kind: "tool" | "provider" | "hook"; toolName?: string; error: unknown },
@@ -77,6 +94,14 @@ export interface DefineAgentOptions {
 	 * loop continues).
 	 */
 	strictTools?: boolean;
+	/**
+	 * Per-step cap on how many times `afterModel` may request a retry before
+	 * the loop gives up and proceeds with the last-returned assistant message
+	 * (soft-fail). Prevents infinite loops when the model keeps ignoring the
+	 * reminder. Each retry also consumes one slot from `stopWhen.maxSteps`.
+	 * Default: `2`.
+	 */
+	maxAfterModelRetries?: number;
 }
 
 export interface RunArgs {

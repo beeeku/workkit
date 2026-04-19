@@ -23,6 +23,7 @@ export { toJsonSchema } from "./schema";
 
 // Public types
 export type {
+	AfterModelDecision,
 	Agent,
 	AgentEvent,
 	AgentHooks,

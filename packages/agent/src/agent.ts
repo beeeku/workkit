@@ -45,6 +45,7 @@ export function defineAgent(options: DefineAgentOptions): Agent {
 		stopWhen,
 		hooks: options.hooks ?? {},
 		strictTools: options.strictTools ?? false,
+		maxAfterModelRetries: options.maxAfterModelRetries ?? 2,
 	};
 
 	sharedRegistry.register(internal);

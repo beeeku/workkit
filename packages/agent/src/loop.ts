@@ -6,6 +6,7 @@ import { toJsonSchema } from "./schema";
 import { runStep } from "./stream-step";
 import { runTool } from "./tool";
 import type {
+	AfterModelDecision,
 	Agent,
 	AgentHooks,
 	Message,
@@ -25,6 +26,7 @@ export interface InternalAgentDef {
 	stopWhen: Required<StopWhen>;
 	hooks: AgentHooks;
 	strictTools: boolean;
+	maxAfterModelRetries: number;
 }
 
 const ZERO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -93,6 +95,9 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 
 	let step = 0;
 	let finalText = "";
+	// Per-step tracking for `afterModel` retry-with-reminder. Resets whenever
+	// the step advances into tool dispatch (i.e. a model turn was accepted).
+	let afterModelRetryCount = 0;
 
 	while (true) {
 		if (ctx.signal?.aborted) {
@@ -177,6 +182,63 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 		// (or a single synthesized one on the non-streaming path), so we don't
 		// re-emit here.
 		emit({ type: "step-complete", step, usage, assistant: assistantMessage });
+
+		// afterModel hook — fires after every assistant turn (text-only, tool-call,
+		// or mixed). Must run BEFORE the strictTools pre-scan and tool dispatch so
+		// that a rejected turn never executes side effects.
+		let afterModelDecision: AfterModelDecision | undefined;
+		try {
+			const raw = await currentAgent.hooks.afterModel?.(
+				assistantMessage as Extract<Message, { role: "assistant" }>,
+				{ ...ctx, agentPath, usage },
+			);
+			afterModelDecision = raw ?? undefined;
+		} catch (error) {
+			emit({ type: "error", error: { kind: "hook", message: errorMessage(error) } });
+			const decision = await currentAgent.hooks.onError?.(
+				{ kind: "hook", error },
+				{ ...ctx, agentPath, usage },
+			);
+			if (!decision || decision.abort !== false) {
+				emit({ type: "done", stopReason: "error", usage });
+				throw error;
+			}
+			// onError opted to suppress: treat as no-retry.
+			afterModelDecision = undefined;
+		}
+
+		// Only honor the retry if another model call actually fits in the step
+		// budget. Otherwise popping the assistant message and bumping `step`
+		// would exit the loop at the top with `stopReason: "max_steps"` while
+		// `finalText` still points at the just-removed message — soft-fail is
+		// supposed to proceed with the last-returned message instead.
+		const retryFitsBudget = step + 1 < currentAgent.stopWhen.maxSteps;
+		if (
+			afterModelDecision?.retry &&
+			afterModelRetryCount < currentAgent.maxAfterModelRetries &&
+			retryFitsBudget
+		) {
+			// Reject the turn: pop the assistant message, optionally append a
+			// reminder as a user message, and re-run the model for this step.
+			// The retry consumes one slot from `stopWhen.maxSteps`.
+			afterModelRetryCount += 1;
+			emit({
+				type: "after-model-retry",
+				step,
+				attempt: afterModelRetryCount,
+				reminder: afterModelDecision.reminder,
+			});
+			messages = messages.slice(0, -1);
+			if (afterModelDecision.reminder) {
+				messages = [...messages, { role: "user", content: afterModelDecision.reminder }];
+			}
+			step += 1;
+			continue;
+		}
+		// Either the turn was accepted, the hook returned no decision, the
+		// per-step retry cap was hit, or the step budget can't fit another
+		// model call (soft-fail: proceed with the last message).
+		afterModelRetryCount = 0;
 
 		const toolCalls: GatewayToolCall[] = output.toolCalls ?? [];
 		if (toolCalls.length === 0) {
