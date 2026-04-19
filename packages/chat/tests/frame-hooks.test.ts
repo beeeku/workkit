@@ -191,9 +191,7 @@ describe("chat transport frame hooks", () => {
 
 	it("fires onFrameIn with phase 'rejected' + error when size limit is exceeded", async () => {
 		const onFrameIn = vi.fn();
-		const transport = createChatTransport(
-			makeOptions({ onFrameIn, maxMessageSize: 20 }),
-		);
+		const transport = createChatTransport(makeOptions({ onFrameIn, maxMessageSize: 20 }));
 		transport.handleUpgrade(dummyRequest(), "s-big");
 
 		const [, server] = wsHelper.getLastPair();
@@ -316,18 +314,14 @@ describe("chat transport frame hooks", () => {
 			.filter((e) => e.phase === "sent");
 		expect(sent[0].sessionId).toBe("s-out");
 		expect(sent[0].message.id).toBe("r1");
-		expect(sent[0].bytes).toBe(
-			new TextEncoder().encode(JSON.stringify(responses[0])).byteLength,
-		);
+		expect(sent[0].bytes).toBe(new TextEncoder().encode(JSON.stringify(responses[0])).byteLength);
 		expect(sent[1].message.id).toBe("r2");
 		expect(sent[0].error).toBeUndefined();
 	});
 
 	it("does not fire onFrameOut for heartbeat pings", () => {
 		const onFrameOut = vi.fn();
-		const transport = createChatTransport(
-			makeOptions({ onFrameOut, heartbeatInterval: 1000 }),
-		);
+		const transport = createChatTransport(makeOptions({ onFrameOut, heartbeatInterval: 1000 }));
 		transport.handleUpgrade(dummyRequest(), "s-hb");
 
 		vi.advanceTimersByTime(3000);

@@ -119,9 +119,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 					const byteLength = new TextEncoder().encode(raw).byteLength;
 					fireFrameIn({ sessionId, phase: "received", bytes: byteLength });
 					if (byteLength > maxMessageSize) {
-						const sizeErr = new Error(
-							`Message exceeds maximum size of ${maxMessageSize} bytes`,
-						);
+						const sizeErr = new Error(`Message exceeds maximum size of ${maxMessageSize} bytes`);
 						fireFrameIn({
 							sessionId,
 							phase: "rejected",
