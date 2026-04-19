@@ -1,5 +1,7 @@
 import { ConfigError, ServiceUnavailableError, ValidationError } from "@workkit/errors";
 import { buildFallbackBodyEntry, normalizeFallbackResponse } from "./fallback";
+import { isFallbackModelRef, runWithFallback } from "./fallback-wrapper";
+import type { FallbackModelRef } from "./fallback-wrapper";
 import { executeAnthropic } from "./providers/anthropic";
 import { executeCustom } from "./providers/custom";
 import { executeEmbed } from "./providers/embed";
@@ -86,36 +88,49 @@ export function createGateway<P extends ProviderMap>(config: GatewayConfig<P>): 
 
 	const providerNames = Object.keys(config.providers);
 
+	const runString = async (
+		model: string,
+		input: AiInput,
+		options?: RunOptions,
+	): Promise<AiOutput> => {
+		if (!model) {
+			throw new ValidationError("Model name is required", [
+				{ path: ["model"], message: "Model name cannot be empty" },
+			]);
+		}
+
+		const providerKey = options?.provider ?? config.defaultProvider;
+		const providerConfig = config.providers[providerKey];
+
+		if (!providerConfig) {
+			throw new ConfigError(`Provider "${providerKey}" not found`, {
+				context: { provider: providerKey, available: providerNames },
+			});
+		}
+
+		const { signal, cleanup } = withTimeoutSignal(options);
+		try {
+			return await executeProvider(
+				providerKey,
+				providerConfig,
+				model,
+				input,
+				signal ? { ...options, signal } : options,
+				config.cfGateway,
+			);
+		} finally {
+			cleanup();
+		}
+	};
+
 	return {
-		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
-			if (!model) {
-				throw new ValidationError("Model name is required", [
-					{ path: ["model"], message: "Model name cannot be empty" },
-				]);
-			}
-
-			const providerKey = options?.provider ?? config.defaultProvider;
-			const providerConfig = config.providers[providerKey];
-
-			if (!providerConfig) {
-				throw new ConfigError(`Provider "${providerKey}" not found`, {
-					context: { provider: providerKey, available: providerNames },
-				});
-			}
-
-			const { signal, cleanup } = withTimeoutSignal(options);
-			try {
-				return await executeProvider(
-					providerKey,
-					providerConfig,
-					model,
-					input,
-					signal ? { ...options, signal } : options,
-					config.cfGateway,
-				);
-			} finally {
-				cleanup();
-			}
+		async run(
+			model: string | FallbackModelRef,
+			input: AiInput,
+			options?: RunOptions,
+		): Promise<AiOutput> {
+			if (isFallbackModelRef(model)) return runWithFallback(model, input, options, runString);
+			return runString(model, input, options);
 		},
 
 		async runFallback(

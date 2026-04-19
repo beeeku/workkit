@@ -1,4 +1,5 @@
 import { ConfigError } from "@workkit/errors";
+import { type FallbackModelRef, modelLabel } from "./fallback-wrapper";
 import type {
 	AiInput,
 	AiOutput,
@@ -61,12 +62,18 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 	const ttl = config.ttl ?? 3600;
 	const hashFn = config.hashFn ?? defaultHashFn;
 
-	function getCacheKey(model: string, input: AiInput): string {
-		return hashFn(model, input);
+	// FallbackModelRef is translated to a stable label (`fallback:primary→secondary`)
+	// so cache entries are deterministic across calls with the same fallback config.
+	function getCacheKey(model: string | FallbackModelRef, input: AiInput): string {
+		return hashFn(modelLabel(model), input);
 	}
 
 	return {
-		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
+		async run(
+			model: string | FallbackModelRef,
+			input: AiInput,
+			options?: RunOptions,
+		): Promise<AiOutput> {
 			const cacheKey = getCacheKey(model, input);
 
 			// Try cache first
@@ -91,13 +98,13 @@ export function withCache(gateway: Gateway, config: CacheConfig): CachedGateway 
 			return result;
 		},
 
-		async isCached(model: string, input: AiInput): Promise<boolean> {
+		async isCached(model: string | FallbackModelRef, input: AiInput): Promise<boolean> {
 			const cacheKey = getCacheKey(model, input);
 			const value = await config.storage.get(cacheKey, { type: "text" });
 			return value !== null;
 		},
 
-		async invalidate(model: string, input: AiInput): Promise<void> {
+		async invalidate(model: string | FallbackModelRef, input: AiInput): Promise<void> {
 			const cacheKey = getCacheKey(model, input);
 			await config.storage.delete(cacheKey);
 		},

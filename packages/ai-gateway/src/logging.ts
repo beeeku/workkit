@@ -1,3 +1,4 @@
+import { type FallbackModelRef, modelLabel } from "./fallback-wrapper";
 import type {
 	AiInput,
 	AiOutput,
@@ -31,17 +32,25 @@ export function withLogging(gateway: Gateway, config: LoggingConfig): LoggedGate
 	const innerEmbed = gateway.embed?.bind(gateway);
 
 	return {
-		async run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput> {
-			config.onRequest?.(model, input);
+		async run(
+			model: string | FallbackModelRef,
+			input: AiInput,
+			options?: RunOptions,
+		): Promise<AiOutput> {
+			// `LoggingConfig` callbacks take `model: string`, so fallback refs are
+			// labeled (`fallback:primary→secondary`) before emission instead of
+			// stringifying to `[object Object]`.
+			const label = modelLabel(model);
+			config.onRequest?.(label, input);
 
 			const start = Date.now();
 			try {
 				const result = await gateway.run(model, input, options);
 				const duration = Date.now() - start;
-				config.onResponse?.(model, result, duration);
+				config.onResponse?.(label, result, duration);
 				return result;
 			} catch (err) {
-				config.onError?.(model, err);
+				config.onError?.(label, err);
 				throw err;
 			}
 		},
