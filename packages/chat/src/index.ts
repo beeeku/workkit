@@ -19,5 +19,7 @@ export type {
 	ChatMessage,
 	ChatMessageType,
 	ChatTransportOptions,
+	InboundFrameEvent,
+	OutboundFrameEvent,
 	SessionState,
 } from "./types";
