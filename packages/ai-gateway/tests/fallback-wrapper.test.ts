@@ -1,7 +1,13 @@
 import { ServiceUnavailableError, UnauthorizedError } from "@workkit/errors";
 import { describe, expect, it, vi } from "vitest";
 import { runWithFallback } from "../src/fallback-wrapper";
-import { FallbackExhaustedError, createGateway, fallback } from "../src/index";
+import {
+	FallbackExhaustedError,
+	createGateway,
+	fallback,
+	isFallbackModelRef,
+	modelLabel,
+} from "../src/index";
 import type { AiInput, AiOutput, Gateway, RunOptions, WorkersAiBinding } from "../src/types";
 
 /**
@@ -243,7 +249,7 @@ describe("runWithFallback() — direct runner contract", () => {
 		expect(out.via).toBe("secondary");
 	});
 
-	it("wraps a plain UnauthorizedError (statusCode 401) and matches on:[401]", async () => {
+	it("matches a plain UnauthorizedError (statusCode 401) and falls back on:[401]", async () => {
 		const raw = new UnauthorizedError("401");
 		const runner = vi
 			.fn()
@@ -254,5 +260,47 @@ describe("runWithFallback() — direct runner contract", () => {
 		const ref = fallback("p", "s", { on: [401] });
 		const out = await runWithFallback(ref, { prompt: "hi" }, undefined, runner);
 		expect(out.via).toBe("secondary");
+	});
+});
+
+describe("isFallbackModelRef() shape validation", () => {
+	it("returns true for a well-formed fallback() result", () => {
+		expect(isFallbackModelRef(fallback("p", "s", { on: [401] }))).toBe(true);
+	});
+	it("rejects non-objects", () => {
+		expect(isFallbackModelRef(null)).toBe(false);
+		expect(isFallbackModelRef(undefined)).toBe(false);
+		expect(isFallbackModelRef("fallback")).toBe(false);
+		expect(isFallbackModelRef(42)).toBe(false);
+	});
+	it("rejects objects missing kind === 'fallback'", () => {
+		expect(isFallbackModelRef({ kind: "other", primary: "p", secondary: "s", on: [] })).toBe(false);
+		expect(isFallbackModelRef({ primary: "p", secondary: "s", on: [] })).toBe(false);
+	});
+	it("rejects refs with empty-string primary or secondary", () => {
+		expect(isFallbackModelRef({ kind: "fallback", primary: "", secondary: "s", on: [] })).toBe(
+			false,
+		);
+		expect(isFallbackModelRef({ kind: "fallback", primary: "p", secondary: "", on: [] })).toBe(
+			false,
+		);
+	});
+	it("rejects refs where `on` is not an array or contains non-matcher entries", () => {
+		expect(isFallbackModelRef({ kind: "fallback", primary: "p", secondary: "s", on: "401" })).toBe(
+			false,
+		);
+		expect(
+			isFallbackModelRef({ kind: "fallback", primary: "p", secondary: "s", on: [{} as unknown] }),
+		).toBe(false);
+	});
+});
+
+describe("modelLabel() — stable label for wrappers", () => {
+	it("returns the string unchanged for plain string models", () => {
+		expect(modelLabel("gpt-4o")).toBe("gpt-4o");
+	});
+	it("returns a deterministic `fallback:primary→secondary` label for refs", () => {
+		const ref = fallback("claude-sonnet-4-6", "gpt-4o", { on: [401] });
+		expect(modelLabel(ref)).toBe("fallback:claude-sonnet-4-6→gpt-4o");
 	});
 });

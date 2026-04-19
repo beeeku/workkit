@@ -65,11 +65,45 @@ export function fallback(
 	};
 }
 
-/** Narrow an unknown value to a `FallbackModelRef` by its discriminant tag. */
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.length > 0;
+}
+
+function isFallbackMatcher(value: unknown): value is FallbackMatcher {
+	return typeof value === "number" || typeof value === "function";
+}
+
+/**
+ * Narrow an unknown value to a `FallbackModelRef`. Validates the discriminant
+ * tag AND that `primary`/`secondary` are non-empty strings and `on` is an
+ * array of numbers or predicates. Rejecting malformed shapes here avoids
+ * confusing runtime failures deeper in `runWithFallback` for JS callers
+ * (where TS's structural checks are absent).
+ */
 export function isFallbackModelRef(value: unknown): value is FallbackModelRef {
-	return (
-		typeof value === "object" && value !== null && (value as { kind?: unknown }).kind === "fallback"
-	);
+	if (typeof value !== "object" || value === null) return false;
+	const v = value as {
+		kind?: unknown;
+		primary?: unknown;
+		secondary?: unknown;
+		on?: unknown;
+	};
+	if (v.kind !== "fallback") return false;
+	if (!isNonEmptyString(v.primary)) return false;
+	if (!isNonEmptyString(v.secondary)) return false;
+	if (!Array.isArray(v.on)) return false;
+	return v.on.every(isFallbackMatcher);
+}
+
+/**
+ * Produce a stable, human-readable label for a model reference. Used by
+ * wrappers like `withCache` (as part of the cache key) and `withLogging` (as
+ * the log label) so a `FallbackModelRef` doesn't stringify to
+ * `"[object Object]"`.
+ */
+export function modelLabel(model: string | FallbackModelRef): string {
+	if (typeof model === "string") return model;
+	return `fallback:${model.primary}→${model.secondary}`;
 }
 
 /**

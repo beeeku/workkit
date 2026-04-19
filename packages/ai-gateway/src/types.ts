@@ -394,9 +394,9 @@ export interface CacheConfig {
 /** A cached gateway — same interface as Gateway */
 export interface CachedGateway extends Gateway {
 	/** Check if a response is cached for the given model + input */
-	isCached(model: string, input: AiInput): Promise<boolean>;
+	isCached(model: string | FallbackModelRef, input: AiInput): Promise<boolean>;
 	/** Invalidate cached response for the given model + input */
-	invalidate(model: string, input: AiInput): Promise<void>;
+	invalidate(model: string | FallbackModelRef, input: AiInput): Promise<void>;
 }
 
 // --- Logging types ---

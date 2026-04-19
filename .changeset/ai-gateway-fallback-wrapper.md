@@ -22,6 +22,7 @@ Semantics:
 - `onFallback` fires once when the primary fails and the secondary is about to run, with the attempt tier (`"primary"`) that triggered the transition.
 - When both tiers fail, `run()` throws `FallbackExhaustedError` with `.primaryError` and `.secondaryError` preserved for inspection.
 - `AiOutput.via` is tagged `"primary" | "secondary"` so observability pipelines can break down traffic by tier. Absent on direct string-model calls.
-- Retry (`withRetry`) still wraps each tier independently: the primary retries per its policy first, and only once it gives up does the fallback trigger.
+
+Wrapper interop: `withCache`, `withLogging`, and `withRetry` accept a `FallbackModelRef` where they previously accepted a model string, and use a stable `modelLabel(ref)` → `"fallback:primary→secondary"` for cache keys and log labels (no more `[object Object]` stringification). **Retry currently wraps the whole fallback call, not each tier independently** — if the primary throws a retryable error, `withRetry` retries the overall `gateway.run(ref, …)`, which re-enters the primary first. Per-tier retry (primary exhausts its retry budget before the secondary is tried) is a follow-up; until then, put `withRetry` *inside* each tier explicitly if that matters for your use case.
 
 Two-tier only for now — chain by nesting if you need three tiers. Circuit-breaker ("stop trying primary for N minutes") is a separate follow-up. No new runtime deps.
