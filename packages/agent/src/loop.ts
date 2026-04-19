@@ -1,5 +1,5 @@
 import type { ChatMessage, GatewayToolCall, RunOptions, TokenUsage } from "@workkit/ai-gateway";
-import { ToolValidationError } from "./errors";
+import { OffPaletteToolError, ToolValidationError } from "./errors";
 import type { AgentEvent } from "./events";
 import { HANDOFF_HOP_LIMIT } from "./handoff";
 import { toJsonSchema } from "./schema";
@@ -24,6 +24,7 @@ export interface InternalAgentDef {
 	tools: Tool[];
 	stopWhen: Required<StopWhen>;
 	hooks: AgentHooks;
+	strictTools: boolean;
 }
 
 const ZERO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -189,6 +190,12 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			emit({ type: "tool-start", call, step });
 			const tool = currentAgent.tools.find((t) => t.name === call.name);
 			if (!tool) {
+				if (currentAgent.strictTools) {
+					const allowedPalette = currentAgent.tools.map((t) => t.name);
+					emit({ type: "tool-rejected", call, reason: "off-palette", step });
+					emit({ type: "done", stopReason: "error", usage });
+					throw new OffPaletteToolError(call.name, allowedPalette);
+				}
 				const errMsg = `unknown tool: ${call.name}`;
 				const toolMsg: Message = {
 					role: "tool",

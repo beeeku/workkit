@@ -1,5 +1,5 @@
 import { ConfigError, ValidationError, WorkkitError } from "@workkit/errors";
-import type { RetryStrategy } from "@workkit/errors";
+import type { RetryStrategy, WorkkitErrorCode } from "@workkit/errors";
 
 export class ToolValidationError extends ValidationError {
 	constructor(toolName: string, issues: Array<{ path: PropertyKey[]; message: string }>) {
@@ -43,5 +43,27 @@ export class BudgetExceededError extends WorkkitError {
 
 	constructor(kind: "max_steps" | "max_tokens", limit: number) {
 		super(`agent budget exceeded: ${kind} >= ${limit}`, { context: { kind, limit } });
+	}
+}
+
+export class OffPaletteToolError extends WorkkitError {
+	// The code union in @workkit/errors is centrally registered; agent-specific
+	// subcodes that haven't been added to the shared union cast locally. This
+	// preserves the package boundary (we don't reach into @workkit/errors for
+	// this additive change) while still surfacing a stable, greppable code.
+	readonly code = "WORKKIT_AGENT_OFF_PALETTE_TOOL" as unknown as WorkkitErrorCode;
+	readonly statusCode = 400;
+	readonly retryable = false;
+	readonly defaultRetryStrategy: RetryStrategy = { kind: "none" };
+	readonly toolName: string;
+	readonly allowedPalette: readonly string[];
+
+	constructor(toolName: string, allowedPalette: readonly string[]) {
+		super(
+			`off-palette tool call "${toolName}" rejected (allowed: ${allowedPalette.length > 0 ? allowedPalette.join(", ") : "<none>"})`,
+			{ context: { toolName, allowedPalette: [...allowedPalette] } },
+		);
+		this.toolName = toolName;
+		this.allowedPalette = [...allowedPalette];
 	}
 }
