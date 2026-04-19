@@ -87,6 +87,42 @@ describe("strictTools mode", () => {
 		expect(knownCallCount).toBe(0);
 	});
 
+	it("strictTools=true with [known, unknown] calls does NOT execute the earlier known tool either", async () => {
+		// Regression guard: the rejection must pre-scan the whole turn, otherwise
+		// a known tool placed *before* an off-palette one would run and leave a
+		// partial side effect from a turn we're about to reject.
+		let knownCallCount = 0;
+		const known = tool({
+			name: "search",
+			description: "searches",
+			input: z.object({}),
+			handler: async () => {
+				knownCallCount += 1;
+				return "ran";
+			},
+		});
+		const { gateway } = mockGateway([{ toolCalls: [call("search"), call("compute_greeks")] }]);
+		const agent = defineAgent({
+			name: "strict-on-3b",
+			model: "m",
+			provider: gateway,
+			tools: [known],
+			strictTools: true,
+		});
+		const events: AgentEvent[] = [];
+		try {
+			for await (const e of agent.stream({ messages: [{ role: "user", content: "go" }] })) {
+				events.push(e);
+			}
+		} catch {
+			// expected
+		}
+		expect(knownCallCount).toBe(0);
+		// No tool-start should have been emitted for any call in the rejected turn,
+		// so tool-start/tool-end pairs stay balanced for downstream consumers.
+		expect(events.some((e) => e.type === "tool-start")).toBe(false);
+	});
+
 	it("emits a tool-rejected event with call + reason='off-palette'", async () => {
 		const offPaletteCall = call("compute_greeks", { foo: 1 });
 		const { gateway } = mockGateway([{ toolCalls: [offPaletteCall] }]);

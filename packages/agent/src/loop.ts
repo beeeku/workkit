@@ -184,18 +184,25 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			return { messages, usage, stopReason: "stop", finalText };
 		}
 
+		// Strict mode: pre-scan the whole turn so no sibling tool executes if any
+		// call is off-palette. Reject at the first off-palette call; never emit
+		// `tool-start` for a rejected turn, so event pairs stay balanced.
+		if (currentAgent.strictTools) {
+			const paletteNames = new Set(currentAgent.tools.map((t) => t.name));
+			const offPalette = toolCalls.find((c) => !paletteNames.has(c.name));
+			if (offPalette) {
+				emit({ type: "tool-rejected", call: offPalette, reason: "off-palette", step });
+				emit({ type: "done", stopReason: "error", usage });
+				throw new OffPaletteToolError(offPalette.name, Array.from(paletteNames));
+			}
+		}
+
 		// Run tools (sequential — keeps order deterministic; parallel can come later).
 		let switched = false;
 		for (const call of toolCalls) {
 			emit({ type: "tool-start", call, step });
 			const tool = currentAgent.tools.find((t) => t.name === call.name);
 			if (!tool) {
-				if (currentAgent.strictTools) {
-					const allowedPalette = currentAgent.tools.map((t) => t.name);
-					emit({ type: "tool-rejected", call, reason: "off-palette", step });
-					emit({ type: "done", stopReason: "error", usage });
-					throw new OffPaletteToolError(call.name, allowedPalette);
-				}
 				const errMsg = `unknown tool: ${call.name}`;
 				const toolMsg: Message = {
 					role: "tool",
