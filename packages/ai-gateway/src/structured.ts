@@ -143,18 +143,7 @@ export async function structuredAI<T>(
 			lastIssues = [...result.issues];
 
 			if (attempt < maxRetries) {
-				const issuesSummary = result.issues
-					.map((issue) => {
-						const path = issue.path
-							? issue.path
-									.map((p) =>
-										typeof p === "object" && p !== null && "key" in p ? String(p.key) : String(p),
-									)
-									.join(".")
-							: "";
-						return path ? `${path}: ${issue.message}` : issue.message;
-					})
-					.join("; ");
+				const issuesSummary = formatIssues(result.issues);
 
 				messages.push({ role: "assistant", content: rawText });
 				messages.push({
@@ -204,15 +193,26 @@ function toMessages(input: AiInput): ChatMessage[] {
  */
 export class StructuredRetryExhaustedError extends Error {
 	readonly attempts: number;
-	readonly lastError: unknown;
+	/** The parse/validation error from the final attempt. */
+	readonly lastError: Error | undefined;
+	/** The `raw` field from the final attempt's generator output, if any. */
 	readonly lastRaw: unknown;
+	/** The `text` field from the final attempt's generator output — useful for logging bad generations. */
+	readonly lastText: string | undefined;
 
-	constructor(attempts: number, lastError: unknown, lastRaw: unknown, message?: string) {
+	constructor(
+		attempts: number,
+		lastError: Error | undefined,
+		lastRaw: unknown,
+		lastText: string | undefined,
+		message?: string,
+	) {
 		super(message ?? `structuredWithRetry exhausted after ${attempts} attempt(s)`);
 		this.name = "StructuredRetryExhaustedError";
 		this.attempts = attempts;
 		this.lastError = lastError;
 		this.lastRaw = lastRaw;
+		this.lastText = lastText;
 	}
 }
 
@@ -232,10 +232,14 @@ export interface StructuredWithRetryOptions<T> {
 	onAttempt?: (attempt: number, error: unknown) => void;
 }
 
-/** Result from a successful {@link structuredWithRetry} call. */
+/**
+ * Result from a successful {@link structuredWithRetry} call. Naming mirrors
+ * {@link StructuredResult} (`data` for the parsed payload) so the two helpers
+ * stay interoperable in consumer code.
+ */
 export interface StructuredWithRetryResult<T> {
 	/** The parsed, validated data. */
-	value: T;
+	data: T;
 	/** How many attempts it took to get a valid response (1-based). */
 	attempts: number;
 	/** The `raw` field from the attempt that validated. */
@@ -283,14 +287,19 @@ function formatIssues(issues: ReadonlyArray<StandardSchemaV1Issue>): string {
 export async function structuredWithRetry<T>(
 	opts: StructuredWithRetryOptions<T>,
 ): Promise<StructuredWithRetryResult<T>> {
-	if (!Number.isFinite(opts.maxAttempts) || opts.maxAttempts < 1) {
+	if (
+		!Number.isFinite(opts.maxAttempts) ||
+		!Number.isInteger(opts.maxAttempts) ||
+		opts.maxAttempts < 1
+	) {
 		throw new ValidationError("structuredWithRetry requires maxAttempts >= 1", [
 			{ path: ["maxAttempts"], message: "Expected an integer >= 1" },
 		]);
 	}
 
-	let lastError: unknown = undefined;
+	let lastError: Error | undefined;
 	let lastRaw: unknown = undefined;
+	let lastText: string | undefined;
 	let remindWith: string | undefined;
 
 	for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
@@ -303,6 +312,7 @@ export async function structuredWithRetry<T>(
 		const output = await opts.generate(remindWith);
 		lastRaw = output.raw;
 		const rawText = output.text ?? "";
+		lastText = rawText;
 
 		let parsed: unknown;
 		try {
@@ -326,11 +336,11 @@ export async function structuredWithRetry<T>(
 		}
 
 		return {
-			value: result.value as T,
+			data: result.value as T,
 			attempts: attempt,
 			raw: output.raw,
 		};
 	}
 
-	throw new StructuredRetryExhaustedError(opts.maxAttempts, lastError, lastRaw);
+	throw new StructuredRetryExhaustedError(opts.maxAttempts, lastError, lastRaw, lastText);
 }

@@ -49,7 +49,7 @@ describe("structuredWithRetry", () => {
 			onAttempt,
 		});
 
-		expect(result.value).toEqual({ name: "Alice", age: 30 });
+		expect(result.data).toEqual({ name: "Alice", age: 30 });
 		expect(result.attempts).toBe(1);
 		expect(result.raw).toEqual({ provider: "test" });
 		expect(generate).toHaveBeenCalledTimes(1);
@@ -74,7 +74,7 @@ describe("structuredWithRetry", () => {
 			onAttempt,
 		});
 
-		expect(result.value).toEqual({ name: "Bob", age: 42 });
+		expect(result.data).toEqual({ name: "Bob", age: 42 });
 		expect(result.attempts).toBe(2);
 		expect(generate).toHaveBeenCalledTimes(2);
 		expect(onAttempt).toHaveBeenCalledTimes(1);
@@ -82,24 +82,55 @@ describe("structuredWithRetry", () => {
 		expect(onAttempt.mock.calls[0][1]).toBeInstanceOf(Error);
 	});
 
-	it("exhausts after maxAttempts: 3 and throws StructuredRetryExhaustedError", async () => {
+	it("exhausts after maxAttempts: 3 and throws StructuredRetryExhaustedError carrying lastError + lastText + lastRaw", async () => {
+		const badText = JSON.stringify({ wrongShape: true });
 		const generate = vi.fn().mockResolvedValue({
-			text: JSON.stringify({ wrongShape: true }),
+			text: badText,
 			raw: { attempt: "bad" },
 		});
 
-		await expect(
-			structuredWithRetry<Person>({
+		let caught: unknown;
+		try {
+			await structuredWithRetry<Person>({
 				schema: personSchema,
 				generate,
 				maxAttempts: 3,
-			}),
-		).rejects.toMatchObject({
+			});
+		} catch (err) {
+			caught = err;
+		}
+
+		expect(caught).toMatchObject({
 			name: "StructuredRetryExhaustedError",
 			attempts: 3,
 		});
+		// Narrowed types: lastError is Error | undefined, lastText carries the last
+		// generation so consumers can log the bad output without the raw envelope.
+		const exhausted = caught as {
+			lastError: Error | undefined;
+			lastText: string | undefined;
+			lastRaw: unknown;
+		};
+		expect(exhausted.lastError).toBeInstanceOf(Error);
+		expect(exhausted.lastText).toBe(badText);
+		expect(exhausted.lastRaw).toEqual({ attempt: "bad" });
 
 		expect(generate).toHaveBeenCalledTimes(3);
+	});
+
+	it("rejects invalid maxAttempts values", async () => {
+		const generate = vi.fn().mockResolvedValue({ text: "{}", raw: null });
+		for (const bad of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+			await expect(
+				structuredWithRetry<Person>({
+					schema: personSchema,
+					generate,
+					maxAttempts: bad,
+				}),
+			).rejects.toThrow(/maxAttempts/);
+		}
+		// None of the invalid values should trigger a generate call.
+		expect(generate).not.toHaveBeenCalled();
 	});
 
 	it("passes the actual parse error to onAttempt", async () => {
