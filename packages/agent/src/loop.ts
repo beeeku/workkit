@@ -207,7 +207,17 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			afterModelDecision = undefined;
 		}
 
-		if (afterModelDecision?.retry && afterModelRetryCount < currentAgent.maxAfterModelRetries) {
+		// Only honor the retry if another model call actually fits in the step
+		// budget. Otherwise popping the assistant message and bumping `step`
+		// would exit the loop at the top with `stopReason: "max_steps"` while
+		// `finalText` still points at the just-removed message — soft-fail is
+		// supposed to proceed with the last-returned message instead.
+		const retryFitsBudget = step + 1 < currentAgent.stopWhen.maxSteps;
+		if (
+			afterModelDecision?.retry &&
+			afterModelRetryCount < currentAgent.maxAfterModelRetries &&
+			retryFitsBudget
+		) {
 			// Reject the turn: pop the assistant message, optionally append a
 			// reminder as a user message, and re-run the model for this step.
 			// The retry consumes one slot from `stopWhen.maxSteps`.
@@ -225,8 +235,9 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			step += 1;
 			continue;
 		}
-		// Either the turn was accepted, the hook returned no decision, or the
-		// per-step retry cap was hit (soft-fail: proceed with the last message).
+		// Either the turn was accepted, the hook returned no decision, the
+		// per-step retry cap was hit, or the step budget can't fit another
+		// model call (soft-fail: proceed with the last message).
 		afterModelRetryCount = 0;
 
 		const toolCalls: GatewayToolCall[] = output.toolCalls ?? [];

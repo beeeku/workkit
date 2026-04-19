@@ -169,6 +169,36 @@ describe("afterModel hook", () => {
 		expect(done && (done as { stopReason: string }).stopReason).toBe("stop");
 	});
 
+	it("skips a retry when stopWhen.maxSteps would be exhausted (soft-fail on last message)", async () => {
+		// Regression guard: the retry path pops the assistant message and bumps
+		// `step`. If that push exits the loop at maxSteps, `finalText` would
+		// still reference the removed message and stopReason would be
+		// "max_steps" — both contradicting soft-fail semantics. The budget
+		// guard inside the retry branch avoids this: a retry request at the
+		// step boundary is ignored and the current turn is accepted.
+		const { gateway } = mockGateway([{ text: "only-turn" }]);
+		let hookCalls = 0;
+		const agent = defineAgent({
+			name: "am-budget-guard",
+			model: "m",
+			provider: gateway,
+			stopWhen: { maxSteps: 1 },
+			hooks: {
+				afterModel: (): AfterModelDecision => {
+					hookCalls += 1;
+					return { retry: true };
+				},
+			},
+		});
+		const result = await agent.run({ messages: [{ role: "user", content: "go" }] });
+		expect(hookCalls).toBe(1);
+		expect(result.stopReason).toBe("stop");
+		expect(result.text).toBe("only-turn");
+		// The assistant message is retained in history — no pop happened.
+		expect(result.messages.at(-1)?.role).toBe("assistant");
+		expect((result.messages.at(-1) as { content: string }).content).toBe("only-turn");
+	});
+
 	it("retries consume from stopWhen.maxSteps", async () => {
 		const { gateway } = mockGateway([{ text: "a" }, { text: "b" }]);
 		let attempts = 0;
