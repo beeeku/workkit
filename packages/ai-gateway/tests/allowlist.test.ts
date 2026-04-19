@@ -52,6 +52,24 @@ describe("createModelAllowlist", () => {
 		expect(allow.isAllowed("anthropic", "claude-opus-4-7")).toBe(false);
 	});
 
+	it("returns false and does not throw for prototype-chain provider keys", () => {
+		const allow = createModelAllowlist({
+			anthropic: ["claude-opus-4-7"],
+		});
+		expect(() => allow.isAllowed("__proto__", "anything")).not.toThrow();
+		expect(allow.isAllowed("__proto__", "anything")).toBe(false);
+		expect(allow.isAllowed("toString", "claude-opus-4-7")).toBe(false);
+		expect(allow.isAllowed("hasOwnProperty", "claude-opus-4-7")).toBe(false);
+	});
+
+	it("returns false for a { prefix: '' } matcher (does not match every model)", () => {
+		const allow = createModelAllowlist({
+			groq: [{ prefix: "" }],
+		});
+		expect(allow.isAllowed("groq", "anything")).toBe(false);
+		expect(allow.isAllowed("groq", "")).toBe(false);
+	});
+
 	it("supports mixing exact and prefix matchers under the same provider", () => {
 		const allow = createModelAllowlist({
 			openai: ["gpt-4o", { prefix: "gpt-4o-mini" }],

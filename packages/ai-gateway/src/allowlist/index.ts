@@ -41,6 +41,8 @@ export interface ModelAllowlist {
 
 function matches(matcher: ModelMatcher, model: string): boolean {
 	if (typeof matcher === "string") return matcher === model;
+	// Empty prefix would match every model — fail closed.
+	if (matcher.prefix === "") return false;
 	return model.startsWith(matcher.prefix);
 }
 
@@ -49,15 +51,18 @@ function matches(matcher: ModelMatcher, model: string): boolean {
  *
  * Semantics:
  * - Exact string matcher — strict equality with the model.
- * - `{ prefix }` matcher — `model.startsWith(prefix)`.
+ * - `{ prefix }` matcher — `model.startsWith(prefix)`. Empty prefix returns `false`.
  * - Unknown provider — returns `false`.
  * - Empty matcher array — returns `false`.
+ * - Prototype-chain keys (`__proto__`, `toString`, …) — returns `false`.
  */
 export function createModelAllowlist(config: AllowlistConfig): ModelAllowlist {
 	return {
 		isAllowed(provider, model) {
+			// Own-property guard keeps prototype-chain keys from resolving config values.
+			if (!Object.prototype.hasOwnProperty.call(config, provider)) return false;
 			const matchers = config[provider];
-			if (!matchers || matchers.length === 0) return false;
+			if (!Array.isArray(matchers) || matchers.length === 0) return false;
 			for (const m of matchers) {
 				if (matches(m, model)) return true;
 			}
