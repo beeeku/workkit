@@ -44,6 +44,7 @@ export function defineAgent(options: DefineAgentOptions): Agent {
 		tools,
 		stopWhen,
 		hooks: options.hooks ?? {},
+		strictTools: options.strictTools ?? false,
 	};
 
 	sharedRegistry.register(internal);

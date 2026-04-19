@@ -1,5 +1,5 @@
 import type { ChatMessage, GatewayToolCall, RunOptions, TokenUsage } from "@workkit/ai-gateway";
-import { ToolValidationError } from "./errors";
+import { OffPaletteToolError, ToolValidationError } from "./errors";
 import type { AgentEvent } from "./events";
 import { HANDOFF_HOP_LIMIT } from "./handoff";
 import { toJsonSchema } from "./schema";
@@ -24,6 +24,7 @@ export interface InternalAgentDef {
 	tools: Tool[];
 	stopWhen: Required<StopWhen>;
 	hooks: AgentHooks;
+	strictTools: boolean;
 }
 
 const ZERO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -181,6 +182,19 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 		if (toolCalls.length === 0) {
 			emit({ type: "done", stopReason: "stop", usage });
 			return { messages, usage, stopReason: "stop", finalText };
+		}
+
+		// Strict mode: pre-scan the whole turn so no sibling tool executes if any
+		// call is off-palette. Reject at the first off-palette call; never emit
+		// `tool-start` for a rejected turn, so event pairs stay balanced.
+		if (currentAgent.strictTools) {
+			const paletteNames = new Set(currentAgent.tools.map((t) => t.name));
+			const offPalette = toolCalls.find((c) => !paletteNames.has(c.name));
+			if (offPalette) {
+				emit({ type: "tool-rejected", call: offPalette, reason: "off-palette", step });
+				emit({ type: "done", stopReason: "error", usage });
+				throw new OffPaletteToolError(offPalette.name, Array.from(paletteNames));
+			}
 		}
 
 		// Run tools (sequential — keeps order deterministic; parallel can come later).

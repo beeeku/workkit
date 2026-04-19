@@ -8,6 +8,7 @@ export type AgentEvent =
 	| { type: "tool-end"; call: GatewayToolCall; result: string; isError: boolean; step: number }
 	| { type: "handoff"; from: string; to: string; step: number }
 	| { type: "step-complete"; step: number; usage: TokenUsage; assistant: Message }
+	| { type: "tool-rejected"; call: GatewayToolCall; reason: "off-palette"; step: number }
 	| {
 			type: "error";
 			error: { kind: "tool" | "provider" | "hook" | "config"; toolName?: string; message: string };

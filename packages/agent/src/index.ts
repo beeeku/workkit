@@ -13,6 +13,7 @@ export type { HandoffOptions } from "./handoff";
 export {
 	BudgetExceededError,
 	HandoffCycleError,
+	OffPaletteToolError,
 	ToolNameCollisionError,
 	ToolValidationError,
 } from "./errors";

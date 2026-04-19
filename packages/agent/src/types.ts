@@ -68,6 +68,15 @@ export interface DefineAgentOptions {
 	tools?: Tool[];
 	stopWhen?: StopWhen;
 	hooks?: AgentHooks;
+	/**
+	 * When true, a tool call naming a tool outside the agent's palette is
+	 * rejected: the loop terminates with `stopReason: "error"`, emits a
+	 * `tool-rejected` event, and throws `OffPaletteToolError`. Sibling calls
+	 * from the same assistant turn are not executed. Default: `false`
+	 * (soft behavior — unknown tool returns an error tool-result and the
+	 * loop continues).
+	 */
+	strictTools?: boolean;
 }
 
 export interface RunArgs {
