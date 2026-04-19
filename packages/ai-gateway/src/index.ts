@@ -17,6 +17,11 @@ export { withLogging } from "./logging";
 export { withRetry } from "./retry";
 export type { RetryConfig } from "./retry";
 
+// Fallback wrapper — two-tier provider failover usable as a model ref.
+export { fallback, isFallbackModelRef } from "./fallback-wrapper";
+export type { FallbackModelRef, FallbackMatcher, FallbackOptions } from "./fallback-wrapper";
+export { FallbackExhaustedError } from "./errors";
+
 // Tool registry — name/handler map for dispatching tool calls.
 export { createToolRegistry } from "./tool-registry";
 export type { ToolHandler, ToolRegistry } from "./tool-registry";

@@ -1,3 +1,5 @@
+import type { FallbackModelRef } from "./fallback-wrapper";
+
 // --- Provider types ---
 
 /** Workers AI binding — the `env.AI` object */
@@ -145,6 +147,12 @@ export interface AiOutput {
 	model: string;
 	/** Tool calls from the model, if any */
 	toolCalls?: GatewayToolCall[];
+	/**
+	 * Which tier of a `fallback(primary, secondary)` reference served the
+	 * call. Only set when `run()` was invoked with a `FallbackModelRef`;
+	 * absent for direct string-model calls.
+	 */
+	via?: "primary" | "secondary";
 }
 
 /** Token usage stats */
@@ -208,8 +216,13 @@ export type GatewayStreamEvent =
 
 /** Gateway instance */
 export interface Gateway {
-	/** Run a model with the given input */
-	run(model: string, input: AiInput, options?: RunOptions): Promise<AiOutput>;
+	/**
+	 * Run a model with the given input. Accepts either a string model id or
+	 * a `FallbackModelRef` produced by `fallback(primary, secondary, { on })`;
+	 * in the latter case the gateway tries the primary first and falls over
+	 * to the secondary when the primary throws a matching error.
+	 */
+	run(model: string | FallbackModelRef, input: AiInput, options?: RunOptions): Promise<AiOutput>;
 	/**
 	 * Run a chain of provider/model attempts through the Cloudflare AI Gateway
 	 * Universal Endpoint. The gateway tries each entry server-side in order
