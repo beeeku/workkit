@@ -1,5 +1,95 @@
 # @workkit/ai-gateway
 
+## 0.5.0
+
+### Minor Changes
+
+- 686926d: **Model allowlist helper.** New `@workkit/ai-gateway/allowlist` sub-export with `createModelAllowlist(config)` and `isAllowedModel(config, provider, model)` for validating untrusted model strings (e.g. a `?model=` query-param override) against a curated per-provider list. Closes #80.
+
+  ```ts
+  import { createModelAllowlist } from "@workkit/ai-gateway/allowlist";
+
+  const allow = createModelAllowlist({
+    anthropic: ["claude-opus-4-7", "claude-sonnet-4-6"],
+    openai: ["gpt-4o", "gpt-4o-mini"],
+    groq: [{ prefix: "llama-3.1-" }], // prefix rule for families
+  });
+
+  const requested = url.searchParams.get("model") ?? DEFAULT_MODEL;
+  if (!allow.isAllowed("anthropic", requested)) {
+    return new Response("model not in allowlist", { status: 400 });
+  }
+  ```
+
+  Matcher semantics:
+
+  - Exact string — strict equality with the model.
+  - `{ prefix }` — `model.startsWith(prefix)`.
+  - Unknown provider — `false`.
+  - Empty matcher array — `false`.
+
+  Shipped as a tree-shakeable sub-export (constitution rule 4) so callers that don't need it pay zero bytes. No new runtime deps.
+
+- 8d862f1: **Two-tier provider failover as a model reference.** New `fallback(primary, secondary, { on, onFallback? })` primitive on `@workkit/ai-gateway` lets you route a call through a secondary model when the primary throws a matching HTTP status or predicate. The returned `FallbackModelRef` plugs into `gateway.run()` exactly where a string model id would — same input, same `RunOptions`, same retry/cache/logging wrappers. Closes #81.
+
+  ```ts
+  import { createGateway, fallback } from "@workkit/ai-gateway";
+
+  const gateway = createGateway({
+    providers: {
+      /* … */
+    },
+    defaultProvider: "anthropic",
+  });
+
+  const model = fallback("claude-sonnet-4-6", "gpt-4o", {
+    on: [401, 429, 500, 502, 503, 504],
+    onFallback: (err, attempt) =>
+      log.warn("provider failover", { err, attempt }),
+  });
+
+  const result = await gateway.run(model, { prompt: "…" });
+  result.via; // "primary" | "secondary"
+  ```
+
+  Semantics:
+
+  - Numeric `on` entries match `err.status`, `err.statusCode`, or `err.context?.status`, walking the `.cause` chain so wrapped provider errors still trigger. Exact number match.
+  - Function `on` entries receive the raw error and return `true` to fall over.
+  - `onFallback` fires once when the primary fails and the secondary is about to run, with the attempt tier (`"primary"`) that triggered the transition.
+  - When both tiers fail, `run()` throws `FallbackExhaustedError` with `.primaryError` and `.secondaryError` preserved for inspection.
+  - `AiOutput.via` is tagged `"primary" | "secondary"` so observability pipelines can break down traffic by tier. Absent on direct string-model calls.
+
+  Wrapper interop: `withCache`, `withLogging`, and `withRetry` accept a `FallbackModelRef` where they previously accepted a model string, and use a stable `modelLabel(ref)` → `"fallback:primary→secondary"` for cache keys and log labels (no more `[object Object]` stringification). **Retry currently wraps the whole fallback call, not each tier independently** — if the primary throws a retryable error, `withRetry` retries the overall `gateway.run(ref, …)`, which re-enters the primary first. Per-tier retry (primary exhausts its retry budget before the secondary is tried) is a follow-up; until then, put `withRetry` _inside_ each tier explicitly if that matters for your use case.
+
+  Two-tier only for now — `fallback()` accepts string model ids, not nested refs, so n-ary chains aren't supported by this API yet. Circuit-breaker ("stop trying primary for N minutes") is a separate follow-up. No new runtime deps.
+
+- 57bc09b: feat(ai-gateway/structured): `structuredWithRetry` — reprompt on schema parse failure (#83)
+
+  Adds a caller-controlled reprompt loop for LLM callers that parse structured output against a Standard Schema. On validation failure the previous attempt's error message is threaded into the next `generate` call so callers decide how to fold the reminder into the prompt (system vs user, wording). Exhausts after `maxAttempts` with a `StructuredRetryExhaustedError` that carries `attempts`, `lastError`, and `lastRaw`. Non-validation errors (network, abort) propagate immediately — per-attempt network retry stays on the gateway (`withRetry`).
+
+  Scope-corrected from `@workkit/workflow` to `@workkit/ai-gateway/structured` per the issue body: the workflow package's step retry is generic and doesn't know about schemas or LLM reprompts; this loop belongs next to the existing `structuredAI` helper.
+
+  New public surface (same `src/index.ts` entry):
+
+  - `structuredWithRetry<T>(opts)` → `{ value, attempts, raw }`
+  - `StructuredWithRetryOptions<T>`, `StructuredWithRetryResult<T>`
+  - `StructuredRetryExhaustedError`
+
+### Patch Changes
+
+- 776a6bc: **Fix: Workers AI Llama models actually execute tool calls.** Closes #94.
+
+  The `workers-ai` provider already injected `tools` into the payload, but `extractWorkersAiToolCalls` only understood the OpenAI-compat shape (`{id, type: "function", function: {name, arguments: string}}`). `@cf/meta/llama-*` returns tool calls in a **flat shape** (`{name, arguments: object}` — no `function` wrapper, no `id`), which the parser silently dropped. Net effect: callers wiring tools on Llama models saw `toolCalls: []` and a polite "I'm not able to call any tools" text reply.
+
+  This patch normalizes Llama's flat shape into the OpenAI-compat envelope before parsing, so both shapes flow through the same `parseRawToolCalls` path and consumers get populated `AiOutput.toolCalls` regardless of which provider responded.
+
+  Also fixes the streaming counterpart: `streamWorkersAi` was ignoring `options` entirely, so tool schemas were never injected on streams and any streamed `tool_calls` were dropped. It now threads `toolOptions` through and emits `tool_use` events for each Llama tool call (deduped by id in case the provider re-emits across SSE frames).
+
+  **Behavior change note:** calls that previously silently no-opped on `tools` against a Llama model will now actually invoke tools. Low risk — this is the documented, typed behavior.
+
+  Pairs well with `@workkit/agent`'s `strictTools: true` (shipped in a prior release) — Llama hallucinates tool names more than Claude does, and strict mode turns a potential runaway step-budget into a fail-fast `OffPaletteToolError`.
+
 ## 0.4.0
 
 ### Minor Changes
