@@ -8,10 +8,7 @@ import { call, mockGateway } from "./_mocks";
 
 describe("strictTools mode", () => {
 	it("default strictTools=false preserves soft unknown-tool behavior", async () => {
-		const { gateway } = mockGateway([
-			{ toolCalls: [call("not-a-tool")] },
-			{ text: "moved on" },
-		]);
+		const { gateway } = mockGateway([{ toolCalls: [call("not-a-tool")] }, { text: "moved on" }]);
 		const agent = defineAgent({
 			name: "strict-default",
 			model: "m",
@@ -76,9 +73,7 @@ describe("strictTools mode", () => {
 				return "ran";
 			},
 		});
-		const { gateway } = mockGateway([
-			{ toolCalls: [call("compute_greeks"), call("search")] },
-		]);
+		const { gateway } = mockGateway([{ toolCalls: [call("compute_greeks"), call("search")] }]);
 		const agent = defineAgent({
 			name: "strict-on-3",
 			model: "m",
