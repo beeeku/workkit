@@ -34,16 +34,27 @@ export interface ChatMessage {
  *                 is populated only when the throw came from the handler
  *                 (i.e. decode had already succeeded).
  */
-export interface InboundFrameEvent {
+interface InboundFrameEventBase {
 	sessionId: string;
-	phase: "received" | "decoded" | "handled" | "rejected";
-	/** UTF-8 byte length of the raw wire payload. */
+	/**
+	 * Byte length of the raw wire payload: `ArrayBuffer.byteLength` for binary
+	 * frames, UTF-8 byte length for string frames. Stable even if the payload
+	 * isn't valid UTF-8.
+	 */
 	bytes: number;
-	/** Present once the frame has been decoded into a `ChatMessage`. */
-	message?: ChatMessage;
-	/** Present on `rejected` (size reject, decode failure, or handler throw). */
-	error?: Error;
 }
+
+/** Discriminated inbound-frame event — `phase` narrows the shape. */
+export type InboundFrameEvent =
+	| (InboundFrameEventBase & { phase: "received" })
+	| (InboundFrameEventBase & { phase: "decoded"; message: ChatMessage })
+	| (InboundFrameEventBase & { phase: "handled"; message: ChatMessage })
+	| (InboundFrameEventBase & {
+			phase: "rejected";
+			/** Decoded message when the reject happened post-decode (handler throw); otherwise absent. */
+			message?: ChatMessage;
+			error: Error;
+	  });
 
 /**
  * Event emitted on outbound frames (messages sent to the client) from the
@@ -54,15 +65,17 @@ export interface InboundFrameEvent {
  * - `sent`         — `server.send` returned without throwing for this message.
  * - `send-failed`  — `server.send` threw; `error` is populated.
  */
-export interface OutboundFrameEvent {
+interface OutboundFrameEventBase {
 	sessionId: string;
-	phase: "sent" | "send-failed";
 	/** UTF-8 byte length of the encoded wire payload. */
 	bytes: number;
 	message: ChatMessage;
-	/** Present on `send-failed`. */
-	error?: Error;
 }
+
+/** Discriminated outbound-frame event — `phase` narrows the shape. */
+export type OutboundFrameEvent =
+	| (OutboundFrameEventBase & { phase: "sent" })
+	| (OutboundFrameEventBase & { phase: "send-failed"; error: Error });
 
 /** Options for creating a chat transport */
 export interface ChatTransportOptions {

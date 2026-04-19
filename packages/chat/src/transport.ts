@@ -110,13 +110,17 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 
 			server.addEventListener("message", (event: MessageEvent) => {
 				void (async () => {
-					const raw =
-						typeof event.data === "string"
-							? event.data
-							: new TextDecoder().decode(event.data as ArrayBuffer);
+					// Measure bytes from the raw frame so the count stays accurate for
+					// payloads that aren't valid UTF-8. Only decode to string when we
+					// actually need a string (size check + message decode below).
+					const isString = typeof event.data === "string";
+					const byteLength = isString
+						? new TextEncoder().encode(event.data as string).byteLength
+						: (event.data as ArrayBuffer).byteLength;
+					const raw = isString
+						? (event.data as string)
+						: new TextDecoder().decode(event.data as ArrayBuffer);
 
-					// Size check
-					const byteLength = new TextEncoder().encode(raw).byteLength;
 					fireFrameIn({ sessionId, phase: "received", bytes: byteLength });
 					if (byteLength > maxMessageSize) {
 						const sizeErr = new Error(`Message exceeds maximum size of ${maxMessageSize} bytes`);
@@ -198,11 +202,15 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 							message: incomingMessage,
 							error: handlerErr,
 						});
+						// Only echo the message back to the client when the throw was a
+						// real Error (whose .message is part of the explicit contract);
+						// anything else stays generic so we don't leak internals from a
+						// stringified non-Error throw.
 						const errorMsg: ChatMessage = {
 							id: createMessageId(),
 							type: "error",
 							role: "system",
-							content: handlerErr.message,
+							content: err instanceof Error ? err.message : "Internal error processing message",
 							timestamp: Date.now(),
 						};
 						sendMessage(errorMsg);
