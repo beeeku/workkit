@@ -189,3 +189,148 @@ function toMessages(input: AiInput): ChatMessage[] {
 		[{ path: ["input"], message: "Expected { messages: ChatMessage[] } or { prompt: string }" }],
 	);
 }
+
+// ─── structuredWithRetry ────────────────────────────────────
+//
+// Caller-controlled reprompt loop: callers own the `generate` function, so
+// model/gateway/prompt choices stay outside this helper. This is the
+// parse-and-reprompt loop only — per-attempt network retry belongs on the
+// gateway (`withRetry`).
+
+/**
+ * Error thrown by {@link structuredWithRetry} when every attempt fails schema
+ * validation. Carries the final attempt count plus the last parse error and
+ * raw output so callers can log or fall back.
+ */
+export class StructuredRetryExhaustedError extends Error {
+	readonly attempts: number;
+	readonly lastError: unknown;
+	readonly lastRaw: unknown;
+
+	constructor(attempts: number, lastError: unknown, lastRaw: unknown, message?: string) {
+		super(message ?? `structuredWithRetry exhausted after ${attempts} attempt(s)`);
+		this.name = "StructuredRetryExhaustedError";
+		this.attempts = attempts;
+		this.lastError = lastError;
+		this.lastRaw = lastRaw;
+	}
+}
+
+/** Options for {@link structuredWithRetry}. */
+export interface StructuredWithRetryOptions<T> {
+	/** Standard Schema v1 validator for the expected output shape. */
+	schema: StandardSchemaV1<T>;
+	/**
+	 * Produce a candidate structured response. Called with `undefined` on the
+	 * first attempt and with the previous parse error's `.message` on each
+	 * subsequent attempt so the caller can fold it into the prompt.
+	 */
+	generate: (remindWith?: string) => Promise<{ text?: string; raw?: unknown }>;
+	/** Maximum attempts. Must be >= 1; 1 means "validate once, no retry". */
+	maxAttempts: number;
+	/** Fires on each RETRY (attempts 2..N) with the prior parse error. */
+	onAttempt?: (attempt: number, error: unknown) => void;
+}
+
+/** Result from a successful {@link structuredWithRetry} call. */
+export interface StructuredWithRetryResult<T> {
+	/** The parsed, validated data. */
+	value: T;
+	/** How many attempts it took to get a valid response (1-based). */
+	attempts: number;
+	/** The `raw` field from the attempt that validated. */
+	raw: unknown;
+}
+
+function formatIssues(issues: ReadonlyArray<StandardSchemaV1Issue>): string {
+	return issues
+		.map((issue) => {
+			const path = issue.path
+				? issue.path
+						.map((p) =>
+							typeof p === "object" && p !== null && "key" in p ? String(p.key) : String(p),
+						)
+						.join(".")
+				: "";
+			return path ? `${path}: ${issue.message}` : issue.message;
+		})
+		.join("; ");
+}
+
+/**
+ * Run `generate` and validate its output against `schema`, retrying on parse
+ * failure up to `maxAttempts` times. The previous attempt's error message is
+ * threaded into `generate` so callers control how the reminder is folded into
+ * the next prompt.
+ *
+ * - Schema-validation errors drive the retry loop.
+ * - Any other error from `generate` (network, abort, etc.) propagates
+ *   immediately — per-attempt retry is the gateway's job, not this helper's.
+ * - On exhaustion throws {@link StructuredRetryExhaustedError}.
+ *
+ * @example
+ * ```ts
+ * const result = await structuredWithRetry({
+ *   schema: MySchema,
+ *   generate: (remindWith) => ai(gateway, model, input, {
+ *     responseFormat: "json",
+ *     system: remindWith ? `${base}\n\nReminder: ${remindWith}` : base,
+ *   }),
+ *   maxAttempts: 3,
+ * });
+ * ```
+ */
+export async function structuredWithRetry<T>(
+	opts: StructuredWithRetryOptions<T>,
+): Promise<StructuredWithRetryResult<T>> {
+	if (!Number.isFinite(opts.maxAttempts) || opts.maxAttempts < 1) {
+		throw new ValidationError("structuredWithRetry requires maxAttempts >= 1", [
+			{ path: ["maxAttempts"], message: "Expected an integer >= 1" },
+		]);
+	}
+
+	let lastError: unknown = undefined;
+	let lastRaw: unknown = undefined;
+	let remindWith: string | undefined;
+
+	for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
+		// Fire onAttempt on RETRIES only (attempts 2..N), with the prior error.
+		if (attempt > 1) {
+			opts.onAttempt?.(attempt, lastError);
+		}
+
+		// Non-parse errors (network, etc.) propagate immediately — no retry.
+		const output = await opts.generate(remindWith);
+		lastRaw = output.raw;
+		const rawText = output.text ?? "";
+
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(rawText);
+		} catch (parseErr) {
+			const message =
+				parseErr instanceof Error
+					? `Invalid JSON: ${parseErr.message}`
+					: `Invalid JSON: ${String(parseErr)}`;
+			lastError = new Error(message);
+			remindWith = message;
+			continue;
+		}
+
+		const result = await opts.schema["~standard"].validate(parsed);
+		if (result.issues) {
+			const summary = formatIssues(result.issues);
+			lastError = new Error(summary);
+			remindWith = summary;
+			continue;
+		}
+
+		return {
+			value: result.value as T,
+			attempts: attempt,
+			raw: output.raw,
+		};
+	}
+
+	throw new StructuredRetryExhaustedError(opts.maxAttempts, lastError, lastRaw);
+}

@@ -26,8 +26,18 @@ export { aiWithTools } from "./tool-use";
 export type { AiWithToolsOptions, AiWithToolsResult, ToolMessage } from "./tool-use";
 
 // Structured output — JSON mode with Standard Schema validation + retry.
-export { structuredAI, StructuredOutputError } from "./structured";
-export type { StructuredOptions, StructuredResult } from "./structured";
+export {
+	structuredAI,
+	StructuredOutputError,
+	structuredWithRetry,
+	StructuredRetryExhaustedError,
+} from "./structured";
+export type {
+	StructuredOptions,
+	StructuredResult,
+	StructuredWithRetryOptions,
+	StructuredWithRetryResult,
+} from "./structured";
 
 // Schema conversion.
 export { standardSchemaToJsonSchema } from "./schema";
