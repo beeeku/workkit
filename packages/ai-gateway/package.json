@@ -16,6 +16,12 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./allowlist": {
+      "import": {
+        "types": "./dist/allowlist/index.d.ts",
+        "default": "./dist/allowlist/index.js"
+      }
     }
   },
   "module": "./dist/index.js",
