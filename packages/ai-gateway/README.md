@@ -49,6 +49,7 @@ const result = await gateway.run("claude-sonnet-4-6", {
 | Anthropic prompt caching | `{ role, content, cacheControl: "ephemeral" }` in `messages` |
 | Cross-provider server-side fallback | `gateway.runFallback(entries, input)` |
 | Streaming (text + tool_use + done) | `gateway.stream(model, input)` |
+| Per-provider model allowlist (tree-shakeable sub-export) | `import { createModelAllowlist } from "@workkit/ai-gateway/allowlist"` |
 
 ## Cloudflare AI Gateway
 
@@ -154,6 +155,27 @@ while (true) {
 Consumer-cancel (`reader.cancel()` or `stream.cancel()`) propagates to the upstream fetch, so you stop paying for tokens you're not reading.
 
 > **Note on `responseFormat` + streaming.** Passing `responseFormat: "json"` adds a system prompt asking for JSON only, but the output is still a token-by-token `text` stream. Consumers must buffer and parse the concatenated deltas themselves.
+
+## Model allowlist
+
+Validate untrusted model strings (e.g. a `?model=` query-param override) against a curated per-provider list. Ships as the `@workkit/ai-gateway/allowlist` sub-export so callers that don't need it pay zero bytes.
+
+```ts
+import { createModelAllowlist } from "@workkit/ai-gateway/allowlist"
+
+const allow = createModelAllowlist({
+  anthropic: ["claude-opus-4-7", "claude-sonnet-4-6"],
+  openai:    ["gpt-4o", "gpt-4o-mini"],
+  groq:      [{ prefix: "llama-3.1-" }], // prefix rule for families
+})
+
+const requested = url.searchParams.get("model") ?? DEFAULT_MODEL
+if (!allow.isAllowed("anthropic", requested)) {
+  return new Response("model not in allowlist", { status: 400 })
+}
+```
+
+Matcher semantics: exact strings use strict equality; `{ prefix }` uses `model.startsWith(prefix)`; unknown providers and empty matcher arrays return `false`. A functional form `isAllowedModel(config, provider, model)` is also exported for one-off checks.
 
 ## Tool use (non-streaming)
 
