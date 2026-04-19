@@ -77,5 +77,25 @@ function extractWorkersAiToolCalls(raw: unknown): GatewayToolCall[] | undefined 
 	const obj = raw as Record<string, unknown>;
 	const rawCalls = obj.tool_calls as Array<Record<string, unknown>> | undefined;
 	if (!Array.isArray(rawCalls) || rawCalls.length === 0) return undefined;
-	return parseRawToolCalls(rawCalls);
+	// Workers AI's `@cf/meta/llama-*` endpoint returns tool_calls in a flat
+	// shape — `{name, arguments}` at the top level, no `function` nesting,
+	// no `id`. Normalize to the OpenAI-compat wrapper so `parseRawToolCalls`
+	// handles both paths (id fallback + string/object arg normalization)
+	// without growing provider-specific branches.
+	const normalized = rawCalls.map(normalizeWorkersAiToolCall);
+	return parseRawToolCalls(normalized);
+}
+
+function normalizeWorkersAiToolCall(raw: Record<string, unknown>): Record<string, unknown> {
+	// Already OpenAI-compat (`{id, type, function: {...}}`) — pass through.
+	if (raw.function && typeof raw.function === "object") return raw;
+	// Llama-native flat shape — wrap `{name, arguments}` into the expected envelope.
+	if (typeof raw.name === "string") {
+		return {
+			id: typeof raw.id === "string" ? raw.id : undefined,
+			type: "function",
+			function: { name: raw.name, arguments: raw.arguments },
+		};
+	}
+	return raw;
 }

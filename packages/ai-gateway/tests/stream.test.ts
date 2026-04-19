@@ -69,6 +69,134 @@ describe("gateway.stream() — Workers AI", () => {
 		expect(run).toHaveBeenCalledTimes(1);
 		expect(run.mock.calls[0][1]).toMatchObject({ prompt: "hi", stream: true });
 	});
+
+	it("injects toolOptions into the binding payload on streaming calls", async () => {
+		const run = vi.fn().mockResolvedValue(sseStream(["data: [DONE]\n\n"]));
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		await collect(
+			await gw.stream!(
+				"@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+				{ messages: [{ role: "user", content: "VIX?" }] },
+				{
+					toolOptions: {
+						tools: [
+							{
+								name: "get_macro_indicators",
+								description: "Get macro indicators",
+								parameters: { type: "object", properties: {} },
+							},
+						],
+						toolChoice: "auto",
+					},
+				},
+			),
+		);
+
+		const called = run.mock.calls[0][1];
+		expect(called.stream).toBe(true);
+		expect(called.tools).toEqual([
+			{
+				type: "function",
+				function: {
+					name: "get_macro_indicators",
+					description: "Get macro indicators",
+					parameters: { type: "object", properties: {} },
+				},
+			},
+		]);
+		expect(called.tool_choice).toBe("auto");
+	});
+
+	it("emits tool_use events for Llama's flat tool_calls on the stream", async () => {
+		const toolCall = JSON.stringify({
+			response: "",
+			tool_calls: [{ name: "get_macro_indicators", arguments: { indicator: "VIX" } }],
+		});
+		const bindingStream = sseStream([`data: ${toolCall}\n\n`, "data: [DONE]\n\n"]);
+		const run = vi.fn().mockResolvedValue(bindingStream);
+
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		const events = await collect(
+			await gw.stream!("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+				messages: [{ role: "user", content: "q" }],
+			}),
+		);
+
+		const toolEvents = events.filter((e) => e.type === "tool_use") as Array<
+			Extract<GatewayStreamEvent, { type: "tool_use" }>
+		>;
+		expect(toolEvents).toHaveLength(1);
+		expect(toolEvents[0].name).toBe("get_macro_indicators");
+		expect(toolEvents[0].input).toEqual({ indicator: "VIX" });
+		expect(typeof toolEvents[0].id).toBe("string");
+	});
+
+	it("dedupes tool_calls with the same id across repeated SSE frames", async () => {
+		const body = JSON.stringify({
+			response: "",
+			tool_calls: [{ id: "call_X", name: "f", arguments: { a: 1 } }],
+		});
+		const bindingStream = sseStream([`data: ${body}\n\n`, `data: ${body}\n\n`, "data: [DONE]\n\n"]);
+		const run = vi.fn().mockResolvedValue(bindingStream);
+
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		const events = await collect(
+			await gw.stream!("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { prompt: "q" }),
+		);
+
+		const toolEvents = events.filter((e) => e.type === "tool_use");
+		expect(toolEvents).toHaveLength(1);
+	});
+
+	it("does NOT dedupe un-id'd tool_calls across frames (each fires with a unique fallback id)", async () => {
+		// Regression guard: Llama often omits `id`. Two legitimately distinct
+		// un-id'd calls (same name, different arguments) across frames must both
+		// fire. Dedupe must only apply when the provider supplied an id.
+		const frame1 = JSON.stringify({
+			response: "",
+			tool_calls: [{ name: "lookup", arguments: { q: "VIX" } }],
+		});
+		const frame2 = JSON.stringify({
+			response: "",
+			tool_calls: [{ name: "lookup", arguments: { q: "DXY" } }],
+		});
+		const bindingStream = sseStream([
+			`data: ${frame1}\n\n`,
+			`data: ${frame2}\n\n`,
+			"data: [DONE]\n\n",
+		]);
+		const run = vi.fn().mockResolvedValue(bindingStream);
+
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		const events = await collect(
+			await gw.stream!("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { prompt: "q" }),
+		);
+
+		const toolEvents = events.filter((e) => e.type === "tool_use") as Array<
+			Extract<GatewayStreamEvent, { type: "tool_use" }>
+		>;
+		expect(toolEvents).toHaveLength(2);
+		expect(toolEvents[0].input).toEqual({ q: "VIX" });
+		expect(toolEvents[1].input).toEqual({ q: "DXY" });
+		// Fallback ids are distinct so downstream tool-call threading doesn't collide.
+		expect(toolEvents[0].id).not.toBe(toolEvents[1].id);
+	});
 });
 
 describe("gateway.stream() — Anthropic", () => {
