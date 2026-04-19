@@ -1,6 +1,11 @@
 import { ChatError } from "./errors";
 import { createMessageId, decodeMessage, encodeMessage } from "./protocol";
-import type { ChatMessage, ChatTransportOptions } from "./types";
+import type {
+	ChatMessage,
+	ChatTransportOptions,
+	InboundFrameEvent,
+	OutboundFrameEvent,
+} from "./types";
 
 const DEFAULT_HEARTBEAT_INTERVAL = 30_000;
 const DEFAULT_MAX_MESSAGE_SIZE = 65_536;
@@ -23,6 +28,36 @@ export interface ChatTransport {
 export function createChatTransport(options: ChatTransportOptions): ChatTransport {
 	const heartbeatInterval = options.heartbeatInterval ?? DEFAULT_HEARTBEAT_INTERVAL;
 	const maxMessageSize = options.maxMessageSize ?? DEFAULT_MAX_MESSAGE_SIZE;
+
+	// Fire-and-forget hook wrappers — throwing from a hook must never crash
+	// the worker or skip downstream transport work. Matches the existing
+	// onConnect / onDisconnect swallow pattern.
+	const fireFrameIn = (event: InboundFrameEvent): void => {
+		if (!options.onFrameIn) return;
+		try {
+			const result = options.onFrameIn(event);
+			if (result && typeof (result as Promise<void>).catch === "function") {
+				(result as Promise<void>).catch(() => {
+					// Swallow — observability must not crash the worker
+				});
+			}
+		} catch {
+			// Swallow — observability must not crash the worker
+		}
+	};
+	const fireFrameOut = (event: OutboundFrameEvent): void => {
+		if (!options.onFrameOut) return;
+		try {
+			const result = options.onFrameOut(event);
+			if (result && typeof (result as Promise<void>).catch === "function") {
+				(result as Promise<void>).catch(() => {
+					// Swallow — observability must not crash the worker
+				});
+			}
+		} catch {
+			// Swallow — observability must not crash the worker
+		}
+	};
 
 	return {
 		handleUpgrade(_request: Request, sessionId: string): Response {
@@ -54,24 +89,55 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 				});
 			}
 
+			// Encodes `msg`, sends it over the server socket, and fires onFrameOut
+			// in either `sent` or `send-failed` phase. Does not rethrow.
+			const sendMessage = (msg: ChatMessage): void => {
+				const encoded = encodeMessage(msg);
+				const bytes = new TextEncoder().encode(encoded).byteLength;
+				try {
+					server.send(encoded);
+					fireFrameOut({ sessionId, phase: "sent", bytes, message: msg });
+				} catch (err) {
+					fireFrameOut({
+						sessionId,
+						phase: "send-failed",
+						bytes,
+						message: msg,
+						error: err instanceof Error ? err : new Error(String(err)),
+					});
+				}
+			};
+
 			server.addEventListener("message", (event: MessageEvent) => {
 				void (async () => {
-					const raw =
-						typeof event.data === "string"
-							? event.data
-							: new TextDecoder().decode(event.data as ArrayBuffer);
+					// Measure bytes from the raw frame so the count stays accurate for
+					// payloads that aren't valid UTF-8. Only decode to string when we
+					// actually need a string (size check + message decode below).
+					const isString = typeof event.data === "string";
+					const byteLength = isString
+						? new TextEncoder().encode(event.data as string).byteLength
+						: (event.data as ArrayBuffer).byteLength;
+					const raw = isString
+						? (event.data as string)
+						: new TextDecoder().decode(event.data as ArrayBuffer);
 
-					// Size check
-					const byteLength = new TextEncoder().encode(raw).byteLength;
+					fireFrameIn({ sessionId, phase: "received", bytes: byteLength });
 					if (byteLength > maxMessageSize) {
+						const sizeErr = new Error(`Message exceeds maximum size of ${maxMessageSize} bytes`);
+						fireFrameIn({
+							sessionId,
+							phase: "rejected",
+							bytes: byteLength,
+							error: sizeErr,
+						});
 						const errorMsg: ChatMessage = {
 							id: createMessageId(),
 							type: "error",
 							role: "system",
-							content: `Message exceeds maximum size of ${maxMessageSize} bytes`,
+							content: sizeErr.message,
 							timestamp: Date.now(),
 						};
-						server.send(encodeMessage(errorMsg));
+						sendMessage(errorMsg);
 						return;
 					}
 
@@ -79,6 +145,13 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 					try {
 						wire = decodeMessage(raw);
 					} catch (err) {
+						const decodeErr = err instanceof Error ? err : new Error(String(err));
+						fireFrameIn({
+							sessionId,
+							phase: "rejected",
+							bytes: byteLength,
+							error: decodeErr,
+						});
 						const errorMsg: ChatMessage = {
 							id: createMessageId(),
 							type: "error",
@@ -86,7 +159,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 							content: err instanceof ChatError ? err.message : "Failed to decode message",
 							timestamp: Date.now(),
 						};
-						server.send(encodeMessage(errorMsg));
+						sendMessage(errorMsg);
 						return;
 					}
 
@@ -99,16 +172,40 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 						metadata: wire.metadata,
 						timestamp: Date.now(),
 					};
+					fireFrameIn({
+						sessionId,
+						phase: "decoded",
+						bytes: byteLength,
+						message: incomingMessage,
+					});
 
 					try {
 						const result = await options.onMessage(sessionId, incomingMessage);
 						if (result) {
 							const messages = Array.isArray(result) ? result : [result];
 							for (const msg of messages) {
-								server.send(encodeMessage(msg));
+								sendMessage(msg);
 							}
 						}
+						fireFrameIn({
+							sessionId,
+							phase: "handled",
+							bytes: byteLength,
+							message: incomingMessage,
+						});
 					} catch (err) {
+						const handlerErr = err instanceof Error ? err : new Error(String(err));
+						fireFrameIn({
+							sessionId,
+							phase: "rejected",
+							bytes: byteLength,
+							message: incomingMessage,
+							error: handlerErr,
+						});
+						// Only echo the message back to the client when the throw was a
+						// real Error (whose .message is part of the explicit contract);
+						// anything else stays generic so we don't leak internals from a
+						// stringified non-Error throw.
 						const errorMsg: ChatMessage = {
 							id: createMessageId(),
 							type: "error",
@@ -116,7 +213,7 @@ export function createChatTransport(options: ChatTransportOptions): ChatTranspor
 							content: err instanceof Error ? err.message : "Internal error processing message",
 							timestamp: Date.now(),
 						};
-						server.send(encodeMessage(errorMsg));
+						sendMessage(errorMsg);
 					}
 				})();
 			});
