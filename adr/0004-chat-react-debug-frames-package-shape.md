@@ -49,7 +49,10 @@ on the `@workkit/chat` package.
 ### (b) New `@workkit/chat-react` package
 
 New workspace package that `peerDependencies` React ≥18 and
-`dependencies` `@workkit/chat` for the wire types.
+`@workkit/chat` (`workspace:*`) for the wire types. Using a
+peerDependency (not a direct dependency) avoids duplicate
+`@workkit/chat` installs when the consumer already uses it
+server-side — same pattern as `@workkit/notify` → `@workkit/mail`.
 
 - **Pro**: matches how the monorepo already splits by runtime concern
   (`@workkit/mail` vs `@workkit/notify`, `@workkit/ai-gateway` vs
