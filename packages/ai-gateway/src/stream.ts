@@ -1,7 +1,11 @@
 import { ServiceUnavailableError } from "@workkit/errors";
 import { buildAnthropicBody } from "./providers/anthropic";
 import { buildOpenAiBody } from "./providers/openai";
-import { applyToolsWorkersAi } from "./providers/workers-ai";
+import {
+	WORKERS_AI_ANON_ID_PREFIX,
+	applyToolsWorkersAi,
+	applyWorkersAiResponseFormat,
+} from "./providers/workers-ai";
 import type {
 	AiInput,
 	AnthropicProviderConfig,
@@ -71,9 +75,12 @@ async function streamWorkersAi(
 	input: AiInput,
 	options: RunOptions | undefined,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
-	// Thread toolOptions into the payload so Llama sees the tool list on the
-	// streaming path too. Non-streaming already does this in executeWorkersAi.
-	const withTools = applyToolsWorkersAi(input, options?.toolOptions);
+	// Thread both response-format and tool options into the payload so the
+	// streaming path stays in sync with the non-streaming RunOptions contract
+	// (`executeWorkersAi` applies both). Ordering matches the non-streaming
+	// path: response format first, then tools.
+	const withFormat = applyWorkersAiResponseFormat(input, options?.responseFormat);
+	const withTools = applyToolsWorkersAi(withFormat, options?.toolOptions);
 	const raw = (await providerConfig.binding.run(model, {
 		...withTools,
 		stream: true,
@@ -110,7 +117,9 @@ async function streamWorkersAi(
 				emittedProviderIds.add(rc.id);
 				id = rc.id;
 			} else {
-				id = `call_${fallbackIdCounter++}`;
+				// Distinct namespace from OpenAI's `call_*` ids so a frame mixing
+				// provider-supplied `call_0` and un-id'd calls can't collide.
+				id = `${WORKERS_AI_ANON_ID_PREFIX}${fallbackIdCounter++}`;
 			}
 			const args =
 				rc.arguments && typeof rc.arguments === "object"

@@ -80,22 +80,37 @@ function extractWorkersAiToolCalls(raw: unknown): GatewayToolCall[] | undefined 
 	// Workers AI's `@cf/meta/llama-*` endpoint returns tool_calls in a flat
 	// shape — `{name, arguments}` at the top level, no `function` nesting,
 	// no `id`. Normalize to the OpenAI-compat wrapper so `parseRawToolCalls`
-	// handles both paths (id fallback + string/object arg normalization)
-	// without growing provider-specific branches.
-	const normalized = rawCalls.map(normalizeWorkersAiToolCall);
+	// handles both paths (string/object arg normalization) without growing
+	// provider-specific branches.
+	const normalized = rawCalls.map((raw, idx) => normalizeWorkersAiToolCall(raw, idx));
 	return parseRawToolCalls(normalized);
 }
 
-function normalizeWorkersAiToolCall(raw: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Fallback-id prefix for Llama tool_calls that arrive without a provider id.
+ * Kept deliberately distinct from OpenAI's `call_*` id namespace so a
+ * response mixing id'd and un-id'd calls cannot produce duplicate ids
+ * downstream (e.g. if the model emits `{id: "call_0"}` alongside a
+ * later un-id'd entry — `parseRawToolCalls`'s generic `call_${i}` fallback
+ * would collide).
+ */
+const WORKERS_AI_ANON_ID_PREFIX = "wkai_anon_";
+
+function normalizeWorkersAiToolCall(
+	raw: Record<string, unknown>,
+	index: number,
+): Record<string, unknown> {
 	// Already OpenAI-compat (`{id, type, function: {...}}`) — pass through.
 	if (raw.function && typeof raw.function === "object") return raw;
 	// Llama-native flat shape — wrap `{name, arguments}` into the expected envelope.
 	if (typeof raw.name === "string") {
 		return {
-			id: typeof raw.id === "string" ? raw.id : undefined,
+			id: typeof raw.id === "string" ? raw.id : `${WORKERS_AI_ANON_ID_PREFIX}${index}`,
 			type: "function",
 			function: { name: raw.name, arguments: raw.arguments },
 		};
 	}
 	return raw;
 }
+
+export { WORKERS_AI_ANON_ID_PREFIX };

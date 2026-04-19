@@ -160,6 +160,52 @@ describe("gateway.stream() — Workers AI", () => {
 		expect(toolEvents).toHaveLength(1);
 	});
 
+	it("applies responseFormat to the streaming payload (parity with non-streaming executeWorkersAi)", async () => {
+		const run = vi.fn().mockResolvedValue(sseStream(["data: [DONE]\n\n"]));
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		await collect(await gw.stream!("@cf/m", { prompt: "hi" }, { responseFormat: "json" }));
+
+		expect(run.mock.calls[0][1]).toMatchObject({
+			stream: true,
+			response_format: { type: "json_object" },
+		});
+	});
+
+	it("fallback ids in the stream use a distinct namespace from OpenAI-style 'call_*'", async () => {
+		// Regression guard for review feedback on #94: the streaming fallback
+		// counter was `call_${n}`, which could collide with a provider-supplied
+		// `call_0` from a sibling frame. Distinct prefix avoids collision.
+		const frame = JSON.stringify({
+			response: "",
+			tool_calls: [
+				{ id: "call_0", name: "lookup", arguments: { q: "VIX" } },
+				{ name: "lookup", arguments: { q: "DXY" } },
+			],
+		});
+		const bindingStream = sseStream([`data: ${frame}\n\n`, "data: [DONE]\n\n"]);
+		const run = vi.fn().mockResolvedValue(bindingStream);
+
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: { run } } },
+			defaultProvider: "ai",
+		});
+
+		const events = await collect(
+			await gw.stream!("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { prompt: "q" }),
+		);
+		const toolEvents = events.filter((e) => e.type === "tool_use") as Array<
+			Extract<GatewayStreamEvent, { type: "tool_use" }>
+		>;
+		expect(toolEvents).toHaveLength(2);
+		expect(toolEvents[0].id).toBe("call_0");
+		expect(toolEvents[1].id).not.toBe("call_0");
+		expect(toolEvents[1].id.startsWith("call_")).toBe(false);
+	});
+
 	it("does NOT dedupe un-id'd tool_calls across frames (each fires with a unique fallback id)", async () => {
 		// Regression guard: Llama often omits `id`. Two legitimately distinct
 		// un-id'd calls (same name, different arguments) across frames must both

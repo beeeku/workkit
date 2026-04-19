@@ -130,6 +130,35 @@ describe("gateway tool use — Workers AI", () => {
 		expect(result.toolCalls![0].id.length).toBeGreaterThan(0);
 	});
 
+	it("fallback ids for Llama un-id'd calls use a distinct namespace (no collision with OpenAI-style 'call_*')", async () => {
+		// Regression guard for review feedback on #94: if a response mixes
+		// provider-supplied `call_0` with un-id'd calls, a generic `call_*`
+		// fallback counter could collide. Use a distinct prefix instead.
+		const mockAi = {
+			run: vi.fn().mockResolvedValue({
+				response: "",
+				tool_calls: [
+					{ id: "call_0", name: "search", arguments: { q: "a" } },
+					{ name: "search", arguments: { q: "b" } },
+				],
+			}),
+		};
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			defaultProvider: "ai",
+		});
+
+		const result = await gw.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+			messages: [{ role: "user", content: "q" }],
+		} as AiInput);
+
+		expect(result.toolCalls).toHaveLength(2);
+		expect(result.toolCalls![0].id).toBe("call_0");
+		// Fallback id must NOT match the `call_*` namespace that OpenAI/providers use.
+		expect(result.toolCalls![1].id).not.toBe("call_0");
+		expect(result.toolCalls![1].id.startsWith("call_")).toBe(false);
+	});
+
 	it("generates distinct fallback ids when Llama returns multiple tool_calls without ids", async () => {
 		const mockAi = {
 			run: vi.fn().mockResolvedValue({
