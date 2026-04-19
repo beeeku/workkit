@@ -1,6 +1,11 @@
 import { ServiceUnavailableError } from "@workkit/errors";
 import { buildAnthropicBody } from "./providers/anthropic";
 import { buildOpenAiBody } from "./providers/openai";
+import {
+	WORKERS_AI_ANON_ID_PREFIX,
+	applyToolsWorkersAi,
+	applyWorkersAiResponseFormat,
+} from "./providers/workers-ai";
 import type {
 	AiInput,
 	AnthropicProviderConfig,
@@ -68,10 +73,16 @@ async function streamWorkersAi(
 	providerConfig: WorkersAiProviderConfig,
 	model: string,
 	input: AiInput,
-	_options: RunOptions | undefined,
+	options: RunOptions | undefined,
 ): Promise<ReadableStream<GatewayStreamEvent>> {
+	// Thread both response-format and tool options into the payload so the
+	// streaming path stays in sync with the non-streaming RunOptions contract
+	// (`executeWorkersAi` applies both). Ordering matches the non-streaming
+	// path: response format first, then tools.
+	const withFormat = applyWorkersAiResponseFormat(input, options?.responseFormat);
+	const withTools = applyToolsWorkersAi(withFormat, options?.toolOptions);
 	const raw = (await providerConfig.binding.run(model, {
-		...(input as Record<string, unknown>),
+		...withTools,
 		stream: true,
 	})) as unknown;
 
@@ -82,12 +93,52 @@ async function streamWorkersAi(
 	}
 
 	// Workers AI stream has no underlying fetch to abort on cancel.
+	const emittedProviderIds = new Set<string>();
+	let fallbackIdCounter = 0;
 	return transformSse(raw, noop, (event, emit) => {
 		if (event.data === "[DONE]") return;
 		const obj = tryParseJson(event.data);
 		const delta = typeof obj?.response === "string" ? obj.response : undefined;
 		if (delta) emit({ type: "text", delta });
+
+		// Llama on Workers AI streams emits tool_calls as fully-formed objects
+		// (not delta-fragmented like OpenAI). Dedupe only when the provider
+		// supplied an id — otherwise two legitimately distinct un-id'd calls
+		// (same name, different arguments) would be silently collapsed.
+		// `fallbackIdCounter` is stream-scoped so IDs stay unique across frames.
+		const rawCalls = obj?.tool_calls as Array<Record<string, unknown>> | undefined;
+		if (!Array.isArray(rawCalls) || rawCalls.length === 0) return;
+		for (const rc of rawCalls) {
+			const name = typeof rc.name === "string" ? rc.name : undefined;
+			if (!name) continue;
+			let id: string;
+			if (typeof rc.id === "string") {
+				if (emittedProviderIds.has(rc.id)) continue;
+				emittedProviderIds.add(rc.id);
+				id = rc.id;
+			} else {
+				// Distinct namespace from OpenAI's `call_*` ids so a frame mixing
+				// provider-supplied `call_0` and un-id'd calls can't collide.
+				id = `${WORKERS_AI_ANON_ID_PREFIX}${fallbackIdCounter++}`;
+			}
+			const args =
+				rc.arguments && typeof rc.arguments === "object"
+					? (rc.arguments as Record<string, unknown>)
+					: typeof rc.arguments === "string"
+						? safeJsonParse(rc.arguments)
+						: {};
+			emit({ type: "tool_use", id, name, input: args });
+		}
 	});
+}
+
+function safeJsonParse(s: string): Record<string, unknown> {
+	try {
+		const parsed = JSON.parse(s);
+		return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+	} catch {
+		return {};
+	}
 }
 
 function extractWorkersAiText(raw: unknown): string {

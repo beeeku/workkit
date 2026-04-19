@@ -100,6 +100,107 @@ describe("gateway tool use — Workers AI", () => {
 
 		expect(result.toolCalls).toBeUndefined();
 	});
+
+	it("parses Llama's flat tool_call shape {name, arguments} without a function wrapper", async () => {
+		// Workers AI's @cf/meta/llama-3.3 endpoint returns tool_calls with a
+		// flat shape — no `id`, no `function` nesting, `arguments` already an
+		// object. The pre-existing OpenAI-compat parser dropped these silently.
+		const mockAi = {
+			run: vi.fn().mockResolvedValue({
+				response: "",
+				tool_calls: [{ name: "get_macro_indicators", arguments: { indicator: "VIX" } }],
+			}),
+		};
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			defaultProvider: "ai",
+		});
+
+		const result = await gw.run(
+			"@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+			{ messages: [{ role: "user", content: "What is the current VIX?" }] } as AiInput,
+			{ toolOptions: sampleTools },
+		);
+
+		expect(result.toolCalls).toHaveLength(1);
+		expect(result.toolCalls![0].name).toBe("get_macro_indicators");
+		expect(result.toolCalls![0].arguments).toEqual({ indicator: "VIX" });
+		// No id from the model — a stable fallback keeps tool_call_id threading working.
+		expect(typeof result.toolCalls![0].id).toBe("string");
+		expect(result.toolCalls![0].id.length).toBeGreaterThan(0);
+	});
+
+	it("fallback ids for Llama un-id'd calls use a distinct namespace (no collision with OpenAI-style 'call_*')", async () => {
+		// Regression guard for review feedback on #94: if a response mixes
+		// provider-supplied `call_0` with un-id'd calls, a generic `call_*`
+		// fallback counter could collide. Use a distinct prefix instead.
+		const mockAi = {
+			run: vi.fn().mockResolvedValue({
+				response: "",
+				tool_calls: [
+					{ id: "call_0", name: "search", arguments: { q: "a" } },
+					{ name: "search", arguments: { q: "b" } },
+				],
+			}),
+		};
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			defaultProvider: "ai",
+		});
+
+		const result = await gw.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+			messages: [{ role: "user", content: "q" }],
+		} as AiInput);
+
+		expect(result.toolCalls).toHaveLength(2);
+		expect(result.toolCalls![0].id).toBe("call_0");
+		// Fallback id must NOT match the `call_*` namespace that OpenAI/providers use.
+		expect(result.toolCalls![1].id).not.toBe("call_0");
+		expect(result.toolCalls![1].id.startsWith("call_")).toBe(false);
+	});
+
+	it("generates distinct fallback ids when Llama returns multiple tool_calls without ids", async () => {
+		const mockAi = {
+			run: vi.fn().mockResolvedValue({
+				response: "",
+				tool_calls: [
+					{ name: "get_macro_indicators", arguments: { indicator: "VIX" } },
+					{ name: "get_macro_indicators", arguments: { indicator: "DXY" } },
+				],
+			}),
+		};
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			defaultProvider: "ai",
+		});
+
+		const result = await gw.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+			messages: [{ role: "user", content: "list VIX and DXY" }],
+		} as AiInput);
+
+		expect(result.toolCalls).toHaveLength(2);
+		expect(result.toolCalls![0].id).not.toBe(result.toolCalls![1].id);
+	});
+
+	it("keeps both response text and tool_calls when Llama returns both", async () => {
+		const mockAi = {
+			run: vi.fn().mockResolvedValue({
+				response: "Looking up VIX now.",
+				tool_calls: [{ name: "get_macro_indicators", arguments: { indicator: "VIX" } }],
+			}),
+		};
+		const gw = createGateway({
+			providers: { ai: { type: "workers-ai", binding: mockAi } },
+			defaultProvider: "ai",
+		});
+
+		const result = await gw.run("llama", {
+			messages: [{ role: "user", content: "q" }],
+		} as AiInput);
+
+		expect(result.text).toBe("Looking up VIX now.");
+		expect(result.toolCalls).toHaveLength(1);
+	});
 });
 
 describe("gateway tool use — OpenAI format", () => {
