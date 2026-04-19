@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	type AllowlistConfig,
-	createModelAllowlist,
-	isAllowedModel,
-} from "../src/allowlist/index";
+import { type AllowlistConfig, createModelAllowlist, isAllowedModel } from "../src/allowlist/index";
 
 describe("createModelAllowlist", () => {
 	it("allows an exact string match for the given provider", () => {

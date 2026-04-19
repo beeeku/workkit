@@ -72,10 +72,6 @@ export function createModelAllowlist(config: AllowlistConfig): ModelAllowlist {
  *
  * Semantically identical to `createModelAllowlist(config).isAllowed(provider, model)`.
  */
-export function isAllowedModel(
-	config: AllowlistConfig,
-	provider: string,
-	model: string,
-): boolean {
+export function isAllowedModel(config: AllowlistConfig, provider: string, model: string): boolean {
 	return createModelAllowlist(config).isAllowed(provider, model);
 }
