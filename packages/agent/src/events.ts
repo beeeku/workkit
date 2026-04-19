@@ -9,6 +9,7 @@ export type AgentEvent =
 	| { type: "handoff"; from: string; to: string; step: number }
 	| { type: "step-complete"; step: number; usage: TokenUsage; assistant: Message }
 	| { type: "tool-rejected"; call: GatewayToolCall; reason: "off-palette"; step: number }
+	| { type: "after-model-retry"; step: number; attempt: number; reminder?: string }
 	| {
 			type: "error";
 			error: { kind: "tool" | "provider" | "hook" | "config"; toolName?: string; message: string };
