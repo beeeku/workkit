@@ -7,6 +7,8 @@
 ```ts
 import { createGateway, fallback } from "@workkit/ai-gateway";
 
+const gateway = createGateway({ providers: { /* … */ }, defaultProvider: "anthropic" });
+
 const model = fallback("claude-sonnet-4-6", "gpt-4o", {
   on: [401, 429, 500, 502, 503, 504],
   onFallback: (err, attempt) => log.warn("provider failover", { err, attempt }),
@@ -25,4 +27,4 @@ Semantics:
 
 Wrapper interop: `withCache`, `withLogging`, and `withRetry` accept a `FallbackModelRef` where they previously accepted a model string, and use a stable `modelLabel(ref)` → `"fallback:primary→secondary"` for cache keys and log labels (no more `[object Object]` stringification). **Retry currently wraps the whole fallback call, not each tier independently** — if the primary throws a retryable error, `withRetry` retries the overall `gateway.run(ref, …)`, which re-enters the primary first. Per-tier retry (primary exhausts its retry budget before the secondary is tried) is a follow-up; until then, put `withRetry` *inside* each tier explicitly if that matters for your use case.
 
-Two-tier only for now — chain by nesting if you need three tiers. Circuit-breaker ("stop trying primary for N minutes") is a separate follow-up. No new runtime deps.
+Two-tier only for now — `fallback()` accepts string model ids, not nested refs, so n-ary chains aren't supported by this API yet. Circuit-breaker ("stop trying primary for N minutes") is a separate follow-up. No new runtime deps.

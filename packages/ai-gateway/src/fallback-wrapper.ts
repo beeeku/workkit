@@ -181,7 +181,13 @@ export async function runWithFallback(
 	} catch (err) {
 		if (!matchesFallback(err, ref.on)) throw err;
 		primaryError = err;
-		ref.onFallback?.(err, "primary");
+		// onFallback is an observability hook — swallow throws so a broken
+		// logger/metrics emitter never blocks the actual secondary attempt.
+		try {
+			ref.onFallback?.(err, "primary");
+		} catch {
+			// ignored intentionally
+		}
 	}
 	try {
 		const result = await runOne(ref.secondary, input, options);

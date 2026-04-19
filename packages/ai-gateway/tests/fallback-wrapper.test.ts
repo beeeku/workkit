@@ -261,6 +261,27 @@ describe("runWithFallback() — direct runner contract", () => {
 		const out = await runWithFallback(ref, { prompt: "hi" }, undefined, runner);
 		expect(out.via).toBe("secondary");
 	});
+
+	it("fails open on onFallback throws — secondary is still attempted", async () => {
+		const primaryErr = new HttpLikeError("401", 401);
+		const runner = vi
+			.fn()
+			.mockImplementationOnce(async () => {
+				throw primaryErr;
+			})
+			.mockImplementationOnce(async (model: string) => okOutput(model));
+		const ref = fallback("p", "s", {
+			on: [401],
+			onFallback: () => {
+				throw new Error("logger exploded");
+			},
+		});
+		const out = await runWithFallback(ref, { prompt: "hi" }, undefined, runner);
+		// A broken observability hook must not mask the provider failure or
+		// block failover to the secondary tier.
+		expect(out.via).toBe("secondary");
+		expect(runner).toHaveBeenCalledTimes(2);
+	});
 });
 
 describe("isFallbackModelRef() shape validation", () => {
