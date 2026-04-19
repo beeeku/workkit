@@ -1,5 +1,35 @@
 # @workkit/agent
 
+## 0.3.0
+
+### Minor Changes
+
+- 10cce1f: **Add `afterModel` hook for output-side guardrails with retry-and-reminder.** New optional `AgentHooks.afterModel(assistant, ctx)` fires after every assistant turn (text-only, tool-call, or mixed), receives the full assistant message, and may return `{ retry: true, reminder?: string }` to reject the turn and re-run the model. Tools from a rejected turn are **not** executed — the hook call site is between `step-complete` and the strict-tools pre-scan / tool dispatch, so any `tool_calls` on a rejected turn are discarded along with the assistant message.
+
+  Retries consume from `stopWhen.maxSteps` (keeps budgets honest) and are additionally capped per-step by a new `maxAfterModelRetries` option (default `2`). When the per-step cap is hit the loop soft-fails: it proceeds with the last-returned assistant message rather than throwing. Throws from `afterModel` route through `onError({ kind: "hook", error })`; if `onError` returns `{ abort: false }` the throw is suppressed and the turn is treated as no-retry, otherwise the loop terminates with `stopReason: "error"`.
+
+  New event variant `{ type: "after-model-retry", step, attempt, reminder? }` is emitted per retry so consumers can trace guardrail activity. The reminder (when present) is appended as a `{ role: "user", content: reminder }` message before the next model call; the rejected assistant message is popped from history so the model doesn't re-read its own bad output.
+
+  New export: `AfterModelDecision` type. Purely additive — existing agents ignoring the hook see zero behavior change.
+
+  Closes #58.
+
+- d8c9c97: **Add `strictTools` mode for off-palette rejection.** New `defineAgent({ strictTools: true })` opt-in rejects tool calls naming a tool outside the agent's palette: the loop terminates with `stopReason: "error"`, emits a `{ type: "tool-rejected", call, reason: "off-palette", step }` event, throws a typed `OffPaletteToolError` (carrying `toolName` and `allowedPalette`), and does **not** execute any sibling calls from the same assistant turn.
+
+  Default remains `false` — preserves the current soft behavior where unknown tool names return a `"unknown tool: <name>"` tool-result message and the loop continues. Purely additive; zero migration cost.
+
+  Motivation: strong models self-correct after a soft unknown-tool message, but weaker open-weight models (e.g. Llama 3.x routed through CF AI Gateway) tend to double down on hallucinated tool names and burn the entire step budget. Strict mode lets consumers opt into fail-fast when they know their model is weak or need predictable budgets.
+
+  Closes #79.
+
+### Patch Changes
+
+- Updated dependencies [686926d]
+- Updated dependencies [8d862f1]
+- Updated dependencies [57bc09b]
+- Updated dependencies [776a6bc]
+  - @workkit/ai-gateway@0.5.0
+
 ## 0.2.0
 
 ### Minor Changes
