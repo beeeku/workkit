@@ -46,6 +46,7 @@ export function defineAgent(options: DefineAgentOptions): Agent {
 		hooks: options.hooks ?? {},
 		strictTools: options.strictTools ?? false,
 		maxAfterModelRetries: options.maxAfterModelRetries ?? 2,
+		forceTextAfterTool: options.forceTextAfterTool ?? false,
 	};
 
 	sharedRegistry.register(internal);

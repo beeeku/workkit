@@ -102,6 +102,17 @@ export interface DefineAgentOptions {
 	 * Default: `2`.
 	 */
 	maxAfterModelRetries?: number;
+	/**
+	 * After every assistant turn that emits at least one tool call, invoke the
+	 * NEXT assistant turn with `toolChoice: "none"` — forcing a plain-text
+	 * response. Mitigates models (notably Llama 3.x on Workers AI) that loop
+	 * on identical tool calls instead of transitioning to text after the tool
+	 * has already returned. Default: `false`.
+	 *
+	 * Reset on handoff: a freshly-entered handoff target starts with
+	 * `toolChoice: "auto"` regardless of the previous agent's tool calls.
+	 */
+	forceTextAfterTool?: boolean;
 }
 
 export interface RunArgs {
