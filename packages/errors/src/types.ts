@@ -24,7 +24,8 @@ export type WorkkitErrorCode =
 	| "WORKKIT_MAIL_DELIVERY_FAILED"
 	| "WORKKIT_TURNSTILE"
 	| "WORKKIT_AGENT_HANDOFF_CYCLE"
-	| "WORKKIT_AGENT_BUDGET";
+	| "WORKKIT_AGENT_BUDGET"
+	| "WORKKIT_AGENT_OFF_PALETTE_TOOL";
 
 /**
  * Retry strategy classification.
