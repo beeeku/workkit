@@ -19,15 +19,12 @@ interface StandardSchemaLike {
 }
 
 export function standardSchemaToJsonSchema(schema: StandardSchemaLike): Record<string, unknown> {
-	// biome-ignore lint/suspicious/noExplicitAny: Schema libraries expose toJSONSchema without a standard type.
 	if (typeof (schema as any).toJSONSchema === "function") {
-		// biome-ignore lint/suspicious/noExplicitAny: same reason.
 		const full = (schema as any).toJSONSchema() as Record<string, unknown>;
 		const { $schema: _meta, ...rest } = full;
 		return rest;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: Inspecting Zod's private defs.
 	const def = (schema as any)?._zod?.def ?? (schema as any)?._def;
 	if (def) return convertDef(def);
 
@@ -46,11 +43,9 @@ function convertDef(def: Record<string, unknown>): Record<string, unknown> {
 			return { type: "boolean" };
 
 		case "array": {
-			// biome-ignore lint/suspicious/noExplicitAny: Zod internal shape.
 			const items = def.element ?? (def as any).items;
 			return {
 				type: "array",
-				// biome-ignore lint/suspicious/noExplicitAny: Zod internal shape.
 				items: items ? convertDef((items as any)?._zod?.def ?? (items as any)?._def ?? {}) : {},
 			};
 		}
@@ -62,7 +57,6 @@ function convertDef(def: Record<string, unknown>): Record<string, unknown> {
 
 			if (shape) {
 				for (const [key, field] of Object.entries(shape)) {
-					// biome-ignore lint/suspicious/noExplicitAny: Zod internal shape.
 					const fieldDef = (field as any)?._zod?.def ?? (field as any)?._def ?? {};
 					properties[key] = convertDef(fieldDef);
 
@@ -91,14 +85,12 @@ function convertDef(def: Record<string, unknown>): Record<string, unknown> {
 
 		case "optional":
 		case "nullable": {
-			// biome-ignore lint/suspicious/noExplicitAny: Zod internal shape.
 			const inner = (def as any).innerType;
 			const innerDef = inner?._zod?.def ?? inner?._def ?? {};
 			return convertDef(innerDef);
 		}
 
 		case "default": {
-			// biome-ignore lint/suspicious/noExplicitAny: Zod internal shape.
 			const inner = (def as any).innerType;
 			const innerDef = inner?._zod?.def ?? inner?._def ?? {};
 			return { ...convertDef(innerDef), default: def.defaultValue };

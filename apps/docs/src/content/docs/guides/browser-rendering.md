@@ -14,7 +14,7 @@ bun add @workkit/browser @cloudflare/puppeteer
 
 `@cloudflare/puppeteer` is an optional peer — bring your own version.
 
-**When you need it:** anything that touches Puppeteer's scripting API — `page.pdf`, `page.screenshot`, `page.evaluate`, `page.click`, `waitForSelector`. That's the quick-start below and most real workloads.
+**When you need it:** anything that touches Puppeteer's scripting API — `page.pdf`, `page.screenshot`, `page.evaluate`, `page.click`, `page.waitForSelector`. That's the quick-start below and most real workloads.
 
 **When you can skip it:** the raw `BROWSER` binding now exposes `.launch()` natively, returning a minimal session that can open a page and dump final HTML but cannot script it. `browser()` automatically takes this path when `options.puppeteer` is not supplied. Useful only if you're bundle-size-constrained and don't need the scripting surface.
 

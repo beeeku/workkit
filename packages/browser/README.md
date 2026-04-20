@@ -10,7 +10,7 @@ bun add @workkit/browser @cloudflare/puppeteer
 
 `@cloudflare/puppeteer` is an optional peer dependency — bring your own version.
 
-Required if you want Puppeteer's scripting API: `page.pdf`, `page.screenshot`, `page.evaluate`, `page.click`, `waitForSelector`, etc. — i.e. anything in the quick-start below. The 95% case wants this.
+Required if you want Puppeteer's scripting API: `page.pdf`, `page.screenshot`, `page.evaluate`, `page.click`, `page.waitForSelector`, etc. — i.e. anything in the quick-start below. The 95% case wants this.
 
 The raw `BROWSER` binding also exposes `.launch()` natively (workerd >= recent versions), which gives a minimal session: open a page and dump final HTML, no scripting surface. Useful only when you're bundle-size-constrained and can live without Puppeteer's API. `browser()` falls back to this path automatically when `options.puppeteer` is not supplied.
 
