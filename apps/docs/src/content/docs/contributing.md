@@ -260,6 +260,35 @@ When creating a changeset:
 - `minor` -- New features, non-breaking additions
 - `major` -- Breaking changes
 
+### Manually backfilling a missing GitHub release
+
+The release workflow creates GitHub releases serially in its own step (so the multi-package race that bit us in #77 can't recur). The step is idempotent — re-running the `Release` workflow on the same merge commit only fills in releases that don't yet exist.
+
+If you ever need to create a single release by hand (e.g. the `gh release create` call inside the workflow failed for one package due to a transient API hiccup):
+
+```bash
+PKG=@workkit/agent
+VER=0.2.0
+TAG="${PKG}@${VER}"
+
+# 1. Push the tag if `changeset publish` didn't (rare — it normally does).
+if ! git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
+  git tag "$TAG" "$(git rev-parse HEAD)"
+  git push origin "$TAG"
+fi
+
+# 2. Pull just this version's section out of the package CHANGELOG.
+PKGDIR=packages/agent  # or integrations/<name>
+NOTES=$(mktemp)
+awk -v ver="$VER" '
+  /^## / { if (in_section) exit; if ($2 == ver) { in_section = 1; next } }
+  in_section
+' "$PKGDIR/CHANGELOG.md" > "$NOTES"
+
+# 3. Create the release.
+gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"
+```
+
 ## Code Style
 
 - Biome for linting and formatting: `bun run lint`
