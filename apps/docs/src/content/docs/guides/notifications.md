@@ -15,9 +15,9 @@ Both packages now share the Cloudflare `send_email` binding as the default email
 | Multi-channel dispatch (email + in-app + WhatsApp), preferences, opt-out registry, quiet hours, idempotency, fallback chains, delivery records, test mode | **`@workkit/notify`** (this guide) |
 | Send one email, parse one inbound, route inbound by address | **`@workkit/mail`** ([Email](/workkit/guides/email/)) |
 
-| Subpath | Adapter | Optional peer |
+| Subpath | Adapter | Optional peers |
 |---|---|---|
-| `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
+| `@workkit/notify/email` | Provider-pluggable: Cloudflare `send_email` (default) or Resend HTTP API | `@workkit/mail` (CF provider), `@react-email/render` (React templates) |
 | `@workkit/notify/inapp` | D1-backed feed + SSE streaming | — |
 | `@workkit/notify/whatsapp` | Meta WA Cloud API (default) + Twilio/Gupshup stubs | — |
 
@@ -139,7 +139,7 @@ const email = emailAdapter({
     replyTo: "support@entryexit.ai",                // optional
   }),
   bucket: env.REPORTS,                              // optional, only for attachments
-  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+  markUnsubscribable: ["pre-market-brief"],         // marks this notification as unsubscribable
 });
 ```
 
