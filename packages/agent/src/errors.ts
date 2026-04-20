@@ -1,5 +1,5 @@
 import { ConfigError, ValidationError, WorkkitError } from "@workkit/errors";
-import type { RetryStrategy, WorkkitErrorCode } from "@workkit/errors";
+import type { RetryStrategy } from "@workkit/errors";
 
 export class ToolValidationError extends ValidationError {
 	constructor(toolName: string, issues: Array<{ path: PropertyKey[]; message: string }>) {
@@ -47,11 +47,7 @@ export class BudgetExceededError extends WorkkitError {
 }
 
 export class OffPaletteToolError extends WorkkitError {
-	// The code union in @workkit/errors is centrally registered; agent-specific
-	// subcodes that haven't been added to the shared union cast locally. This
-	// preserves the package boundary (we don't reach into @workkit/errors for
-	// this additive change) while still surfacing a stable, greppable code.
-	readonly code = "WORKKIT_AGENT_OFF_PALETTE_TOOL" as unknown as WorkkitErrorCode;
+	readonly code = "WORKKIT_AGENT_OFF_PALETTE_TOOL" as const;
 	readonly statusCode = 400;
 	readonly retryable = false;
 	readonly defaultRetryStrategy: RetryStrategy = { kind: "none" };

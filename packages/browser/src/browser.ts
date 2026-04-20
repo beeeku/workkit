@@ -13,8 +13,11 @@ export interface BrowserSessionOptions {
 	keepAlive?: number;
 
 	/**
-	 * Puppeteer launcher (`@cloudflare/puppeteer`). Optional — supply for
-	 * explicit control. When provided, takes precedence over `binding.launch`.
+	 * Puppeteer launcher (`@cloudflare/puppeteer`). Required for the scripting
+	 * surface — `page.pdf`, `page.screenshot`, `page.evaluate`, `page.click`,
+	 * `page.waitForSelector`. Omit only when the raw `binding.launch()` is
+	 * enough (open a page, dump final HTML, no scripting). Takes precedence
+	 * over `binding.launch()` when both are available.
 	 */
 	puppeteer?: PuppeteerLike;
 
