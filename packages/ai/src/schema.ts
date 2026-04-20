@@ -19,6 +19,12 @@ interface StandardSchemaLike {
  *
  * @param schema - A Standard Schema v1 compatible schema
  * @returns A JSON Schema object describing the schema
+ *
+ * @deprecated Available identically from `@workkit/ai-gateway` — import from
+ * there going forward. Per
+ * [ADR-001](../../.maina/decisions/001-ai-package-consolidation.md),
+ * `@workkit/ai` will be removed at v2.0; track migration via
+ * [#63](https://github.com/beeeku/workkit/issues/63).
  */
 export function standardSchemaToJsonSchema(schema: StandardSchemaLike): Record<string, unknown> {
 	// Prefer built-in toJSONSchema() (Zod v4+, Valibot, ArkType, etc.)
