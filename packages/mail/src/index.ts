@@ -14,6 +14,10 @@ export { composeMessage } from "./compose";
 export { parseEmail } from "./parser";
 export type { ParsedEmail } from "./parser";
 
+// Bounces (RFC 3464 DSN parser)
+export { parseBounceDSN } from "./bounces";
+export type { BounceInfo, BounceKind } from "./bounces";
+
 // Validation
 export { validateAddress, isValidAddress } from "./validation";
 
