@@ -1,3 +1,13 @@
+/**
+ * Workers-AI model + IO type definitions from `@workkit/ai`.
+ *
+ * @deprecated Equivalent shapes live in `@workkit/ai-gateway` as
+ * `AiInput` / `AiOutput` / `ChatMessage` / `TokenUsage` / `RunOptions`.
+ * Per [ADR-001](../../.maina/decisions/001-ai-package-consolidation.md),
+ * `@workkit/ai` will be removed at v2.0; track migration via
+ * [#63](https://github.com/beeeku/workkit/issues/63).
+ */
+
 /** Supported text generation models */
 export type TextGenerationModel =
 	| "@cf/meta/llama-3.1-8b-instruct"

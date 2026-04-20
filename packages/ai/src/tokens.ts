@@ -35,6 +35,12 @@ const CONVERSATION_OVERHEAD = 3;
  * ])
  * // estimates total tokens including message overhead
  * ```
+ *
+ * @deprecated Available identically from `@workkit/ai-gateway` — import from
+ * there going forward. Per
+ * [ADR-001](../../.maina/decisions/001-ai-package-consolidation.md),
+ * `@workkit/ai` will be removed at v2.0; track migration via
+ * [#63](https://github.com/beeeku/workkit/issues/63).
  */
 export function estimateTokens(input: string | AiMessage[]): number {
 	if (typeof input === "string") {

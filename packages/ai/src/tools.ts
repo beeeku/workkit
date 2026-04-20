@@ -1,3 +1,13 @@
+/**
+ * Tool-use type definitions from `@workkit/ai`.
+ *
+ * @deprecated Use `GatewayToolDefinition`, `GatewayToolCall`, and
+ * `GatewayToolOptions` from `@workkit/ai-gateway`. Per
+ * [ADR-001](../../.maina/decisions/001-ai-package-consolidation.md),
+ * `@workkit/ai` will be removed at v2.0; track migration via
+ * [#63](https://github.com/beeeku/workkit/issues/63).
+ */
+
 /** Definition of a tool that a model can call */
 export interface ToolDefinition {
 	/** Unique name for the tool */
