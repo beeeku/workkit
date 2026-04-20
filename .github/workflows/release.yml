@@ -30,12 +30,85 @@ jobs:
       - run: bun run build
       - run: bun run test
       - name: Create Release Pull Request or Publish
+        id: changesets
         uses: changesets/action@v1
         with:
           publish: bun run release
           version: bun run version-packages
           title: "chore: version packages"
           commit: "chore: version packages"
+          # Disable the action's built-in GitHub release creation — it races
+          # when 2+ packages publish in the same run and the GitHub Releases
+          # API rejects the batch with `tag_name: already_exists` for all but
+          # one of the packages. Drive release creation ourselves below,
+          # serially, so the same race can't happen. (See #77.)
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub releases for each published package
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          set -euo pipefail
+          # `publishedPackages` is a JSON array like:
+          #   [{ "name": "@workkit/agent", "version": "0.2.0" }, ...]
+          # `changeset publish` already pushed the per-package tags
+          # (e.g. `@workkit/agent@0.2.0`) before this step runs.
+          echo "$PUBLISHED" | jq -c '.[]' | while read -r pkg; do
+            name=$(echo "$pkg" | jq -r '.name')
+            version=$(echo "$pkg" | jq -r '.version')
+            tag="${name}@${version}"
+
+            # Idempotency: skip if a release for this tag already exists. This
+            # also makes the backfill story trivial — re-running the workflow
+            # (or invoking this step manually) only fills in what's missing.
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "✓ release already exists: $tag"
+              continue
+            fi
+
+            # Resolve the package directory from its name so we can read the
+            # CHANGELOG. Walk both `packages/*` and `integrations/*` (the only
+            # workspace globs that ship to npm).
+            pkgdir=""
+            for dir in packages/* integrations/*; do
+              if [ -f "$dir/package.json" ] && [ "$(jq -r .name "$dir/package.json")" = "$name" ]; then
+                pkgdir="$dir"
+                break
+              fi
+            done
+
+            # Extract just the section for THIS version from the changelog.
+            # Format produced by `@changesets/cli/changelog`:
+            #   # <package name>
+            #   ## <version>
+            #   ### <change-kind>
+            #   - <commit>: <summary>
+            #   ## <previous version>
+            #   ...
+            notes_file=$(mktemp)
+            if [ -n "$pkgdir" ] && [ -f "$pkgdir/CHANGELOG.md" ]; then
+              awk -v ver="$version" '
+                /^## / {
+                  if (in_section) exit
+                  # Match "## <ver>" exactly (token-aware, not substring).
+                  if ($2 == ver) { in_section = 1; next }
+                }
+                in_section
+              ' "$pkgdir/CHANGELOG.md" > "$notes_file"
+            fi
+            # Empty changelog falls back to a one-line auto-note rather than
+            # creating a blank release body.
+            if [ ! -s "$notes_file" ]; then
+              echo "Release ${tag} (no changelog entry found)" > "$notes_file"
+            fi
+
+            echo "→ creating release: $tag"
+            gh release create "$tag" \
+              --title "$tag" \
+              --notes-file "$notes_file"
+          done

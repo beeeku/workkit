@@ -6,7 +6,16 @@ title: "Email"
 
 `@workkit/mail` is a typed email primitive for Cloudflare Workers — outbound send via the [`SendEmail` binding](https://developers.cloudflare.com/email-routing/email-workers/send-email/), inbound parsing for [Email Routing](https://developers.cloudflare.com/email-routing/email-workers/), pattern-matching router, and MIME composition with attachments. No third-party API dependency.
 
-For high-level dispatch (preferences, opt-out, fallback chains), see [Notifications](/workkit/guides/notifications/) — `@workkit/notify` runs *on top* of `@workkit/mail` (or any transport).
+## When to use `@workkit/mail` vs `@workkit/notify`
+
+Both packages now share the Cloudflare `send_email` binding as the default transport — `@workkit/notify`'s `cloudflareEmailProvider` delegates to `@workkit/mail`'s `mail()` under the hood. Pick by what you need:
+
+| You want… | Use |
+|---|---|
+| Send one email, parse one inbound, route inbound by address | **`@workkit/mail`** (this guide) |
+| Multi-channel dispatch (email + in-app + WhatsApp), preferences, opt-out registry, quiet hours, idempotency, fallback chains, delivery records, test mode | **`@workkit/notify`** ([Notifications](/workkit/guides/notifications/)) |
+
+You don't need to know that notify delegates to mail — pick the package whose surface matches your problem and the other stays out of your way.
 
 ## Install
 
