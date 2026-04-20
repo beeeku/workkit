@@ -1,4 +1,5 @@
 import { getRetryDelay, getRetryStrategy, isRetryable } from "@workkit/errors";
+import { isFallbackModelRef, runWithFallback } from "./fallback-wrapper";
 import type { AiInput, EmbedInput, FallbackEntry, Gateway, RunOptions } from "./types";
 
 /** Options for `withRetry`. */
@@ -42,8 +43,20 @@ export function withRetry(gateway: Gateway, config?: RetryConfig): Gateway {
 	const innerEmbed = gateway.embed?.bind(gateway);
 
 	return {
-		run: (model, input, options) =>
-			retry(() => gateway.run(model, input, options), options?.signal),
+		// FallbackModelRef refs need per-tier retry: primary's full retry budget
+		// must exhaust before failover, otherwise wrapping the whole gateway.run
+		// re-enters the primary on every retry and the secondary never gets
+		// reached on its own budget. We dispatch via runWithFallback with an
+		// inner runner that re-enters the underlying gateway per tier — that
+		// way each tier gets its own independent retry pass.
+		run: (model, input, options) => {
+			if (isFallbackModelRef(model)) {
+				return runWithFallback(model, input, options, (m, i, o) =>
+					retry(() => gateway.run(m, i, o), o?.signal),
+				);
+			}
+			return retry(() => gateway.run(model, input, options), options?.signal);
+		},
 		runFallback: innerFallback
 			? (entries: FallbackEntry[], input: AiInput, options?: RunOptions) =>
 					retry(() => innerFallback(entries, input, options), options?.signal)
