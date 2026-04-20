@@ -6,5 +6,6 @@ export default defineConfig({
 	dts: true,
 	sourcemap: "linked",
 	clean: true,
+	target: "browser",
 	external: ["@workkit/ai-gateway", "@workkit/errors", "@standard-schema/spec"],
 });
