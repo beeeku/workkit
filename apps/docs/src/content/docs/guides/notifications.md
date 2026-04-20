@@ -179,6 +179,43 @@ const email = emailAdapter({
 - Hard bounce + complaint → automatic opt-out via injected hook (configurable, default on).
 - Attachment cap default 40MB; bounded R2 fetch concurrency 4.
 
+### Bounces on the Cloudflare transport
+
+The `send_email` binding has no delivery webhook — there's no Resend-style stream of `email.bounced` events to drive `autoOptOut`. The recovery path is to point a bounce mailbox at a Worker, parse the inbound DSN, and feed the result into your opt-out store.
+
+1. Reserve a bounce address in the domain you're sending from (e.g. `bounces@yourdomain.com`) and route it to your Worker via Cloudflare Email Routing.
+2. Set the outbound envelope-sender / `Return-Path` to that address (most providers accept it on `headers["Return-Path"]`).
+3. Wire the inbound handler:
+
+```ts
+import { createEmailRouter } from "@workkit/mail";
+import { createBounceRoute } from "@workkit/notify/email";
+import { optOut } from "@workkit/notify";
+
+const bounces = createBounceRoute({
+  optOutHook: async (emailAddress, channel, _nid, reason) => {
+    const userId = await lookupUserIdByEmail(emailAddress);
+    if (userId) await optOut(env.DB, userId, channel, null, reason);
+  },
+  // Optional. Fires when a non-DSN message lands on the bounce mailbox
+  // (auto-replies, misrouted threads). Default: silently drop.
+  onNonBounce: (email) => console.warn("non-bounce on bounces@", email.from),
+});
+
+export default {
+  email: createEmailRouter()
+    .match((e) => e.to === "bounces@yourdomain.com", bounces)
+    .default((e) => e.setReject("Unknown recipient"))
+    .handle,
+};
+```
+
+Behavior:
+- **Hard bounce** (RFC 3463 `5.x`) → `optOutHook` fires with `reason: "hard-bounce"`.
+- **Soft bounce** (`4.x`) → no opt-out (transient failures shouldn't drop legit subscribers).
+- **Non-DSN** → `onNonBounce` (or silent no-op).
+- **Hook throws** → error propagates so the MTA can retry.
+
 ### Migrating from the pre-provider shape
 
 The pre-#52 shape took provider-specific options directly on `emailAdapter()`. Wrap them in the new `provider: …` field:

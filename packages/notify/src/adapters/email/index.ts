@@ -13,6 +13,9 @@ export type { CloudflareEmailProviderOptions } from "./providers/cloudflare";
 export { resendEmailProvider } from "./providers/resend";
 export type { ResendEmailProviderOptions, EmailOptOutHook } from "./providers/resend";
 
+export { createBounceRoute } from "./bounce-route";
+export type { BounceRouteOptions } from "./bounce-route";
+
 export { renderEmail, htmlToText } from "./render";
 
 export { loadAttachments } from "./attachments";
