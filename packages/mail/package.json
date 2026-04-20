@@ -1,6 +1,6 @@
 {
   "name": "@workkit/mail",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Typed email client for Cloudflare Workers — send, receive, route, parse",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@workkit/types": "^1.0.1",
-    "@workkit/errors": "^1.0.1",
+    "@workkit/errors": "^1.0.4",
     "mimetext": "^3.0.24",
     "postal-mime": "^2.4.1"
   },

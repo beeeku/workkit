@@ -1,5 +1,18 @@
 # @workkit/browser
 
+## 0.1.1
+
+### Patch Changes
+
+- b26dbbc: **Docs: reframe `@cloudflare/puppeteer` as scripting-API dependency, not a launcher requirement.** The previous framing implied the binding had no `.launch()` method without `@cloudflare/puppeteer`, which is outdated — workerd exposes `binding.launch()` natively. The honest framing is: bring `@cloudflare/puppeteer` if you want Puppeteer's scripting API (`page.pdf`, `page.screenshot`, `page.evaluate`, etc.), skip it only if a bare session that can open a page and dump HTML is enough.
+
+  `browser()` already supports both paths; this is purely a docs and JSDoc clarification on `BrowserSessionOptions.puppeteer`. README, the `browser-rendering` docs guide, and the `puppeteer` option JSDoc all updated.
+
+  Closes #75.
+
+- Updated dependencies [b26dbbc]
+  - @workkit/errors@1.0.4
+
 ## 0.1.0
 
 ### Minor Changes
@@ -48,7 +61,7 @@
     CSS-injection attempts in font URL/family, and abort-listener cleanup after
     successful and rejected handler settlement.
   - **Visual fixtures** — `basic.html` now uses an explicit `Helvetica, Arial,
-    sans-serif` stack instead of `system-ui` for deterministic baselines across
+sans-serif` stack instead of `system-ui` for deterministic baselines across
     CI vs developer machines. `font.html` ships with an inline `@font-face`
     declaration so the fixture actually exercises the Inter font path instead
     of silently falling back to system fonts.

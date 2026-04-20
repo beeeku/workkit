@@ -1,5 +1,15 @@
 # @workkit/errors
 
+## 1.0.4
+
+### Patch Changes
+
+- b26dbbc: **Register `WORKKIT_AGENT_OFF_PALETTE_TOOL` in the central error code union.** `OffPaletteToolError` (added in #88 / strictTools) was carrying its code via `as unknown as WorkkitErrorCode` because the `@workkit/errors` union was out of diff-only scope for that PR. The cast worked at runtime but defeated exhaustive-switch analysis for consumers pattern-matching on `err.code`.
+
+  The code now lives in the `WorkkitErrorCode` union and `OffPaletteToolError` declares it as a literal `as const` — no behavior change, just type integrity.
+
+  Closes #93.
+
 ## 1.0.3
 
 ### Patch Changes
@@ -12,7 +22,7 @@
   - **`defineAgent({ name, model, provider, tools, stopWhen, hooks })`** —
     multi-turn loop with mandatory `stopWhen.maxSteps` (default 10) and
     optional `stopWhen.maxTokens` cumulative budget. Returns `{ text, messages,
-    usage, stopReason }`.
+usage, stopReason }`.
   - **`agent.stream()`** — typed `AgentEvent` discriminated union (`step-start`,
     `text-delta`, `tool-start`, `tool-end`, `handoff`, `step-complete`, `error`,
     `done`).

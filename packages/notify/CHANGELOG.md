@@ -1,5 +1,99 @@
 # @workkit/notify
 
+## 1.0.0
+
+### Minor Changes
+
+- 44ece4c: **Preserve retry semantics through adapter `send()` results.** `AdapterSendResult` now carries optional `retryable?: boolean` and `retryStrategy?: RetryStrategy` fields on failures, so the provider's classification of "this is transient, retry with backoff" vs "this is terminal, don't retry" survives the boundary into the dispatch pipeline. See [ADR-002](.maina/decisions/002-notify-adapter-retry-semantics.md).
+
+  ```ts
+  const result = await emailAdapter.send(args);
+  if (result.status === "failed") {
+    if (result.retryable === false) {
+      // Terminal failure — don't requeue.
+    } else if (result.retryStrategy?.kind === "exponential") {
+      // Server / queue can apply the recommended backoff.
+    }
+  }
+  ```
+
+  Migrated providers in this change:
+
+  - **`cloudflareEmailProvider`** — catches `WorkkitError` from `@workkit/mail` (e.g. `DeliveryError` → retryable + exponential, `InvalidAddressError` → terminal) and propagates the metadata via the new `adapterFailedFromError` helper.
+  - **`resendEmailProvider`** — classifies failure modes explicitly: network errors and HTTP `5xx`/`429` are retryable (exponential), other `4xx` are terminal, missing-id responses are terminal.
+
+  `adapterFailedFromError(err)` is exported from `@workkit/notify` so custom-adapter authors can opt in with one call inside their `catch` blocks instead of inlining the `instanceof WorkkitError` check.
+
+  **Out of scope (separate follow-ups):**
+
+  - `createNotifyConsumer` does not yet act on the new fields when deciding ack vs retry — that requires touching `@workkit/queue`'s ack/retry contract and is filed separately. Until then, the metadata flows through the result type but isn't yet consumed by the dispatcher.
+  - In-app and WhatsApp adapters still return the legacy flat shape. Migrating them is mechanical follow-up work; the new fields are optional so this isn't a breaking gap.
+  - Persisting the retry hints in `notification_deliveries` is a schema migration and tracked separately.
+
+  Closes #55.
+
+- cf7844c: **Add `createBounceRoute` to `@workkit/notify/email` for Cloudflare-transport bounce handling.** The Cloudflare `send_email` binding has no delivery-webhook surface, so the Resend-style `autoOptOut` path isn't available on `cloudflareEmailProvider`. This helper closes the gap: feed an inbound DSN routed via Cloudflare Email Routing into the same `EmailOptOutHook` shape your Resend setup uses.
+
+  ```ts
+  import { createEmailRouter } from "@workkit/mail";
+  import { createBounceRoute } from "@workkit/notify/email";
+  import { optOut } from "@workkit/notify";
+
+  const bounces = createBounceRoute({
+    optOutHook: async (address, channel, _nid, reason) => {
+      const userId = await lookupUserIdByEmail(address);
+      if (userId) await optOut(env.DB, userId, channel, null, reason);
+    },
+  });
+
+  export default {
+    email: createEmailRouter()
+      .match((e) => e.to === "bounces@yourdomain.com", bounces)
+      .default((e) => e.setReject("Unknown recipient")).handle,
+  };
+  ```
+
+  Hard bounces (RFC 3463 `5.x`) fire the opt-out hook with `reason: "hard-bounce"`; soft bounces (`4.x`) no-op so transient failures don't silently drop subscribers; non-DSN messages route through the optional `onNonBounce` callback (or are dropped). Hook errors propagate so the MTA retries.
+
+  Built on `parseBounceDSN` from `@workkit/mail` (same release).
+
+  Closes #54.
+
+- af3268a: **Add `sesEmailProvider` and `postmarkEmailProvider` stubs to `@workkit/notify/email`.** Mirrors the WhatsApp adapter's existing stub pattern (`twilioWaProvider`, `gupshupWaProvider`) — `send` / `parseWebhook` / `verifySignature` throw `NotImplementedError` with a link to the tracking issue (#57), but the option types, the conformance to `EmailProvider`, and the export surface are stable so a real implementation can drop in without touching the adapter or caller code.
+
+  ```ts
+  import {
+    emailAdapter,
+    sesEmailProvider,
+    postmarkEmailProvider,
+  } from "@workkit/notify/email";
+
+  // Same emailAdapter, different provider — the adapter is provider-agnostic.
+  const ses = emailAdapter({
+    provider: sesEmailProvider({
+      region: "us-east-1",
+      accessKeyId: env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+      from: "Reports <reports@entryexit.ai>",
+    }),
+  });
+  ```
+
+  Closes #57.
+
+### Patch Changes
+
+- a625323: **Fix module-init crash in workerd: drop top-level `createRequire(import.meta.url)` from the bundle.** Bunup's default Node-target build emitted a top-level `import { createRequire } from "node:module"; var __require = createRequire(import.meta.url);` shim. Under workerd, `import.meta.url` is `undefined` for non-entry-point modules, so `createRequire(undefined)` threw synchronously at module load — blocking any Cloudflare Worker that imported (directly or transitively) `@workkit/agent` or `@workkit/notify` from booting.
+
+  Both packages now build with `target: "browser"`, which switches bunup to a self-contained `__require` shim that has no top-level side effects. The shim only throws if a caller actually performs a dynamic `require()` — which neither package does. No source changes; no API changes.
+
+  Closes #64.
+
+- Updated dependencies [b26dbbc]
+- Updated dependencies [cf7844c]
+  - @workkit/errors@1.0.4
+  - @workkit/mail@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @workkit/approval
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [b26dbbc]
+  - @workkit/errors@1.0.4
+
 ## 0.1.2
 
 ### Patch Changes
