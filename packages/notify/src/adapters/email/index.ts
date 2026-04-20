@@ -13,6 +13,12 @@ export type { CloudflareEmailProviderOptions } from "./providers/cloudflare";
 export { resendEmailProvider } from "./providers/resend";
 export type { ResendEmailProviderOptions, EmailOptOutHook } from "./providers/resend";
 
+export { sesEmailProvider } from "./providers/ses";
+export type { SesEmailProviderOptions } from "./providers/ses";
+
+export { postmarkEmailProvider } from "./providers/postmark";
+export type { PostmarkEmailProviderOptions } from "./providers/postmark";
+
 export { createBounceRoute } from "./bounce-route";
 export type { BounceRouteOptions } from "./bounce-route";
 
