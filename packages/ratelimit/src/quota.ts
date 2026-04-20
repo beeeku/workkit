@@ -112,7 +112,7 @@ export function quota(options: QuotaOptions): QuotaLimiter {
 					const k = kvKey(w.config.window, w.boundary, key);
 					const ttlSeconds = Math.ceil((w.boundary + w.config.durationMs - now) / 1000);
 					return options.namespace.put(k, JSON.stringify(newState), {
-						expirationTtl: Math.max(ttlSeconds, 1),
+						expirationTtl: Math.max(ttlSeconds, 60),
 					});
 				});
 				await Promise.all(writes);

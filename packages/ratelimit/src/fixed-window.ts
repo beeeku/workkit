@@ -52,7 +52,7 @@ export function fixedWindow(options: FixedWindowOptions): RateLimiter {
 				const ttlSeconds = Math.ceil((windowStart + windowMs - now) / 1000);
 
 				await options.namespace.put(kvKey, JSON.stringify(state), {
-					expirationTtl: Math.max(ttlSeconds, 1),
+					expirationTtl: Math.max(ttlSeconds, 60),
 				});
 			}
 

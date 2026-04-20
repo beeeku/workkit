@@ -75,7 +75,7 @@ export function slidingWindow(options: SlidingWindowOptions): RateLimiter {
 				const ttlSeconds = Math.ceil((currentWindowStart + windowMs * 2 - now) / 1000);
 
 				await options.namespace.put(currentKey, JSON.stringify(state), {
-					expirationTtl: Math.max(ttlSeconds, 1),
+					expirationTtl: Math.max(ttlSeconds, 60),
 				});
 			}
 
