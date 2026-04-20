@@ -6,6 +6,15 @@ title: "Notifications"
 
 `@workkit/notify` is a unified notification dispatch primitive for Cloudflare Workers. One API, pluggable transport adapters that ship as **subpath imports** of the same package — bring the runtime cost of an adapter only when you import it.
 
+## When to use `@workkit/notify` vs `@workkit/mail`
+
+Both packages now share the Cloudflare `send_email` binding as the default email transport — `@workkit/notify`'s `cloudflareEmailProvider` delegates to `@workkit/mail`'s `mail()` under the hood. Pick by what you need:
+
+| You want… | Use |
+|---|---|
+| Multi-channel dispatch (email + in-app + WhatsApp), preferences, opt-out registry, quiet hours, idempotency, fallback chains, delivery records, test mode | **`@workkit/notify`** (this guide) |
+| Send one email, parse one inbound, route inbound by address | **`@workkit/mail`** ([Email](/workkit/guides/email/)) |
+
 | Subpath | Adapter | Optional peer |
 |---|---|---|
 | `@workkit/notify/email` | Resend HTTP API + React Email | `@react-email/render` |
@@ -110,32 +119,74 @@ export const queue = createNotifyConsumer(
 
 ## Email adapter
 
+Provider-pluggable. **Cloudflare `send_email` is the default** — zero config, ships with every Worker deployment, no third-party API key. Resend is the first-class alternative when you need delivery webhooks and auto-opt-out from hard bounces.
+
+### Default: Cloudflare `send_email` binding
+
+```toml
+# wrangler.toml
+[[send_email]]
+name = "SEND_EMAIL"
+```
+
 ```ts
-import { emailAdapter } from "@workkit/notify/email";
+import { emailAdapter, cloudflareEmailProvider } from "@workkit/notify/email";
+
+const email = emailAdapter({
+  provider: cloudflareEmailProvider({
+    binding: env.SEND_EMAIL,
+    from: "Reports <reports@entryexit.ai>",
+    replyTo: "support@entryexit.ai",                // optional
+  }),
+  bucket: env.REPORTS,                              // optional, only for attachments
+  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+});
+```
+
+- Delegates to `@workkit/mail`'s `mail()` — zero MIME duplication.
+- Requires `@workkit/mail` (optional peer): `bun add @workkit/mail`.
+- No delivery webhooks on the binding → `autoOptOut` is not available on this provider; bounce synthesis from inbound DSN routing is tracked as a roadmap item.
+- Plain-text fallback auto-generated.
+- Attachment cap default 40MB; bounded R2 fetch concurrency 4.
+
+### Alternative: Resend
+
+```ts
+import { emailAdapter, resendEmailProvider } from "@workkit/notify/email";
 import { optOut } from "@workkit/notify";
 
 const email = emailAdapter({
-  apiKey: env.RESEND_API_KEY,
-  from: "Reports <reports@entryexit.ai>",
-  bucket: env.REPORTS,                              // for attachments
-  webhook: { maxAgeMs: 5 * 60 * 1000 },
-  autoOptOut: {
-    enabled: true,
-    hook: async (emailAddress, _channel, _notificationId, reason) => {
-      const userId = await lookupUserIdByEmail(emailAddress);
-      if (userId) await optOut(env.DB, userId, "email", null, reason);
+  provider: resendEmailProvider({
+    apiKey: env.RESEND_API_KEY,
+    from: "Reports <reports@entryexit.ai>",
+    webhook: { maxAgeMs: 5 * 60 * 1000 },
+    autoOptOut: {
+      enabled: true,
+      hook: async (emailAddress, channel, _notificationId, reason) => {
+        const userId = await lookupUserIdByEmail(emailAddress);
+        if (userId) await optOut(env.DB, userId, channel, null, reason);
+      },
     },
-  },
-  markUnsubscribable: ["pre-market-brief"],         // attaches List-Unsubscribe headers
+  }),
+  bucket: env.REPORTS,
+  markUnsubscribable: ["pre-market-brief"],
 });
 ```
 
 - Direct `fetch` to Resend (no SDK).
 - Optional `@react-email/render` peer for React Email components.
-- Plain-text fallback auto-generated.
 - Svix-format webhook verification (`v1,<base64>` HMAC-SHA256), 5-min replay window.
 - Hard bounce + complaint → automatic opt-out via injected hook (configurable, default on).
 - Attachment cap default 40MB; bounded R2 fetch concurrency 4.
+
+### Migrating from the pre-provider shape
+
+The pre-#52 shape took provider-specific options directly on `emailAdapter()`. Wrap them in the new `provider: …` field:
+
+```diff
+- emailAdapter({ apiKey: env.RESEND_API_KEY, from: "…", autoOptOut: { hook } })
++ emailAdapter({ provider: resendEmailProvider({ apiKey: env.RESEND_API_KEY, from: "…", autoOptOut: { hook } }) })
+```
 
 ## In-app adapter
 
