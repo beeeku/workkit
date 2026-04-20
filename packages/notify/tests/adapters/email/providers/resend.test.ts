@@ -61,7 +61,7 @@ describe("resendEmailProvider", () => {
 		expect(body.reply_to).toBe("reply@example.com");
 	});
 
-	it("returns failed on 4xx", async () => {
+	it("returns failed on 4xx (terminal — not retryable)", async () => {
 		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
 			new Response(JSON.stringify({ error: { message: "from-domain not verified" } }), {
 				status: 403,
@@ -71,9 +71,34 @@ describe("resendEmailProvider", () => {
 		const result = await provider.send(baseArgs());
 		expect(result.status).toBe("failed");
 		expect(result.error).toContain("from-domain");
+		// 4xx (other than 429) is a terminal failure — no retry value.
+		expect(result.retryable).toBe(false);
+		expect(result.retryStrategy).toEqual({ kind: "none" });
 	});
 
-	it("returns failed when fetch throws", async () => {
+	it("returns failed on 429 with retryable: true (rate-limited)", async () => {
+		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+			new Response(JSON.stringify({ error: { message: "rate limited" } }), { status: 429 }),
+		);
+		const provider = resendEmailProvider({ apiKey: "k", from: "x@example.com" });
+		const result = await provider.send(baseArgs());
+		expect(result.status).toBe("failed");
+		expect(result.retryable).toBe(true);
+		expect(result.retryStrategy?.kind).toBe("exponential");
+	});
+
+	it("returns failed on 5xx with retryable: true (transient)", async () => {
+		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+			new Response("upstream error", { status: 503 }),
+		);
+		const provider = resendEmailProvider({ apiKey: "k", from: "x@example.com" });
+		const result = await provider.send(baseArgs());
+		expect(result.status).toBe("failed");
+		expect(result.retryable).toBe(true);
+		expect(result.retryStrategy?.kind).toBe("exponential");
+	});
+
+	it("returns failed when fetch throws (network error → retryable)", async () => {
 		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
 			new Error("ENOTFOUND"),
 		);
@@ -81,6 +106,9 @@ describe("resendEmailProvider", () => {
 		const result = await provider.send(baseArgs());
 		expect(result.status).toBe("failed");
 		expect(result.error).toContain("ENOTFOUND");
+		// Network failures (DNS, TLS, connection reset) are always retryable.
+		expect(result.retryable).toBe(true);
+		expect(result.retryStrategy?.kind).toBe("exponential");
 	});
 
 	it("returns failed when response lacks id", async () => {
