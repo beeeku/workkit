@@ -1,5 +1,45 @@
 # @workkit/agent
 
+## 0.4.0
+
+### Minor Changes
+
+- a625323: **Add `forceTextAfterTool` agent option for post-tool `toolChoice: "none"` enforcement.** When enabled, the loop sends `toolChoice: "none"` on the assistant turn that immediately follows a tool execution — forcing a plain-text response. Works around models (notably Llama 3.x routed through Workers AI) that loop on identical tool calls instead of transitioning to text after the tool has already returned.
+
+  ```ts
+  defineAgent({
+    name: "technical",
+    model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    provider: gateway,
+    tools: [getQuote, getOptionChain, computeGreeks],
+    forceTextAfterTool: true, // <- post-tool turn forced to text
+    stopWhen: { maxSteps: 2 },
+  });
+  ```
+
+  Default: `false` — preserves existing behavior. Reset on handoff: a freshly-entered handoff target starts with `toolChoice: "auto"` regardless of the previous agent's tool calls. The flag is preserved across `afterModel` retries (the retry is still the post-tool step), so a `forceTextAfterTool` retry doesn't accidentally re-enable tool calls.
+
+  Closes #97.
+
+### Patch Changes
+
+- a625323: **Fix module-init crash in workerd: drop top-level `createRequire(import.meta.url)` from the bundle.** Bunup's default Node-target build emitted a top-level `import { createRequire } from "node:module"; var __require = createRequire(import.meta.url);` shim. Under workerd, `import.meta.url` is `undefined` for non-entry-point modules, so `createRequire(undefined)` threw synchronously at module load — blocking any Cloudflare Worker that imported (directly or transitively) `@workkit/agent` or `@workkit/notify` from booting.
+
+  Both packages now build with `target: "browser"`, which switches bunup to a self-contained `__require` shim that has no top-level side effects. The shim only throws if a caller actually performs a dynamic `require()` — which neither package does. No source changes; no API changes.
+
+  Closes #64.
+
+- b26dbbc: **Register `WORKKIT_AGENT_OFF_PALETTE_TOOL` in the central error code union.** `OffPaletteToolError` (added in #88 / strictTools) was carrying its code via `as unknown as WorkkitErrorCode` because the `@workkit/errors` union was out of diff-only scope for that PR. The cast worked at runtime but defeated exhaustive-switch analysis for consumers pattern-matching on `err.code`.
+
+  The code now lives in the `WorkkitErrorCode` union and `OffPaletteToolError` declares it as a literal `as const` — no behavior change, just type integrity.
+
+  Closes #93.
+
+- Updated dependencies [b26dbbc]
+- Updated dependencies [b26dbbc]
+  - @workkit/ai-gateway@0.6.0
+  - @workkit/errors@1.0.4
+
 ## 0.3.0
 
 ### Minor Changes

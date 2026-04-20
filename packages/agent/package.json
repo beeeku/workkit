@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/agent",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Composable agent loop primitives — typed tools (Standard Schema), handoffs, streaming, hooks. Provider-agnostic via @workkit/ai-gateway.",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",
@@ -37,7 +37,7 @@
 	"dependencies": {
 		"@standard-schema/spec": "^1.1.0",
 		"@workkit/ai-gateway": "workspace:*",
-		"@workkit/errors": "^1.0.3"
+		"@workkit/errors": "^1.0.4"
 	},
 	"devDependencies": {
 		"valibot": "^1.3.1",

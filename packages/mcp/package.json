@@ -1,6 +1,6 @@
 {
   "name": "@workkit/mcp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Hono for MCP — type-safe MCP servers on Cloudflare Workers with REST + OpenAPI from one definition",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",

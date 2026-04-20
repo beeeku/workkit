@@ -1,5 +1,14 @@
 # @workkit/pdf
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [b26dbbc]
+- Updated dependencies [b26dbbc]
+  - @workkit/browser@0.1.1
+  - @workkit/errors@1.0.4
+
 ## 0.1.0
 
 ### Minor Changes

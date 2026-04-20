@@ -1,5 +1,12 @@
 # @workkit/mcp
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [b26dbbc]
+  - @workkit/errors@1.0.4
+
 ## 0.2.1
 
 ### Patch Changes
