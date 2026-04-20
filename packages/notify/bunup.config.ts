@@ -11,5 +11,6 @@ export default defineConfig({
 	dts: true,
 	sourcemap: "linked",
 	clean: true,
+	target: "browser",
 	external: ["@workkit/errors", "@standard-schema/spec", "@react-email/render"],
 });

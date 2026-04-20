@@ -27,6 +27,7 @@ export interface InternalAgentDef {
 	hooks: AgentHooks;
 	strictTools: boolean;
 	maxAfterModelRetries: number;
+	forceTextAfterTool: boolean;
 }
 
 const ZERO_USAGE: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -98,6 +99,12 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 	// Per-step tracking for `afterModel` retry-with-reminder. Resets whenever
 	// the step advances into tool dispatch (i.e. a model turn was accepted).
 	let afterModelRetryCount = 0;
+	// Set when the previous step's assistant turn executed at least one tool
+	// call. The NEXT iteration uses this with `forceTextAfterTool` to send
+	// `toolChoice: "none"` and force a text response. Preserved across
+	// `afterModel` retries (the retry is still the post-tool step) and reset
+	// on handoff (the new agent gets a fresh `toolChoice: "auto"`).
+	let postToolStep = false;
 
 	while (true) {
 		if (ctx.signal?.aborted) {
@@ -126,6 +133,7 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			throw error;
 		}
 
+		const forceNoneNow = postToolStep && currentAgent.forceTextAfterTool;
 		const runOptions: RunOptions = {
 			signal: ctx.signal,
 			toolOptions:
@@ -136,7 +144,7 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 								description: t.description,
 								parameters: toJsonSchema(t.input).schema,
 							})),
-							toolChoice: "auto",
+							toolChoice: forceNoneNow ? "none" : "auto",
 						}
 					: undefined,
 		};
@@ -242,6 +250,9 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 
 		const toolCalls: GatewayToolCall[] = output.toolCalls ?? [];
 		if (toolCalls.length === 0) {
+			// Pure-text turn — clear the post-tool flag so a future tool call
+			// triggers `toolChoice: "none"` only on the immediate next step.
+			postToolStep = false;
 			emit({ type: "done", stopReason: "stop", usage });
 			return { messages, usage, stopReason: "stop", finalText };
 		}
@@ -371,6 +382,11 @@ export async function runLoop(args: RunLoopArgs): Promise<{
 			}
 		}
 
+		// Mark the NEXT step as a post-tool step so `forceTextAfterTool` can
+		// send `toolChoice: "none"`. Reset on handoff — the new agent has its
+		// own tool palette and shouldn't be forced into text on its first turn
+		// just because the previous agent called a tool.
+		postToolStep = !switched;
 		step += 1;
 		if (switched) continue;
 	}
