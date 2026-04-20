@@ -148,12 +148,7 @@ describe("withRetry() + fallback() — per-tier retry budget", () => {
 
 		expect(result.via).toBe("secondary");
 		const calls = run.mock.calls.map((c) => c[0]);
-		expect(calls).toEqual([
-			"primary-model",
-			"primary-model",
-			"primary-model",
-			"secondary-model",
-		]);
+		expect(calls).toEqual(["primary-model", "primary-model", "primary-model", "secondary-model"]);
 	});
 
 	it("non-retryable but fallback-matched primary error → secondary runs immediately", async () => {
