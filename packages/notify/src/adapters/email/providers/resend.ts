@@ -1,3 +1,4 @@
+import { RetryStrategies } from "@workkit/errors";
 import type { AdapterSendResult, WebhookEvent } from "../../../types";
 import { FromDomainError } from "../errors";
 import type { EmailAttachmentWire, EmailProvider, EmailProviderSendArgs } from "../provider";
@@ -85,7 +86,14 @@ export function resendEmailProvider(options: ResendEmailProviderOptions): EmailP
 					body: JSON.stringify(body),
 				});
 			} catch (err) {
-				return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+				// Network-level failure — DNS, TLS, connection reset. Always
+				// retryable with exponential backoff. See ADR-002.
+				return {
+					status: "failed",
+					error: err instanceof Error ? err.message : String(err),
+					retryable: true,
+					retryStrategy: RetryStrategies.exponential(),
+				};
 			}
 
 			let json: ResendSendResponse | null = null;
@@ -95,13 +103,27 @@ export function resendEmailProvider(options: ResendEmailProviderOptions): EmailP
 				json = null;
 			}
 			if (!resp.ok) {
+				// 5xx and 429 are retryable (server / rate limit); other 4xx
+				// are terminal (auth, validation, malformed payload). See
+				// ADR-002.
+				const transient = resp.status >= 500 || resp.status === 429;
 				return {
 					status: "failed",
 					error: json?.error?.message ?? `resend HTTP ${resp.status} ${resp.statusText}`,
+					retryable: transient,
+					retryStrategy: transient ? RetryStrategies.exponential() : RetryStrategies.none(),
 				};
 			}
 			if (!json?.id) {
-				return { status: "failed", error: "resend response missing id" };
+				// Resend returned 2xx but no id — response-shape regression on
+				// their side. Not safe to retry blindly (we may have already
+				// queued the email server-side); flag as terminal.
+				return {
+					status: "failed",
+					error: "resend response missing id",
+					retryable: false,
+					retryStrategy: RetryStrategies.none(),
+				};
 			}
 			return { status: "sent", providerId: json.id };
 		},

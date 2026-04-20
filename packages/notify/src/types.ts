@@ -100,6 +100,19 @@ export interface AdapterSendResult {
 	providerId?: string;
 	status: Exclude<DeliveryStatus, "queued" | "duplicate" | "skipped">;
 	error?: string;
+	/**
+	 * Optional. Whether the failure should be retried. Adapters that catch
+	 * a `WorkkitError` populate this from `WorkkitError.retryable`; other
+	 * adapters can leave it undefined. See ADR-002.
+	 */
+	retryable?: boolean;
+	/**
+	 * Optional. Recommended backoff strategy for the failure. Adapters that
+	 * catch a `WorkkitError` populate this from `WorkkitError.retryStrategy`.
+	 * Consumers / queue policy can opt into reading this field; today it is
+	 * not yet acted on by `createNotifyConsumer` (see ADR-002 follow-ups).
+	 */
+	retryStrategy?: import("@workkit/errors").RetryStrategy;
 }
 
 export interface WebhookEvent {

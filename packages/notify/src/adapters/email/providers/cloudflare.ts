@@ -1,3 +1,4 @@
+import { adapterFailedFromError } from "../../../adapter-result";
 import type { AdapterSendResult } from "../../../types";
 import type { EmailAttachmentWire, EmailProvider, EmailProviderSendArgs } from "../provider";
 
@@ -54,7 +55,11 @@ export function cloudflareEmailProvider(options: CloudflareEmailProviderOptions)
 				});
 				return { status: "sent", providerId: messageId };
 			} catch (err) {
-				return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+				// `@workkit/mail` throws WorkkitError subclasses (DeliveryError →
+				// retryable, InvalidAddressError → terminal). adapterFailedFromError
+				// preserves their `retryable` and `retryStrategy` so consumers /
+				// queue policy can act on them. See ADR-002.
+				return adapterFailedFromError(err);
 			}
 		},
 	};

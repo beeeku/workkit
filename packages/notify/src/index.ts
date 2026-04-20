@@ -10,6 +10,7 @@ export type { NotifyConsumerOptions, ConsumerLookup } from "./consumer";
 
 // adapters
 export { AdapterRegistry, buildRegistry } from "./adapters";
+export { adapterFailedFromError } from "./adapter-result";
 
 // preferences / opt-out
 export { readPreferences, upsertPreferences } from "./preferences";
