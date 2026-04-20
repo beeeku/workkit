@@ -202,6 +202,35 @@ const email = emailAdapter({
 - Hard bounce + complaint → auto opt-out (configurable, default on).
 - Attachment cap default 40MB; bounded R2 fetch concurrency 4.
 
+#### Stubs: AWS SES + Postmark
+
+```ts
+import { emailAdapter, sesEmailProvider, postmarkEmailProvider } from "@workkit/notify/email";
+
+// Either provider conforms to the EmailProvider interface — adapter and
+// caller code don't change between providers; only the construction does.
+const ses = emailAdapter({
+  provider: sesEmailProvider({
+    region: "us-east-1",
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    from: "Reports <reports@entryexit.ai>",
+  }),
+});
+
+const postmark = emailAdapter({
+  provider: postmarkEmailProvider({
+    serverToken: env.POSTMARK_SERVER_TOKEN,
+    from: "Reports <reports@entryexit.ai>",
+  }),
+});
+```
+
+- Both are **stubs** — `send` / `parseWebhook` / `verifySignature` throw with a link back to [#57](https://github.com/beeeku/workkit/issues/57). The interface is fixed, so a real implementation drops in without touching the adapter or caller code.
+- `sesEmailProvider` will need SigV4 signing + `SendRawEmail`; SES delivery notifications are SNS-wrapped (the webhook handler should decode the SNS envelope first).
+- `postmarkEmailProvider` will need `POST /email` + Postmark's webhook signature scheme.
+- Community implementations welcome.
+
 #### Migrating from the pre-provider shape
 
 ```diff
