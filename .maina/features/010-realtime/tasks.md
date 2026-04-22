@@ -43,7 +43,7 @@ Each task is one commit. Test tasks precede implementation tasks (TDD always —
 
 ## Dependencies
 
-```
+```text
 T01 ─┬─> T02 ─> T03
      ├─> T04 ─> T05
      ├─> T06 ─> T07 ─> T08 ─> T09 ─> T10
@@ -58,14 +58,14 @@ Critical path: T01 → T06 → T07 → T08 → T13 → T16 → T17 (≈ 7 sequen
 
 ## Definition of Done
 
-- [ ] All tests pass (`bun run test`)
-- [ ] Biome lint clean (`bun run lint`)
+- [x] All tests pass (`bun run test`) — 67 passing
+- [x] Biome lint clean (`bun run lint`)
 - [x] TypeScript compiles (`bun run typecheck`)
-- [ ] `bun run constitution:check` — 0 errors, no new warnings on this package
-- [ ] `maina verify` clean on final diff
-- [ ] `maina review` two-stage pass with no critical/important findings
-- [ ] `maina slop` reports no findings on changed files
-- [ ] ADR merged at `.maina/decisions/003-realtime-sse-do-broker.md`
-- [ ] Changeset added
-- [ ] Success criteria in spec.md all checkable
-- [ ] PR description links #111 and the maina-cloud spec reference
+- [x] `bun run constitution:check` — 0 errors, 0 warnings on this package
+- [x] `maina verify` clean on final diff
+- [x] `maina review` two-stage pass with no critical/important findings (independent review + Copilot + CodeRabbit addressed)
+- [x] `maina slop` reports no findings on changed files
+- [x] ADR published at `adr/0005-realtime-sse-over-durable-objects-broker.md`
+- [x] Changeset added (`.changeset/realtime-initial.md`)
+- [x] Success criteria in spec.md all checkable
+- [x] PR #112 links #111

@@ -80,18 +80,46 @@ export function subscribe(url: string, opts: SubscribeOptions): Subscription {
 		opts.onEvent(event, parsed, lastEventId);
 	};
 
-	const consumeStream = async (body: ReadableStream<Uint8Array>): Promise<void> => {
+	// Idle timeout (stalled-proxy guard): tear the stream down if no bytes arrive for 2.5x the server heartbeat.
+	const idleTimeoutMs = (opts.heartbeatMs ?? 30_000) * 2.5;
+
+	const consumeStream = async (
+		body: ReadableStream<Uint8Array>,
+		onFirstByte: () => void,
+		controller: AbortController,
+	): Promise<void> => {
 		const reader = body.getReader();
 		const decoder = new TextDecoder();
 		const feed = createSseParser(onFrame);
+		let gotByte = false;
+		let idleTimer: ReturnType<typeof setTimeout> | undefined;
+		const armIdle = () => {
+			if (idleTimer) clearTimeout(idleTimer);
+			idleTimer = setTimeout(() => {
+				controller.abort();
+				// reader.cancel() forces the pending read() to resolve done.
+				reader.cancel().catch(() => undefined);
+			}, idleTimeoutMs);
+		};
+		armIdle();
 		try {
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) return;
+				if (!gotByte) {
+					gotByte = true;
+					onFirstByte();
+				}
 				feed(decoder.decode(value, { stream: true }));
+				armIdle();
 			}
 		} finally {
-			reader.releaseLock();
+			if (idleTimer) clearTimeout(idleTimer);
+			try {
+				reader.releaseLock();
+			} catch {
+				// reader.cancel() already released
+			}
 		}
 	};
 
@@ -130,9 +158,13 @@ export function subscribe(url: string, opts: SubscribeOptions): Subscription {
 					headers,
 				});
 				if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-				failures = 0;
-				firstFailureAt = 0;
-				await consumeStream(res.body);
+				// Only reset the failure window once the stream actually delivers
+				// bytes — a 200 that immediately closes shouldn't clear the clock
+				// that feeds the polling threshold.
+				await consumeStream(res.body, () => {
+					failures = 0;
+					firstFailureAt = 0;
+				}, ctrl);
 			} catch (err) {
 				if (closed || (err as Error).name === "AbortError") return;
 			}

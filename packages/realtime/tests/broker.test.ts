@@ -215,6 +215,35 @@ describe("createBroker — publish", () => {
 	});
 });
 
+describe("createBroker — config validation", () => {
+	it("rejects negative replayBufferSize", () => {
+		expect(() =>
+			createBroker({ authorize: async () => ({}), replayBufferSize: -1 }),
+		).toThrow(/replayBufferSize/);
+	});
+
+	it("rejects zero maxSubscribersPerChannel", () => {
+		expect(() =>
+			createBroker({ authorize: async () => ({}), maxSubscribersPerChannel: 0 }),
+		).toThrow(/maxSubscribersPerChannel/);
+	});
+
+	it("rejects non-positive heartbeatMs (would create a hot loop)", () => {
+		expect(() => createBroker({ authorize: async () => ({}), heartbeatMs: 0 })).toThrow(
+			/heartbeatMs/,
+		);
+		expect(() =>
+			createBroker({ authorize: async () => ({}), heartbeatMs: Number.POSITIVE_INFINITY }),
+		).toThrow(/heartbeatMs/);
+	});
+
+	it("rejects non-integer replayBufferSize", () => {
+		expect(() =>
+			createBroker({ authorize: async () => ({}), replayBufferSize: 1.5 }),
+		).toThrow(/replayBufferSize/);
+	});
+});
+
 describe("createBroker — eviction gap detection", () => {
 	it("emits realtime.reset when Last-Event-ID exceeds buffer.lastId (post-eviction)", async () => {
 		const Broker = createBroker({ authorize: async () => ({}) });

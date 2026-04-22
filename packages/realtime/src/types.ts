@@ -25,6 +25,9 @@ export interface SubscribeOptions {
 	fallbackPollingUrl?: string;
 	pollingAfterMs?: number;
 	signal?: AbortSignal;
+	/** Server heartbeat cadence — used by the client to detect stalled streams
+	 * (aborts after ~2.5x this value with no bytes). Defaults to 30000. */
+	heartbeatMs?: number;
 }
 
 export interface PublishResult {

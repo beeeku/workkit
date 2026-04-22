@@ -31,6 +31,16 @@ export function createBroker<TEnv = unknown, TPrincipal = unknown>(
 	const heartbeatMs = config.heartbeatMs ?? DEFAULT_HEARTBEAT_MS;
 	const channelPattern = config.channelPattern ?? DEFAULT_CHANNEL_PATTERN;
 
+	if (!Number.isInteger(replayBufferSize) || replayBufferSize < 0) {
+		throw new Error(`createBroker: replayBufferSize must be a non-negative integer, got ${replayBufferSize}`);
+	}
+	if (!Number.isInteger(maxSubs) || maxSubs <= 0) {
+		throw new Error(`createBroker: maxSubscribersPerChannel must be a positive integer, got ${maxSubs}`);
+	}
+	if (!Number.isFinite(heartbeatMs) || heartbeatMs <= 0) {
+		throw new Error(`createBroker: heartbeatMs must be a positive finite number, got ${heartbeatMs}`);
+	}
+
 	return class Broker implements BrokerInstance {
 		private subs = new Set<Writer>();
 		private buffer: RingBuffer<BufferedEvent> = createRingBuffer(replayBufferSize);

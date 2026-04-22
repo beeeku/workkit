@@ -69,6 +69,9 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/sse/")) {
+      if (request.method !== "GET") {
+        return new Response("method not allowed", { status: 405 });
+      }
       const channel = url.pathname.slice("/sse/".length);
       const stub = singleton(env.SSE_BROKER, channel);
       return stub.fetch(
@@ -121,7 +124,7 @@ The client uses `fetch` + streams (not `EventSource`), so it works identically i
 
 Durable Objects hibernate and can evict when idle. When they come back, the broker's in-memory id counter starts fresh at 0. If a reconnecting client reports a `Last-Event-ID` higher than the broker's current `lastId`, the broker emits:
 
-```
+```text
 event: realtime.reset
 id: <current-lastId>
 data: {"reason":"buffer_gap","lastKnownId":<client's-id>}

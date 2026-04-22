@@ -24,7 +24,7 @@ New package `packages/realtime/` following the `@workkit/ratelimit` shape (same 
 | `scheduleAlarm` / `createAlarmHandler` | `@workkit/do` | Optional idle-eviction alarm (release subscriber map after N min of no publish). |
 | `createMockDO()` | `@workkit/testing` | Broker unit test: storage mock + operation tracking. |
 | SSE framing pattern | `packages/notify/src/adapters/inapp/sse.ts:122-160` | Reference for `data:` / `: keepalive` line shape. Not imported — duplicated in `framing.ts`. |
-| `authorize` hook shape | `@workkit/auth` `createAuthHandler` | Match `(req, env) => Promise<T | null>` return-null-means-deny pattern, extended to include `channel`. |
+| `authorize` hook shape | `@workkit/auth` `createAuthHandler` | Match `(req, env) => Promise<T \| null>` return-null-means-deny pattern, extended to include `channel`. |
 
 ## Key Technical Decisions
 

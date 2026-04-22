@@ -200,6 +200,51 @@ describe("subscribe", () => {
 		sub.unsubscribe();
 	});
 
+	it("aborts and reconnects when stream stays silent past the idle timeout", async () => {
+		const first = makeStreamResponse();
+		const second = makeStreamResponse();
+		fetchMock.mockResolvedValueOnce(first.response).mockResolvedValue(second.response);
+
+		const sub = subscribe("/sse/test", {
+			onEvent: () => {},
+			backoff: { initialMs: 10, maxMs: 10 },
+			heartbeatMs: 20, // idle timeout becomes 50ms
+		});
+		await flush();
+		// Deliberately never push any bytes — proxy stalled the stream open.
+		await new Promise((r) => setTimeout(r, 120));
+		await flush();
+
+		// Second fetch happens after idle-timeout abort + backoff.
+		expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+		sub.unsubscribe();
+		// Both streams were already cancelled by idle timers — don't close again.
+	});
+
+	it("does not reset the failure window when stream yields zero bytes before closing", async () => {
+		// Short-lived 200 + immediate close should still accumulate time toward
+		// pollingAfterMs — otherwise a flapping proxy could prevent polling.
+		const shortLived = makeStreamResponse();
+		shortLived.close();
+		const polled = new Response(JSON.stringify([{ event: "ok", id: 1, data: "p" }]));
+		fetchMock.mockResolvedValueOnce(shortLived.response).mockResolvedValueOnce(polled);
+
+		const received: Array<{ event: string; data: unknown; id: number }> = [];
+		const sub = subscribe("/sse/test", {
+			onEvent: (event, data, id) => received.push({ event, data, id }),
+			backoff: { initialMs: 5, maxMs: 5 },
+			fallbackPollingUrl: "/poll/test",
+			pollingAfterMs: 0,
+		});
+		await new Promise((r) => setTimeout(r, 40));
+		await flush();
+
+		expect(
+			fetchMock.mock.calls.find((c) => c[0].startsWith("/poll/test")),
+		).toBeDefined();
+		sub.unsubscribe();
+	});
+
 	it("honors opts.signal by calling unsubscribe on abort", async () => {
 		const stream = makeStreamResponse();
 		fetchMock.mockResolvedValue(stream.response);

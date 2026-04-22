@@ -74,8 +74,8 @@ Constitution rule #4 requires a single `src/index.ts`; subpaths via the `exports
 ### 6. New package, not an adapter in `@workkit/notify`
 Notify is *deliver-to-user* (retryable, provider-backed). Realtime is *broadcast-to-topic* (fire-and-forget, ephemeral). Different failure model, different consumer (UI vs. domain code), different future (realtime earns WebSocket; notify earns more providers). Merging would muddy both.
 
-## Open Questions
+## Resolved Questions
 
-- **Max concurrent subscribers per channel** — SSE on DO can't hibernate an active response stream, so each subscriber holds the DO awake. Do we enforce a cap? *Proposed:* soft cap at 1000/channel, configurable, 429 beyond. Resolve before implement.
-- **Heartbeat cadence default** — notify uses 30s. Same default here? *Proposed:* yes, match.
-- **Channel name validation** — regex or free-form string? *Proposed:* `^[a-zA-Z0-9:_.-]{1,128}$` to prevent path traversal in the subscribe URL.
+- **Max concurrent subscribers per channel** — soft cap at 1000/channel, configurable via `maxSubscribersPerChannel`, 429 beyond.
+- **Heartbeat cadence** — 30s default (`DEFAULT_HEARTBEAT_MS`), matching notify.
+- **Channel name validation** — `/^[a-zA-Z0-9:_.-]{1,128}$/` default (`DEFAULT_CHANNEL_PATTERN`), configurable via `channelPattern`.
