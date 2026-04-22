@@ -32,7 +32,7 @@ export interface PublishResult {
 	id: number;
 }
 
-export const DEFAULT_REPLAY_BUFFER_SIZE = 50;
-export const DEFAULT_MAX_SUBSCRIBERS_PER_CHANNEL = 1000;
-export const DEFAULT_HEARTBEAT_MS = 30_000;
-export const DEFAULT_CHANNEL_PATTERN = /^[a-zA-Z0-9:_.-]{1,128}$/;
+export const DEFAULT_REPLAY_BUFFER_SIZE: number = 50;
+export const DEFAULT_MAX_SUBSCRIBERS_PER_CHANNEL: number = 1000;
+export const DEFAULT_HEARTBEAT_MS: number = 30_000;
+export const DEFAULT_CHANNEL_PATTERN: RegExp = /^[a-zA-Z0-9:_.-]{1,128}$/;
