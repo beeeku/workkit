@@ -161,10 +161,14 @@ export function subscribe(url: string, opts: SubscribeOptions): Subscription {
 				// Only reset the failure window once the stream actually delivers
 				// bytes — a 200 that immediately closes shouldn't clear the clock
 				// that feeds the polling threshold.
-				await consumeStream(res.body, () => {
-					failures = 0;
-					firstFailureAt = 0;
-				}, ctrl);
+				await consumeStream(
+					res.body,
+					() => {
+						failures = 0;
+						firstFailureAt = 0;
+					},
+					ctrl,
+				);
 			} catch (err) {
 				if (closed || (err as Error).name === "AbortError") return;
 			}

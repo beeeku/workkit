@@ -217,9 +217,9 @@ describe("createBroker — publish", () => {
 
 describe("createBroker — config validation", () => {
 	it("rejects negative replayBufferSize", () => {
-		expect(() =>
-			createBroker({ authorize: async () => ({}), replayBufferSize: -1 }),
-		).toThrow(/replayBufferSize/);
+		expect(() => createBroker({ authorize: async () => ({}), replayBufferSize: -1 })).toThrow(
+			/replayBufferSize/,
+		);
 	});
 
 	it("rejects zero maxSubscribersPerChannel", () => {
@@ -238,9 +238,9 @@ describe("createBroker — config validation", () => {
 	});
 
 	it("rejects non-integer replayBufferSize", () => {
-		expect(() =>
-			createBroker({ authorize: async () => ({}), replayBufferSize: 1.5 }),
-		).toThrow(/replayBufferSize/);
+		expect(() => createBroker({ authorize: async () => ({}), replayBufferSize: 1.5 })).toThrow(
+			/replayBufferSize/,
+		);
 	});
 });
 

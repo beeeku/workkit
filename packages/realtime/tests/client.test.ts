@@ -239,9 +239,7 @@ describe("subscribe", () => {
 		await new Promise((r) => setTimeout(r, 40));
 		await flush();
 
-		expect(
-			fetchMock.mock.calls.find((c) => c[0].startsWith("/poll/test")),
-		).toBeDefined();
+		expect(fetchMock.mock.calls.find((c) => c[0].startsWith("/poll/test"))).toBeDefined();
 		sub.unsubscribe();
 	});
 
