@@ -34,8 +34,8 @@ export function createSseParser(onFrame: (frame: ParsedFrame) => void): (chunk: 
 		if (value.startsWith(" ")) value = value.slice(1);
 		if (field === "event") event = value;
 		else if (field === "id") {
-			const n = Number.parseInt(value, 10);
-			if (!Number.isNaN(n)) id = n;
+			// Strict digit match — parseInt("500abc") would be 500.
+			if (/^\d+$/.test(value)) id = Number.parseInt(value, 10);
 		} else if (field === "data") dataLines.push(value);
 	};
 

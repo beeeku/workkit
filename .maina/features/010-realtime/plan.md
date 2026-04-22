@@ -14,7 +14,7 @@ New package `packages/realtime/` following the `@workkit/ratelimit` shape (same 
 - `publish(namespace, channel, event, data)` — convenience wrapper that does `singleton(namespace, channel).fetch("/publish", …)`.
 
 **Client side (subpath `./client`):**
-- `subscribe(url, opts)` — wraps `EventSource`, tracks `lastEventId`, applies backoff on `onerror`, and (if `pollingAfterMs` configured) swaps to a polling loop against `opts.fallbackPollingUrl`.
+- `subscribe(url, opts)` — wraps `fetch` + `ReadableStream` (uniform across browser/Bun/Node), tracks `lastEventId`, applies exponential backoff on stream end/error, and (if `pollingAfterMs` configured) swaps to a polling loop against `opts.fallbackPollingUrl`.
 
 ### Integration points
 
@@ -74,7 +74,7 @@ New package `packages/realtime/` following the `@workkit/ratelimit` shape (same 
 - **Unit (pure):** `framing.ts`, `ring-buffer.ts` — no runtime deps, direct `bun test`.
 - **Broker:** instantiate the DO class with a `createMockDO()`-backed `DurableObjectState`, call its `fetch()` with synthetic requests, assert stream output + status codes. Use `TransformStream` tee or a simple collector to snapshot subscriber writes.
 - **Publish helper:** mock a `DurableObjectNamespace` with an in-process stub that records the fetch URL + body.
-- **Client:** mock `globalThis.EventSource` with a fake that emits scripted events + `error` to verify backoff; use `vi.useFakeTimers()` for backoff assertions.
+- **Client:** mock `globalThis.fetch` with a helper that returns controllable `ReadableStream`s (push/close/error); assert reconnect URL + headers carry `lastEventId` and that `unsubscribe` aborts in-flight fetches.
 - **No integration test against `wrangler dev`** in v1 — that belongs in maina-cloud's first-consumer E2E suite.
 - **`@workkit/testing` wired** in devDependencies to satisfy constitution rule #3, even if only used in broker.test.ts.
 

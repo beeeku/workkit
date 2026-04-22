@@ -84,6 +84,31 @@ describe("subscribe", () => {
 		stream.close();
 	});
 
+	it("sends Last-Event-ID header (as well as query param) once lastEventId > 0", async () => {
+		const first = makeStreamResponse();
+		const second = makeStreamResponse();
+		fetchMock.mockResolvedValueOnce(first.response).mockResolvedValue(second.response);
+
+		const sub = subscribe("/sse/test", {
+			onEvent: () => {},
+			backoff: { initialMs: 10, maxMs: 10 },
+		});
+		await flush();
+		// First connect: no prior lastEventId → no header.
+		expect(fetchMock.mock.calls[0][1].headers["Last-Event-ID"]).toBeUndefined();
+
+		first.push("event: x\nid: 42\ndata: a\n\n");
+		await flush();
+		first.close();
+		await new Promise((r) => setTimeout(r, 30));
+		await flush();
+
+		// Reconnect: header must carry the last seen id.
+		expect(fetchMock.mock.calls[1][1].headers["Last-Event-ID"]).toBe("42");
+		sub.unsubscribe();
+		second.close();
+	});
+
 	it("includes updated lastEventId in URL on reconnect", async () => {
 		const first = makeStreamResponse();
 		const second = makeStreamResponse();

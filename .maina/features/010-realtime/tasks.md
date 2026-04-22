@@ -27,7 +27,7 @@ Each task is one commit. Test tasks precede implementation tasks (TDD always —
 - [x] T10 — `src/publish.ts`: `publish(namespace, channel, event, data)` → `Promise<PublishResult>`.
 
 ### Client wrapper
-- [x] T11 — `tests/client.test.ts`: with fake `EventSource`: first connect → receives events; `error` fires → reconnects with `Last-Event-ID` header; N consecutive failures → calls `fallbackToPolling`; `unsubscribe()` cleans up.
+- [x] T11 — `tests/client.test.ts`: mock `globalThis.fetch` with controllable `ReadableStream`s — first connect → receives events; stream closes/errors → reconnects with `Last-Event-ID` header + `?lastEventId=` query param; N consecutive failures → calls `fallbackPollingUrl`; `unsubscribe()` aborts the fetch.
 - [x] T12 — `src/client.ts`: `subscribe(url, opts)` returns `{ unsubscribe() }`. Backoff from `opts.backoff` (default 500ms → 10s exponential). Persists `lastEventId` in closure.
 
 ### Public exports

@@ -50,6 +50,11 @@ describe("createSseParser", () => {
 		expect(frames).toEqual([{ event: "x", id: undefined, data: "y" }]);
 	});
 
+	it("rejects ids with trailing garbage (parseInt would accept)", () => {
+		const frames = collect("event: x\nid: 500abc\ndata: y\n\n");
+		expect(frames).toEqual([{ event: "x", id: undefined, data: "y" }]);
+	});
+
 	it("tolerates CRLF line endings from proxies", () => {
 		const frames = collect("event: x\r\nid: 1\r\ndata: y\r\n\r\n");
 		expect(frames).toEqual([{ event: "x", id: 1, data: "y" }]);

@@ -13,12 +13,12 @@ Without this primitive, every Workkit-built app that needs live UI (maina-cloud 
 ## Target User
 
 - **Primary:** Workers application developers who need live UI updates and already use other `@workkit/*` primitives. First consumer: `mainahq/maina-cloud` dashboard-v1 (spec: `mainahq/maina-cloud/.maina/specs/001-dashboard-v1/realtime.md`).
-- **Secondary:** CLI consumers (`mainahq/maina` — `maina run follow <runId>`) using the client helper over plain `fetch`/EventSource in a Node context.
+- **Secondary:** CLI consumers (`mainahq/maina` — `maina run follow <runId>`) using the client helper in a Node context (no `EventSource` dependency — the client is `fetch`+stream based).
 
 ## User Stories
 
 - As a Worker handler, I want to publish an event to a channel with one call and have every active subscriber receive it within ~100ms.
-- As a browser client, I want to subscribe to a channel via `EventSource`, survive a network drop, and replay missed events on reconnect via `Last-Event-ID`.
+- As a browser client, I want to subscribe to a channel (via the package's `fetch`+stream client), survive a network drop, and replay missed events on reconnect via `Last-Event-ID`.
 - As the app owner, I want to reject unauthorized subscribes via a per-request hook that sees the channel name, the `Request`, and the `Env`.
 - As an operator, I want connections behind an SSE-stripping proxy to fall back to polling without client code changes.
 

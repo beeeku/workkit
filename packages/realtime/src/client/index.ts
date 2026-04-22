@@ -121,9 +121,13 @@ export function subscribe(url: string, opts: SubscribeOptions): Subscription {
 			const ctrl = new AbortController();
 			currentController = ctrl;
 			try {
+				const headers: Record<string, string> = { accept: "text/event-stream" };
+				// Send via both the header (native SSE convention) and the query param
+				// (our fallback), matching the broker's dual-read contract.
+				if (lastEventId > 0) headers["Last-Event-ID"] = String(lastEventId);
 				const res = await fetch(buildUrl(url, lastEventId), {
 					signal: ctrl.signal,
-					headers: { accept: "text/event-stream" },
+					headers,
 				});
 				if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 				failures = 0;

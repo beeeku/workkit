@@ -20,7 +20,7 @@ We want one tested primitive rather than N copies with subtly different back-off
 
 Ship a new package `@workkit/realtime` built on **one Durable Object instance per channel**, addressed via `singleton(namespace, channelName)` from `@workkit/do`. The DO holds in-memory `Map<channel, Set<Writer>>` for active subscribers and a per-channel bounded ring buffer for `Last-Event-ID` replay. Publish goes through a DO RPC; subscribe returns a streamed `text/event-stream` response after a caller-supplied `authorize(channel, request, env)` hook allows it.
 
-Client helper is a browser-targeted subpath export (`@workkit/realtime/client`) that wraps `EventSource`, persists `lastEventId`, applies exponential backoff, and optionally swaps to polling after a configured failure window.
+Client helper is a subpath export (`@workkit/realtime/client`) that wraps `fetch` + `ReadableStream` — works identically in browsers, Bun, and Node, unlike `EventSource`. It persists `lastEventId`, applies exponential backoff, sends both the `Last-Event-ID` header and a `?lastEventId=` query param on reconnect, and optionally swaps to polling after a configured failure window.
 
 Not adopting: WebSocket transport in v1 (earns its own ADR when needed), storage-backed replay (would invert the ephemeral contract), sharded multi-channel DO (complexity with no scale win at current usage), framing extraction to a shared helper package (~20 lines — premature).
 
@@ -53,7 +53,7 @@ Not adopting: WebSocket transport in v1 (earns its own ADR when needed), storage
 ┌─ Worker handler ─────────┐                    ┌─ Browser ────────────────┐
 │                          │                    │                          │
 │  publish(ns, ch, e, d) ──┼──┐              ┌──┼──> subscribe(url, opts) │
-│                          │  │              │  │     (EventSource +      │
+│                          │  │              │  │     (fetch + stream +   │
 └──────────────────────────┘  │              │  │      backoff + polling) │
                               │              │  └──────────────────────────┘
                               ▼              │
@@ -74,7 +74,7 @@ Not adopting: WebSocket transport in v1 (earns its own ADR when needed), storage
 | `ring-buffer.ts` | Bounded FIFO with monotonic id and `since(id)` slice. Pure. | — |
 | `broker.ts` | `createBroker(config)` returns a `DurableObject` class with `fetch()` routing `/subscribe` + `/publish`. | `framing`, `ring-buffer` |
 | `publish.ts` | `publish(namespace, channel, event, data)` convenience over DO stub fetch. | `@workkit/do` `singleton` |
-| `client.ts` | Browser `subscribe(url, opts)` — `EventSource` wrapper with backoff + polling fallback. | — |
+| `client.ts` | `subscribe(url, opts)` — `fetch` + `ReadableStream` wrapper with backoff + polling fallback. | — |
 | `types.ts` | `RealtimeEvent`, `BrokerConfig`, `AuthorizeHook`, `SubscribeOptions`, `PublishResult`. | `@workkit/types` where applicable |
 
 ### Data Flow
@@ -83,7 +83,7 @@ Not adopting: WebSocket transport in v1 (earns its own ADR when needed), storage
 
 **Subscribe:** client `GET /sse/:channel` (caller-routed) → caller's Worker invokes `singleton(ns, channel).fetch("/subscribe", { headers: { "Last-Event-ID": … } })` → DO runs `authorize(channel, request, env)`; if null → 403; else creates a `ReadableStream`, registers the `Writer` in the channel's `Set`, replays `ringBuffer.since(lastId)`, emits `: connected`, starts heartbeat interval, returns `Response(stream, { headers: { "content-type": "text/event-stream" } })`.
 
-**Reconnect:** client's `onerror` fires → closes `EventSource` → exponential backoff wait → new `EventSource` with `Last-Event-ID: <persisted>` header → server replays missed events past that id, up to buffer capacity.
+**Reconnect:** upstream stream errors or closes → current `AbortController` is torn down → exponential backoff wait → new `fetch` with both `Last-Event-ID: <persisted>` header and `?lastEventId=<persisted>` query param → server replays missed events past that id, up to buffer capacity.
 
 ### External Dependencies
 
@@ -192,4 +192,4 @@ None. No storage writes in v1.
 - **Subscriber closes mid-replay:** `controller.enqueue` throws on the next event, writer is pruned; no crash.
 - **Caller passes a channel name that collides across tenants (e.g. two apps both using `"general"`):** prevented by the caller's naming convention (`team:<id>:<topic>`); package does not enforce tenant prefixes.
 - **Publisher floods a channel:** no back-pressure in v1. Documented as a limitation.
-- **Heartbeat while client is in EventSource-retry state:** `: keepalive` comment is ignored by `EventSource`; harmless.
+- **Heartbeat while client is in reconnect backoff:** the client has already aborted its fetch so no bytes arrive anywhere; heartbeats enqueued server-side are dropped when the stream cancel fires.
