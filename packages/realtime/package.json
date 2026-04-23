@@ -1,6 +1,6 @@
 {
   "name": "@workkit/realtime",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SSE-over-Durable-Objects broadcast primitive for Cloudflare Workers — per-channel pub/sub with Last-Event-ID replay and a fetch+ReadableStream client wrapper",
   "license": "MIT",
   "author": "Bikash Dash <beeeku>",
