@@ -4,3 +4,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .claude/worktrees/
+.maina/cache/
+.maina/context/
+.maina/*.db
