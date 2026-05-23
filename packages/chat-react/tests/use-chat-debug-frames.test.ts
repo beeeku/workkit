@@ -55,6 +55,65 @@ function mountHook(socket: MockSocket, options?: Parameters<typeof useChatDebugF
 	};
 }
 
+function mountTwoHooks(socket: MockSocket) {
+	let first: UseChatDebugFramesResult | undefined;
+	let second: UseChatDebugFramesResult | undefined;
+	let showFirst = true;
+	let showSecond = true;
+	let renderer: ReactTestRenderer;
+
+	function FirstHook() {
+		first = useChatDebugFrames(socket);
+		return null;
+	}
+
+	function SecondHook() {
+		second = useChatDebugFrames(socket);
+		return null;
+	}
+
+	function TestComponent() {
+		return React.createElement(
+			React.Fragment,
+			null,
+			showFirst ? React.createElement(FirstHook) : null,
+			showSecond ? React.createElement(SecondHook) : null,
+		);
+	}
+
+	act(() => {
+		renderer = create(React.createElement(TestComponent));
+	});
+
+	return {
+		get first() {
+			if (!first) throw new Error("first hook did not render");
+			return first;
+		},
+		get second() {
+			if (!second) throw new Error("second hook did not render");
+			return second;
+		},
+		unmountFirst: () => {
+			act(() => {
+				showFirst = false;
+				renderer.update(React.createElement(TestComponent));
+			});
+		},
+		unmountSecond: () => {
+			act(() => {
+				showSecond = false;
+				renderer.update(React.createElement(TestComponent));
+			});
+		},
+		unmount: () => {
+			act(() => {
+				renderer.unmount();
+			});
+		},
+	};
+}
+
 describe("useChatDebugFrames", () => {
 	it("captures inbound and outbound chat frames newest-last", () => {
 		const socket = new MockSocket();
@@ -158,6 +217,33 @@ describe("useChatDebugFrames", () => {
 
 		expect(secondHook.result.frames[0]?.id).toBe("frame-1");
 		secondHook.unmount();
+	});
+
+	it("keeps same-socket send capture isolated across multiple hook instances", () => {
+		const socket = new MockSocket();
+		const originalSend = socket.send;
+		const hooks = mountTwoHooks(socket);
+
+		act(() => {
+			socket.send(JSON.stringify({ id: "out-1", type: "message", role: "user", content: "one" }));
+		});
+
+		expect(hooks.first.frames.map((frame) => frame.message?.id)).toEqual(["out-1"]);
+		expect(hooks.second.frames.map((frame) => frame.message?.id)).toEqual(["out-1"]);
+
+		hooks.unmountFirst();
+
+		act(() => {
+			socket.send(JSON.stringify({ id: "out-2", type: "message", role: "user", content: "two" }));
+		});
+
+		expect(hooks.second.frames.map((frame) => frame.message?.id)).toEqual(["out-1", "out-2"]);
+		expect(socket.send).not.toBe(originalSend);
+
+		hooks.unmountSecond();
+
+		expect(socket.send).toBe(originalSend);
+		hooks.unmount();
 	});
 
 	it("falls back to user when a wire message has an invalid role", () => {

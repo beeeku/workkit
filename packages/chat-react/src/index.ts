@@ -38,6 +38,15 @@ const VALID_TYPES = new Set<ChatMessageType>([
 ]);
 const VALID_ROLES = new Set<ChatMessage["role"]>(["user", "assistant", "system"]);
 const textEncoder = new TextEncoder();
+type SendData = Parameters<ChatDebugSocket["send"]>[0];
+type SendRecorder = (data: SendData) => void;
+
+interface SendPatch {
+	originalSend: ChatDebugSocket["send"];
+	recorders: Set<SendRecorder>;
+}
+
+const sendPatches = new WeakMap<ChatDebugSocket, SendPatch>();
 
 function connectionStateFromReadyState(readyState: number): ChatDebugConnectionState {
 	switch (readyState) {
@@ -144,6 +153,43 @@ function appendFrame(
 	return next.length > bufferSize ? next.slice(next.length - bufferSize) : next;
 }
 
+function installSendRecorder(socket: ChatDebugSocket, recorder: SendRecorder): () => void {
+	let patch = sendPatches.get(socket);
+
+	if (!patch) {
+		const originalSend = socket.send;
+		patch = {
+			originalSend,
+			recorders: new Set(),
+		};
+		sendPatches.set(socket, patch);
+
+		socket.send = ((data: SendData) => {
+			const activePatch = sendPatches.get(socket);
+			if (!activePatch) {
+				return originalSend.call(socket, data);
+			}
+			for (const activeRecorder of [...activePatch.recorders]) {
+				activeRecorder(data);
+			}
+			return activePatch.originalSend.call(socket, data);
+		}) as ChatDebugSocket["send"];
+	}
+
+	patch.recorders.add(recorder);
+
+	return () => {
+		const activePatch = sendPatches.get(socket);
+		if (!activePatch) return;
+
+		activePatch.recorders.delete(recorder);
+		if (activePatch.recorders.size === 0) {
+			socket.send = activePatch.originalSend;
+			sendPatches.delete(socket);
+		}
+	};
+}
+
 export function useChatDebugFrames(
 	socket: ChatDebugSocket | null | undefined,
 	options: UseChatDebugFramesOptions = {},
@@ -157,7 +203,6 @@ export function useChatDebugFrames(
 	const [connectionState, setConnectionState] = useState<ChatDebugConnectionState>(() =>
 		socket ? connectionStateFromReadyState(socket.readyState) : "closed",
 	);
-	const originalSendRef = useRef<ChatDebugSocket["send"] | undefined>(undefined);
 	const nextFrameIdRef = useRef(0);
 
 	const recordFrame = useCallback(
@@ -191,23 +236,14 @@ export function useChatDebugFrames(
 		socket.addEventListener("open", syncConnectionState);
 		socket.addEventListener("close", syncConnectionState);
 		socket.addEventListener("error", syncConnectionState);
-
-		const originalSend = socket.send.bind(socket);
-		originalSendRef.current = originalSend;
-		socket.send = ((data: Parameters<ChatDebugSocket["send"]>[0]) => {
-			recordFrame("out", data);
-			return originalSend(data);
-		}) as ChatDebugSocket["send"];
+		const uninstallSendRecorder = installSendRecorder(socket, (data) => recordFrame("out", data));
 
 		return () => {
 			socket.removeEventListener("message", onMessage);
 			socket.removeEventListener("open", syncConnectionState);
 			socket.removeEventListener("close", syncConnectionState);
 			socket.removeEventListener("error", syncConnectionState);
-			if (originalSendRef.current) {
-				socket.send = originalSendRef.current;
-			}
-			originalSendRef.current = undefined;
+			uninstallSendRecorder();
 		};
 	}, [recordFrame, socket]);
 
