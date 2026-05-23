@@ -103,6 +103,22 @@ describe("useChatDebugFrames", () => {
 		hook.unmount();
 	});
 
+	it("falls back to user when a wire message has an invalid role", () => {
+		const socket = new MockSocket();
+		const hook = mountHook(socket);
+
+		act(() => {
+			socket.emit("message", {
+				data: JSON.stringify({ id: "bad-role", type: "message", role: "admin", content: "one" }),
+			});
+		});
+
+		expect(hook.result.frames[0]?.message?.role).toBe("user");
+		expect(hook.result.frames[0]?.error).toBeUndefined();
+
+		hook.unmount();
+	});
+
 	it("tracks connection state and clears the buffer", () => {
 		const socket = new MockSocket();
 		const hook = mountHook(socket);

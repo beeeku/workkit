@@ -36,6 +36,7 @@ const VALID_TYPES = new Set<ChatMessageType>([
 	"tool_result",
 	"system",
 ]);
+const VALID_ROLES = new Set<ChatMessage["role"]>(["user", "assistant", "system"]);
 let nextFrameId = 0;
 
 function connectionStateFromReadyState(readyState: number): ChatDebugConnectionState {
@@ -67,6 +68,10 @@ function bytesFor(data: unknown): number {
 	return 0;
 }
 
+function isChatMessageRole(value: unknown): value is ChatMessage["role"] {
+	return typeof value === "string" && VALID_ROLES.has(value as ChatMessage["role"]);
+}
+
 function toMessage(data: unknown): ChatMessage | undefined {
 	if (typeof data !== "string") return undefined;
 	const parsed = JSON.parse(data) as unknown;
@@ -80,10 +85,11 @@ function toMessage(data: unknown): ChatMessage | undefined {
 	if (typeof wire.content !== "string") {
 		throw new Error("Message must have a string 'content' field");
 	}
+	const role = isChatMessageRole(wire.role) ? wire.role : "user";
 	return {
 		id: typeof wire.id === "string" ? wire.id : "",
 		type: wire.type as ChatMessageType,
-		role: (wire.role as ChatMessage["role"]) ?? "user",
+		role,
 		content: wire.content,
 		metadata:
 			typeof wire.metadata === "object" && wire.metadata !== null && !Array.isArray(wire.metadata)
