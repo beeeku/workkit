@@ -77,6 +77,29 @@ export type OutboundFrameEvent =
 	| (OutboundFrameEventBase & { phase: "sent" })
 	| (OutboundFrameEventBase & { phase: "send-failed"; error: Error });
 
+/** Direction for a client-side debug frame captured around a WebSocket. */
+export type DebugFrameDirection = "in" | "out";
+
+/** Client-side frame captured for development/debug inspection. */
+export interface DebugFrame {
+	/** Stable hook-local id for rendering lists. */
+	id: string;
+	/** Whether the browser received (`in`) or sent (`out`) the frame. */
+	direction: DebugFrameDirection;
+	/** Best-effort parsed chat message type; `unknown` when the payload is not a chat message. */
+	type: ChatMessageType | "unknown";
+	/** Frame capture time in epoch milliseconds. */
+	timestamp: number;
+	/** UTF-8 byte length for strings, raw byte length for binary frames when available. */
+	bytes: number;
+	/** Raw payload as it appeared at the browser boundary. */
+	data: unknown;
+	/** Decoded chat message payload when parsing succeeds. */
+	message?: ChatMessage;
+	/** Parse or socket error captured while observing the frame. */
+	error?: Error;
+}
+
 /** Options for creating a chat transport */
 export interface ChatTransportOptions {
 	/** Called when a message arrives on the WebSocket. Return message(s) to send back. */

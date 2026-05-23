@@ -18,6 +18,8 @@ export type { ChatErrorCode } from "./errors";
 export type {
 	ChatMessage,
 	ChatMessageType,
+	DebugFrame,
+	DebugFrameDirection,
 	ChatTransportOptions,
 	InboundFrameEvent,
 	OutboundFrameEvent,
