@@ -37,7 +37,7 @@ const VALID_TYPES = new Set<ChatMessageType>([
 	"system",
 ]);
 const VALID_ROLES = new Set<ChatMessage["role"]>(["user", "assistant", "system"]);
-let nextFrameId = 0;
+const textEncoder = new TextEncoder();
 
 function connectionStateFromReadyState(readyState: number): ChatDebugConnectionState {
 	switch (readyState) {
@@ -54,7 +54,7 @@ function connectionStateFromReadyState(readyState: number): ChatDebugConnectionS
 
 function bytesFor(data: unknown): number {
 	if (typeof data === "string") {
-		return new TextEncoder().encode(data).byteLength;
+		return textEncoder.encode(data).byteLength;
 	}
 	if (data instanceof ArrayBuffer) {
 		return data.byteLength;
@@ -70,6 +70,10 @@ function bytesFor(data: unknown): number {
 
 function isChatMessageRole(value: unknown): value is ChatMessage["role"] {
 	return typeof value === "string" && VALID_ROLES.has(value as ChatMessage["role"]);
+}
+
+function timestampFromWire(value: unknown): number {
+	return typeof value === "number" && Number.isFinite(value) ? value : Date.now();
 }
 
 function toMessage(data: unknown): ChatMessage | undefined {
@@ -95,15 +99,15 @@ function toMessage(data: unknown): ChatMessage | undefined {
 			typeof wire.metadata === "object" && wire.metadata !== null && !Array.isArray(wire.metadata)
 				? (wire.metadata as Record<string, unknown>)
 				: undefined,
-		timestamp: Date.now(),
+		timestamp: timestampFromWire(wire.timestamp),
 	};
 }
 
-function makeFrame(direction: DebugFrame["direction"], data: unknown): DebugFrame {
+function makeFrame(direction: DebugFrame["direction"], data: unknown, id: string): DebugFrame {
 	try {
 		const message = toMessage(data);
 		return {
-			id: `frame-${++nextFrameId}`,
+			id,
 			direction,
 			type: message?.type ?? "unknown",
 			timestamp: Date.now(),
@@ -113,7 +117,7 @@ function makeFrame(direction: DebugFrame["direction"], data: unknown): DebugFram
 		};
 	} catch (err) {
 		return {
-			id: `frame-${++nextFrameId}`,
+			id,
 			direction,
 			type: "unknown",
 			timestamp: Date.now(),
@@ -122,6 +126,11 @@ function makeFrame(direction: DebugFrame["direction"], data: unknown): DebugFram
 			error: err instanceof Error ? err : new Error(String(err)),
 		};
 	}
+}
+
+function sanitizeBufferSize(value: number | undefined): number {
+	const candidate = value ?? DEFAULT_BUFFER_SIZE;
+	return Number.isFinite(candidate) ? Math.max(1, Math.floor(candidate)) : DEFAULT_BUFFER_SIZE;
 }
 
 function appendFrame(
@@ -139,7 +148,7 @@ export function useChatDebugFrames(
 	socket: ChatDebugSocket | null | undefined,
 	options: UseChatDebugFramesOptions = {},
 ): UseChatDebugFramesResult {
-	const bufferSize = Math.max(1, Math.floor(options.bufferSize ?? DEFAULT_BUFFER_SIZE));
+	const bufferSize = sanitizeBufferSize(options.bufferSize);
 	const include = useMemo(
 		() => (options.include ? new Set(options.include) : undefined),
 		[options.include],
@@ -149,10 +158,11 @@ export function useChatDebugFrames(
 		socket ? connectionStateFromReadyState(socket.readyState) : "closed",
 	);
 	const originalSendRef = useRef<ChatDebugSocket["send"] | undefined>(undefined);
+	const nextFrameIdRef = useRef(0);
 
 	const recordFrame = useCallback(
 		(direction: DebugFrame["direction"], data: unknown) => {
-			const frame = makeFrame(direction, data);
+			const frame = makeFrame(direction, data, `frame-${++nextFrameIdRef.current}`);
 			setFrames((current) => appendFrame(current, frame, bufferSize, include));
 		},
 		[bufferSize, include],

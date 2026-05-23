@@ -60,10 +60,17 @@ describe("useChatDebugFrames", () => {
 		const socket = new MockSocket();
 		socket.readyState = 1;
 		const hook = mountHook(socket);
+		const messageTimestamp = 1_774_111_200_000;
 
 		act(() => {
 			socket.emit("message", {
-				data: JSON.stringify({ id: "in-1", type: "message", role: "assistant", content: "hi" }),
+				data: JSON.stringify({
+					id: "in-1",
+					type: "message",
+					role: "assistant",
+					content: "hi",
+					timestamp: messageTimestamp,
+				}),
 			});
 			socket.send(JSON.stringify({ id: "out-1", type: "typing", role: "user", content: "..." }));
 		});
@@ -72,6 +79,7 @@ describe("useChatDebugFrames", () => {
 		expect(hook.result.frames).toHaveLength(2);
 		expect(hook.result.frames[0]?.direction).toBe("in");
 		expect(hook.result.frames[0]?.message?.id).toBe("in-1");
+		expect(hook.result.frames[0]?.message?.timestamp).toBe(messageTimestamp);
 		expect(hook.result.frames[1]?.direction).toBe("out");
 		expect(hook.result.frames[1]?.type).toBe("typing");
 		expect(socket.sent).toHaveLength(1);
@@ -101,6 +109,55 @@ describe("useChatDebugFrames", () => {
 		expect(hook.result.frames.map((frame) => frame.message?.id)).toEqual(["m2", "m3"]);
 
 		hook.unmount();
+	});
+
+	it("falls back to the default buffer size when bufferSize is NaN", () => {
+		const socket = new MockSocket();
+		const hook = mountHook(socket, { bufferSize: Number.NaN });
+
+		act(() => {
+			for (let index = 0; index < 101; index += 1) {
+				socket.emit("message", {
+					data: JSON.stringify({
+						id: `m${index}`,
+						type: "message",
+						role: "assistant",
+						content: String(index),
+					}),
+				});
+			}
+		});
+
+		expect(hook.result.frames).toHaveLength(100);
+		expect(hook.result.frames[0]?.message?.id).toBe("m1");
+
+		hook.unmount();
+	});
+
+	it("uses hook-local frame ids", () => {
+		const firstSocket = new MockSocket();
+		const firstHook = mountHook(firstSocket);
+
+		act(() => {
+			firstSocket.emit("message", {
+				data: JSON.stringify({ id: "first", type: "message", role: "assistant", content: "one" }),
+			});
+		});
+
+		expect(firstHook.result.frames[0]?.id).toBe("frame-1");
+		firstHook.unmount();
+
+		const secondSocket = new MockSocket();
+		const secondHook = mountHook(secondSocket);
+
+		act(() => {
+			secondSocket.emit("message", {
+				data: JSON.stringify({ id: "second", type: "message", role: "assistant", content: "two" }),
+			});
+		});
+
+		expect(secondHook.result.frames[0]?.id).toBe("frame-1");
+		secondHook.unmount();
 	});
 
 	it("falls back to user when a wire message has an invalid role", () => {
