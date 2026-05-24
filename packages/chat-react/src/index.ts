@@ -169,10 +169,11 @@ function installSendRecorder(socket: ChatDebugSocket, recorder: SendRecorder): (
 			if (!activePatch) {
 				return originalSend.call(socket, data);
 			}
+			const result = activePatch.originalSend.call(socket, data);
 			for (const activeRecorder of [...activePatch.recorders]) {
 				activeRecorder(data);
 			}
-			return activePatch.originalSend.call(socket, data);
+			return result;
 		}) as ChatDebugSocket["send"];
 	}
 

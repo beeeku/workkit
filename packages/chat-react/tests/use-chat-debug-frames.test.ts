@@ -6,9 +6,11 @@ import { type ChatDebugSocket, type UseChatDebugFramesResult, useChatDebugFrames
 class MockSocket implements ChatDebugSocket {
 	readyState = 0;
 	sent: unknown[] = [];
+	sendError: Error | undefined;
 	private listeners = new Map<string, Set<(event: any) => void>>();
 
 	send(data: Parameters<ChatDebugSocket["send"]>[0]): void {
+		if (this.sendError) throw this.sendError;
 		this.sent.push(data);
 	}
 
@@ -244,6 +246,23 @@ describe("useChatDebugFrames", () => {
 
 		expect(socket.send).toBe(originalSend);
 		hooks.unmount();
+	});
+
+	it("does not record outbound frames when socket.send throws", () => {
+		const socket = new MockSocket();
+		const hook = mountHook(socket);
+		socket.sendError = new Error("send failed");
+
+		act(() => {
+			expect(() =>
+				socket.send(JSON.stringify({ id: "out-1", type: "message", role: "user", content: "one" })),
+			).toThrow("send failed");
+		});
+
+		expect(hook.result.frames).toHaveLength(0);
+		expect(socket.sent).toHaveLength(0);
+
+		hook.unmount();
 	});
 
 	it("falls back to user when a wire message has an invalid role", () => {
