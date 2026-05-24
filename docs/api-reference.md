@@ -93,6 +93,17 @@ Quick reference of all exported functions, types, and classes per package.
 | `durableObject()` | function | DurableObjectNamespace binding validator |
 | `service()` | function | Service binding validator |
 
+## `@workkit/chat-react`
+
+| Export | Kind | Description |
+|--------|------|-------------|
+| `useChatDebugFrames(socket, options?)` | hook | Capture inbound `message` events and outbound `send()` calls from a chat WebSocket-compatible transport |
+| `ChatDebugSocket` | type | Minimal socket contract consumed by the debug hook |
+| `UseChatDebugFramesOptions` | type | Configure `bufferSize` and optional message-type filtering |
+| `UseChatDebugFramesResult` | type | Read captured frames, clear the buffer, and inspect connection state |
+| `ChatDebugConnectionState` | type | Normalized socket state: `connecting`, `open`, `closing`, or `closed` |
+| `DebugFrame` | type | Re-exported frame payload from `@workkit/chat` |
+
 ## `@workkit/d1`
 
 | Export | Kind | Description |
