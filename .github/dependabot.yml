@@ -1,0 +1,43 @@
+# Dependabot config — see issue #123 for context.
+#
+# NOTE: Adding this file explicitly enables Dependabot for the directories
+# listed here and disables it everywhere else. Every directory we want
+# covered must be enumerated. The two directories with their own
+# package.json + resolved dependency graph are `/apps/docs` (Astro docs
+# site) and `/` (Bun workspace root, which covers `packages/*`,
+# `integrations/*`, and `tooling/*` via the root lockfile).
+version: 2
+updates:
+  # apps/docs — has its own manifest with astro + starlight + tailwind.
+  - package-ecosystem: npm
+    directory: /apps/docs
+    schedule:
+      interval: weekly
+    groups:
+      npm_and_yarn:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Astro majors are blocked on the Starlight/Tailwind coordinated
+      # migration tracked in #115. Remove this entry once that migration
+      # lands so Dependabot can resume bumping astro majors.
+      - dependency-name: astro
+        update-types:
+          - version-update:semver-major
+
+  # Bun workspace root — resolves the transitive graph for every
+  # packages/*, integrations/*, and tooling/* manifest via the shared
+  # root lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Vitest v3 -> v4 is a workspace-wide migration tracked in #120.
+      # Remove this entry once that migration lands.
+      - dependency-name: vitest
+        update-types:
+          - version-update:semver-major
