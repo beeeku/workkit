@@ -1,10 +1,14 @@
 # Dependabot config — see issue #123 for context.
 #
-# NOTE: Adding this file explicitly enables Dependabot for the directories
-# listed here and disables it everywhere else. Every directory we want
-# covered must be enumerated.
+# NOTE: This file configures Dependabot's SCHEDULED VERSION UPDATES only —
+# the weekly PRs that bump `dependency-name` in a manifest to the newest
+# allowed version. Every directory we want covered for those PRs must be
+# enumerated below; unlisted directories will not receive version-update
+# PRs. Dependabot SECURITY UPDATES (advisory-driven PRs and vulnerability
+# alerts) are governed by the repository's Code security settings, not by
+# this file, and remain in effect regardless of what is listed here.
 #
-# We enumerate two scopes:
+# We enumerate two scopes for scheduled version updates:
 #   - `/apps/docs` — Astro docs site manifest. Historically the only
 #     workspace directory where Dependabot surfaced version PRs (see the
 #     closed astro-major bumps #110/#116/#119/#121/#122), because astro
@@ -13,11 +17,12 @@
 #     workspace member (`packages/*`, `integrations/*`, `tooling/*`,
 #     `apps/*`). Bumps applied here fan out to every workspace consumer.
 #
-# Deliberately out of scope: `examples/*`. Those directories carry their
-# own `package.json` but are runnable sample worker code, not workspace
-# members (the root `workspaces` glob is `packages/* integrations/*
-# tooling/* apps/*` — no `examples/*`), and they have never produced a
-# Dependabot PR historically. Leaving them unenumerated preserves that.
+# Deliberately out of scope for scheduled version updates: `examples/*`.
+# Those directories carry their own `package.json` but are runnable sample
+# worker code, not workspace members (the root `workspaces` glob is
+# `packages/* integrations/* tooling/* apps/*` — no `examples/*`), and
+# they have never produced a Dependabot version-update PR historically.
+# Leaving them unenumerated preserves that.
 version: 2
 updates:
   # apps/docs — has its own manifest with astro + starlight + tailwind.
@@ -41,9 +46,15 @@ updates:
           - version-update:semver-major
 
   # Bun workspace root — resolves the transitive graph for every
-  # packages/*, integrations/*, and tooling/* manifest via the shared
-  # root lockfile.
-  - package-ecosystem: npm
+  # packages/*, integrations/*, tooling/*, and apps/* manifest via the
+  # shared root `bun.lock`. Root `package.json` declares
+  # `"packageManager": "bun@1.3.8"` and the only lockfile in the repo is
+  # `bun.lock`, so the root entry uses `package-ecosystem: bun` (GA'd
+  # 2025-02, distinct from the `npm` ecosystem which covers npm/yarn/pnpm
+  # manifests only). The /apps/docs entry above stays on `npm` because
+  # its manifest does not declare `packageManager` and Dependabot has
+  # been happily surfacing PRs against it as npm historically.
+  - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
