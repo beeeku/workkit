@@ -2,10 +2,22 @@
 #
 # NOTE: Adding this file explicitly enables Dependabot for the directories
 # listed here and disables it everywhere else. Every directory we want
-# covered must be enumerated. The two directories with their own
-# package.json + resolved dependency graph are `/apps/docs` (Astro docs
-# site) and `/` (Bun workspace root, which covers `packages/*`,
-# `integrations/*`, and `tooling/*` via the root lockfile).
+# covered must be enumerated.
+#
+# We enumerate two scopes:
+#   - `/apps/docs` — Astro docs site manifest. Historically the only
+#     workspace directory where Dependabot surfaced version PRs (see the
+#     closed astro-major bumps #110/#116/#119/#121/#122), because astro
+#     is a direct dep declared here.
+#   - `/` — Bun workspace root + shared lockfile, which resolves every
+#     workspace member (`packages/*`, `integrations/*`, `tooling/*`,
+#     `apps/*`). Bumps applied here fan out to every workspace consumer.
+#
+# Deliberately out of scope: `examples/*`. Those directories carry their
+# own `package.json` but are runnable sample worker code, not workspace
+# members (the root `workspaces` glob is `packages/* integrations/*
+# tooling/* apps/*` — no `examples/*`), and they have never produced a
+# Dependabot PR historically. Leaving them unenumerated preserves that.
 version: 2
 updates:
   # apps/docs — has its own manifest with astro + starlight + tailwind.
