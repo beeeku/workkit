@@ -1,5 +1,11 @@
 # @workkit/chat
 
+## 0.2.1
+
+### Patch Changes
+
+- f8c0d81: Add wire-level debug frame types and a new headless React hook package for client-side chat WebSocket frame inspection.
+
 ## 0.2.0
 
 ### Minor Changes
