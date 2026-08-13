@@ -1,6 +1,6 @@
 {
 	"name": "@workkit/chat-react",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "React debugging hooks for @workkit/chat WebSocket transports",
 	"license": "MIT",
 	"author": "Bikash Dash <beeeku>",
