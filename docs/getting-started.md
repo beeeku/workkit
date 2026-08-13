@@ -15,6 +15,9 @@ bun add @workkit/ai @workkit/ai-gateway
 bun add @workkit/do @workkit/r2 @workkit/crypto
 bun add @workkit/logger
 
+# Chat debugging hooks
+bun add @workkit/chat @workkit/chat-react
+
 # Testing utilities
 bun add -d @workkit/testing
 ```

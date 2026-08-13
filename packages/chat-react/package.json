@@ -1,0 +1,61 @@
+{
+	"name": "@workkit/chat-react",
+	"version": "0.1.0",
+	"description": "React debugging hooks for @workkit/chat WebSocket transports",
+	"license": "MIT",
+	"author": "Bikash Dash <beeeku>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/beeeku/workkit.git",
+		"directory": "packages/chat-react"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		}
+	},
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "bunup",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"peerDependencies": {
+		"@workkit/chat": "workspace:*",
+		"react": ">=18"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": false
+		}
+	},
+	"devDependencies": {
+		"@types/react": "^18.3.18",
+		"@types/react-test-renderer": "^18.3.1",
+		"@workkit/chat": "workspace:*",
+		"@workkit/testing": "workspace:*",
+		"react": "^18.3.1",
+		"react-test-renderer": "^18.3.1"
+	},
+	"keywords": [
+		"workkit",
+		"chat",
+		"react",
+		"websocket",
+		"debug"
+	]
+}

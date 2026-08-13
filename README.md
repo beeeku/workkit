@@ -27,6 +27,8 @@ Every package wraps a Cloudflare binding or API with type safety, better DX, and
 | [`@workkit/ai-gateway`](packages/ai-gateway) | Multi-provider AI gateway — Workers AI, OpenAI, Anthropic, custom. Routing, streaming, fallback, retry, prompt caching, Cloudflare AI Gateway routing, cost tracking |
 | [`@workkit/api`](packages/api) | Type-safe API definitions with Standard Schema and OpenAPI generation |
 | [`@workkit/realtime`](packages/realtime) | SSE-over-Durable-Objects broadcast primitive — per-channel pub/sub with Last-Event-ID replay and a fetch-based client wrapper |
+| [`@workkit/chat`](packages/chat) | WebSocket chat transport primitives and shared debug-frame types |
+| [`@workkit/chat-react`](packages/chat-react) | Headless React hook for inspecting inbound/outbound chat WebSocket frames |
 | [`@workkit/logger`](packages/logger) | Structured logging with request context and Hono middleware |
 | [`@workkit/auth`](packages/auth) | JWT, session management, and auth middleware |
 | [`@workkit/testing`](packages/testing) | In-memory mocks with operation tracking, seed builders, error injection, and snapshots |

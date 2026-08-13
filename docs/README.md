@@ -18,6 +18,7 @@ A composable, tree-shakeable toolkit for building type-safe Cloudflare Workers.
 - [Authentication](./guides/authentication.md) -- JWT, sessions, password hashing, middleware
 - [Rate Limiting](./guides/rate-limiting.md) -- Fixed window, sliding window, token bucket, composite
 - [AI Integration](./guides/ai-integration.md) -- Workers AI, AI Gateway, streaming, fallbacks, cost tracking
+- [Chat React Debugging](../packages/chat-react/README.md) -- Inspect browser-side chat WebSocket frames with a headless hook
 - [Testing](./guides/testing.md) -- Mock bindings, integration patterns, vitest setup
 - [Error Handling](./guides/error-handling.md) -- Structured errors, retry logic, HTTP mapping
 - [Queues and Crons](./guides/queues-and-crons.md) -- Queue processing, cron scheduling, dead letter queues
