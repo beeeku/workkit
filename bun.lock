@@ -25,7 +25,7 @@
         "picocolors": "^1.1.1",
         "turbo": "^2.9.5",
         "typescript": "^5.7.0",
-        "valibot": "^1.3.1",
+        "valibot": "^1.4.2",
         "vitest": "^3.0.0",
       },
     },
@@ -99,20 +99,20 @@
     },
     "packages/agent": {
       "name": "@workkit/agent",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@workkit/ai-gateway": "workspace:*",
-        "@workkit/errors": "^1.0.2",
+        "@workkit/errors": "^1.0.4",
       },
       "devDependencies": {
-        "valibot": "^1.3.1",
+        "valibot": "^1.4.2",
         "zod": "^3.23.0",
       },
     },
     "packages/ai": {
       "name": "@workkit/ai",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -120,9 +120,9 @@
     },
     "packages/ai-gateway": {
       "name": "@workkit/ai-gateway",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "dependencies": {
-        "@workkit/errors": "^1.0.1",
+        "@workkit/errors": "^1.0.4",
         "@workkit/types": "^1.0.1",
       },
     },
@@ -139,7 +139,7 @@
     },
     "packages/approval": {
       "name": "@workkit/approval",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@workkit/crypto": "workspace:*",
         "@workkit/errors": "workspace:*",
@@ -165,7 +165,7 @@
     },
     "packages/browser": {
       "name": "@workkit/browser",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/errors": "^1.0.2",
       },
@@ -242,7 +242,7 @@
       "devDependencies": {
         "@standard-schema/spec": "^1.0.0",
         "arktype": "^2.2.0",
-        "valibot": "^1.3.1",
+        "valibot": "^1.4.2",
         "zod": "^4.3.6",
       },
       "peerDependencies": {
@@ -254,7 +254,7 @@
     },
     "packages/errors": {
       "name": "@workkit/errors",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "devDependencies": {
         "@workkit/types": "workspace:*",
       },
@@ -304,7 +304,7 @@
       "devDependencies": {
         "@standard-schema/spec": "^1.0.0",
         "@workkit/types": "workspace:*",
-        "valibot": "^1.0.0",
+        "valibot": "^1.4.2",
         "zod": "^4.3.6",
       },
       "peerDependencies": {
@@ -330,9 +330,9 @@
     },
     "packages/mail": {
       "name": "@workkit/mail",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
-        "@workkit/errors": "^1.0.1",
+        "@workkit/errors": "^1.0.4",
         "@workkit/types": "^1.0.1",
         "mimetext": "^3.0.24",
         "postal-mime": "^2.4.1",
@@ -343,7 +343,7 @@
     },
     "packages/mcp": {
       "name": "@workkit/mcp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@workkit/errors": "workspace:*",
         "@workkit/types": "^1.0.1",
@@ -356,7 +356,7 @@
     },
     "packages/memory": {
       "name": "@workkit/memory",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -368,10 +368,10 @@
     },
     "packages/notify": {
       "name": "@workkit/notify",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
-        "@workkit/errors": "^1.0.3",
+        "@workkit/errors": "^1.0.4",
       },
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
@@ -391,7 +391,7 @@
     },
     "packages/pdf": {
       "name": "@workkit/pdf",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@workkit/browser": "workspace:*",
         "@workkit/errors": "^1.0.2",
@@ -424,7 +424,7 @@
     },
     "packages/ratelimit": {
       "name": "@workkit/ratelimit",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@workkit/errors": "^1.0.1",
         "@workkit/types": "^1.0.1",
@@ -432,7 +432,7 @@
     },
     "packages/realtime": {
       "name": "@workkit/realtime",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@workkit/do": "workspace:*",
         "@workkit/types": "^1.0.1",
@@ -481,7 +481,7 @@
     },
     "packages/workflow": {
       "name": "@workkit/workflow",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@workkit/errors": "workspace:*",
       },
@@ -2329,7 +2329,7 @@
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
 
-    "valibot": ["valibot@1.3.1", "", { "peerDependencies": { "typescript": ">=5" }, "optionalPeers": ["typescript"] }, "sha512-sfdRir/QFM0JaF22hqTroPc5xy4DimuGQVKFrzF1YfGwaS1nJot3Y8VqMdLO2Lg27fMzat2yD3pY5PbAYO39Gg=="],
+    "valibot": ["valibot@1.4.2", "", { "peerDependencies": { "typescript": ">=5" }, "optionalPeers": ["typescript"] }, "sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg=="],
 
     "vfile": ["vfile@6.0.3", "", { "dependencies": { "@types/unist": "^3.0.0", "vfile-message": "^4.0.0" } }, "sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q=="],
 
