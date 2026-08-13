@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@workkit/testing": "workspace:*",
-    "@cloudflare/workers-types": "^4.20250214.0"
+    "@cloudflare/workers-types": "^5.20260810.1"
   },
   "keywords": [
     "cloudflare",
