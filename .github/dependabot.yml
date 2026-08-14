@@ -38,10 +38,34 @@ updates:
           - patch
           - minor
     ignore:
-      # Astro majors are blocked on the Starlight/Tailwind coordinated
-      # migration tracked in #115. Remove this entry once that migration
-      # lands so Dependabot can resume bumping astro majors.
+      # The Astro/Starlight/Tailwind/Zod coordinated migration is tracked
+      # in #115. Every major listed below has to land as part of that
+      # migration — Starlight 0.41.x peer-deps `astro: ^7`, `@astrojs/tailwind`
+      # is being dropped for the Vite `@tailwindcss/vite` plugin path,
+      # `@astrojs/starlight-tailwind@^5` requires Tailwind v4, and Astro 7
+      # brings the `zod@^4` bump transitively via `astro:content`. Keeping
+      # them each as drive-by Dependabot PRs just burns cycles (see the
+      # 2026-08-13 flood: #126, #128, #130, #131, #133, #134). Remove the
+      # matching entry as each dep lands during the #115 migration.
       - dependency-name: astro
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/starlight"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/starlight-tailwind"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/react"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/tailwind"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: tailwindcss
+        update-types:
+          - version-update:semver-major
+      - dependency-name: zod
         update-types:
           - version-update:semver-major
 
