@@ -39,20 +39,28 @@ updates:
           - minor
     ignore:
       # The Astro/Starlight/Tailwind/Zod coordinated migration is tracked
-      # in #115. Every major listed below has to land as part of that
-      # migration — Starlight 0.41.x peer-deps `astro: ^7`, `@astrojs/tailwind`
-      # is being dropped for the Vite `@tailwindcss/vite` plugin path,
-      # `@astrojs/starlight-tailwind@^5` requires Tailwind v4, and Astro 7
-      # brings the `zod@^4` bump transitively via `astro:content`. Keeping
-      # them each as drive-by Dependabot PRs just burns cycles (see the
-      # 2026-08-13 flood: #126, #128, #130, #131, #133, #134). Remove the
-      # matching entry as each dep lands during the #115 migration.
+      # in #115. Every entry below is blocked because the target release
+      # can't land solo — a Starlight minor bump requires an aligned astro
+      # major (the current 0.41.x line peer-deps the current astro major);
+      # `@astrojs/tailwind` is being dropped for the Vite
+      # `@tailwindcss/vite` plugin path; `@astrojs/starlight-tailwind@^5`
+      # requires Tailwind v4; and the matching astro major transitively
+      # pulls `zod@^4` via `astro:content`. Keeping them as drive-by
+      # Dependabot PRs just burns cycles — see the 2026-08-13 flood: #126
+      # (starlight), #128 (zod), #130 (starlight-tailwind, apps/docs),
+      # #131 (starlight-tailwind, root), #133 (astrojs/react), #134
+      # (tailwindcss). Remove the matching entry as each dep lands during
+      # the #115 migration.
       - dependency-name: astro
         update-types:
           - version-update:semver-major
+      # @astrojs/starlight ships on a 0.x cadence, so Dependabot classifies
+      # its breaking releases as semver-minor rather than semver-major.
+      # Ignore both to keep the grouped minor PR from re-surfacing #126.
       - dependency-name: "@astrojs/starlight"
         update-types:
           - version-update:semver-major
+          - version-update:semver-minor
       - dependency-name: "@astrojs/starlight-tailwind"
         update-types:
           - version-update:semver-major
@@ -86,5 +94,32 @@ updates:
       # Vitest v3 -> v4 is a workspace-wide migration tracked in #120.
       # Remove this entry once that migration lands.
       - dependency-name: vitest
+        update-types:
+          - version-update:semver-major
+      # The docs Astro-ecosystem majors tracked in #115 also surface here
+      # via the shared root `bun.lock` (e.g. #131 was
+      # `@astrojs/starlight-tailwind` at root, not /apps/docs). Mirror the
+      # /apps/docs ignore list so the same coordinated migration blocks
+      # both scopes. Remove each entry as its dep lands during #115.
+      - dependency-name: astro
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/starlight"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: "@astrojs/starlight-tailwind"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/react"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@astrojs/tailwind"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: tailwindcss
+        update-types:
+          - version-update:semver-major
+      - dependency-name: zod
         update-types:
           - version-update:semver-major
