@@ -36,7 +36,8 @@
   },
   "dependencies": {
     "@workkit/types": "^1.0.1",
-    "@workkit/errors": "^1.0.4"
+    "@workkit/errors": "^1.0.4",
+    "@workkit/ai-gateway": "workspace:*"
   },
   "keywords": [
     "cloudflare",

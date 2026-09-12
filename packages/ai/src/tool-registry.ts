@@ -1,3 +1,4 @@
+import { createToolRegistry as gatewayCreateToolRegistry } from "@workkit/ai-gateway";
 import type { ToolCall, ToolDefinition } from "./tools";
 
 /** A tool handler pairs a definition with an execution function */
@@ -61,23 +62,13 @@ export interface ToolRegistry {
  * [#63](https://github.com/beeeku/workkit/issues/63).
  */
 export function createToolRegistry(): ToolRegistry {
-	const handlers = new Map<string, ToolHandler>();
-
-	return {
-		register(name: string, tool: ToolHandler): void {
-			handlers.set(name, tool);
-		},
-
-		getTools(): ToolDefinition[] {
-			return Array.from(handlers.values()).map((h) => h.definition);
-		},
-
-		async execute(call: ToolCall): Promise<string> {
-			const tool = handlers.get(call.name);
-			if (!tool) {
-				throw new Error(`Unknown tool: "${call.name}"`);
-			}
-			return tool.handler(call.arguments);
-		},
-	};
+	// Delegates to `@workkit/ai-gateway`'s `createToolRegistry`. The gateway's
+	// `GatewayToolDefinition` / `GatewayToolCall` are structurally identical
+	// to this package's `ToolDefinition` / `ToolCall` (same three fields, same
+	// types), so the returned object satisfies the ai-local `ToolRegistry`
+	// interface without runtime bridging — the cast is a type identity, not
+	// a shape conversion. First delegation slice of the ADR-001 shim (#63,
+	// #105); the shared implementation source is `packages/ai-gateway/src/
+	// tool-registry.ts`.
+	return gatewayCreateToolRegistry() as unknown as ToolRegistry;
 }
