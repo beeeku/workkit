@@ -6,5 +6,5 @@ export default defineConfig({
 	dts: true,
 	sourcemap: "linked",
 	clean: true,
-	external: ["@workkit/types", "@workkit/errors"],
+	external: ["@workkit/types", "@workkit/errors", "@workkit/ai-gateway"],
 });

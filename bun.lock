@@ -114,7 +114,8 @@
       "name": "@workkit/ai",
       "version": "0.2.2",
       "dependencies": {
-        "@workkit/errors": "^1.0.1",
+        "@workkit/ai-gateway": "workspace:*",
+        "@workkit/errors": "^1.0.4",
         "@workkit/types": "^1.0.1",
       },
     },
@@ -122,7 +123,7 @@
       "name": "@workkit/ai-gateway",
       "version": "0.6.0",
       "dependencies": {
-        "@workkit/errors": "^1.0.1",
+        "@workkit/errors": "^1.0.4",
         "@workkit/types": "^1.0.1",
       },
     },
