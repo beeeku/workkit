@@ -21,7 +21,7 @@ Replace `@workkit/ai` imports with `@workkit/ai-gateway` and construct a gateway
 | `await withRetry(env.AI, model, input, { maxRetries })` | `await withRetry(gateway, { maxAttempts }).run(model, input)` |
 | `await structuredAI(env.AI, model, input, { schema })` | `await gateway.run(model, input, { responseFormat: { jsonSchema } })` |
 | `await aiWithTools(env.AI, model, input, { tools }, handler)` | `await gateway.run(model, input, { toolOptions: { tools } })` + manual dispatch |
-| `createToolRegistry()` | Not re-exported by `@workkit/ai-gateway`; keep using `@workkit/ai`'s helper or inline a `Map<string, handler>`. |
+| `createToolRegistry()` | `createToolRegistry()` — re-exported from `@workkit/ai-gateway` and structurally identical. `@workkit/ai`'s export now delegates to the gateway. Only migration step is the tool-type rename: `ToolDefinition` → `GatewayToolDefinition` and `ToolCall` → `GatewayToolCall`. |
 
 ```ts
 // Before
