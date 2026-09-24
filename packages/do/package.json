@@ -46,5 +46,8 @@
     "typed-storage",
     "alarm",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

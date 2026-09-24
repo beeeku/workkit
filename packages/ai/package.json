@@ -46,5 +46,8 @@
     "typed",
     "streaming",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }
