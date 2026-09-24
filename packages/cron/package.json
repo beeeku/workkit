@@ -46,5 +46,8 @@
     "tasks",
     "distributed-lock",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

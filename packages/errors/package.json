@@ -39,6 +39,7 @@
     }
   },
   "devDependencies": {
+    "@workkit/testing": "workspace:*",
     "@workkit/types": "workspace:*"
   },
   "keywords": [

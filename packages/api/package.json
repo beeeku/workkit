@@ -45,6 +45,7 @@
     "@workkit/types": "^1.0.1"
   },
   "devDependencies": {
+    "@workkit/testing": "workspace:*",
     "zod": "^4.3.6"
   },
   "keywords": [

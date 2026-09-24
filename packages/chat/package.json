@@ -46,5 +46,8 @@
 		"durable-objects",
 		"real-time",
 		"workkit"
-	]
+	],
+	"devDependencies": {
+		"@workkit/testing": "workspace:*"
+	}
 }

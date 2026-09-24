@@ -47,5 +47,8 @@
     "token-bucket",
     "sliding-window",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

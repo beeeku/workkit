@@ -55,5 +55,8 @@
     "aes-gcm",
     "hkdf",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

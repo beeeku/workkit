@@ -43,7 +43,8 @@
     }
   },
   "devDependencies": {
-    "@standard-schema/spec": "^1.0.0"
+    "@standard-schema/spec": "^1.0.0",
+    "@workkit/testing": "workspace:*"
   },
   "keywords": [
     "cloudflare",

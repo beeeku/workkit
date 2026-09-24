@@ -38,9 +38,10 @@
     "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
     "@workkit/crypto": "workspace:*",
-    "@workkit/types": "workspace:*",
-    "@cloudflare/workers-types": "^4.20250214.0"
+    "@workkit/testing": "workspace:*",
+    "@workkit/types": "workspace:*"
   },
   "keywords": [
     "cloudflare",

@@ -54,5 +54,8 @@
     "openai",
     "anthropic",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }
