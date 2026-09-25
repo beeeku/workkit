@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@changesets/cli": "^2.30.0",
+    "@changesets/cli": "^3.0.3",
     "@clack/prompts": "^1.2.0",
     "@cloudflare/workers-types": "^4.20260408.1",
     "@standard-schema/spec": "^1.1.0",
