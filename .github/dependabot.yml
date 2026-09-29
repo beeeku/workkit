@@ -64,3 +64,20 @@ updates:
       - dependency-name: vitest
         update-types:
           - version-update:semver-major
+      # TypeScript v5 -> v7 is a workspace-wide migration tracked in #138.
+      # The raw bump (see #135) fails Type Check + verify — TS 7's native
+      # rewrite tightens inference and knock-on effects hit every embedded
+      # tsc (tsup, tsx, vitest, wrangler, valibot declaration emit). Remove
+      # this entry once #138 lands.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # @cloudflare/workers-types v4 -> v5 is a workspace-wide migration
+      # tracked in #139. v5 reshapes ambient interfaces (Fetcher,
+      # DurableObjectState, Queue, KVNamespace, ExportedHandler) and drops
+      # the v4-shim types; the raw bump (see #127) touches 7 manifests and
+      # risks silent `any`-widening in DO/KV/Queue-consuming packages.
+      # Remove this entry once #139 lands.
+      - dependency-name: "@cloudflare/workers-types"
+        update-types:
+          - version-update:semver-major
