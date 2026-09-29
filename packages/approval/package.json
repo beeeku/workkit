@@ -47,7 +47,7 @@
     "hono": "^4.7.10"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250214.0",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@workkit/d1": "workspace:*",
     "@workkit/do": "workspace:*",
     "@workkit/queue": "workspace:*",
