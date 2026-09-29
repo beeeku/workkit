@@ -48,7 +48,7 @@ updates:
   # Bun workspace root — resolves the transitive graph for every
   # packages/*, integrations/*, tooling/*, and apps/* manifest via the
   # shared root `bun.lock`. Root `package.json` declares
-  # `"packageManager": "bun@1.3.8"` and the only lockfile in the repo is
+  # `"packageManager": "bun@1.4.2"` and the only lockfile in the repo is
   # `bun.lock`, so the root entry uses `package-ecosystem: bun` (GA'd
   # 2025-02, distinct from the `npm` ecosystem which covers npm/yarn/pnpm
   # manifests only). The /apps/docs entry above stays on `npm` because
