@@ -45,11 +45,11 @@
 		}
 	},
 	"devDependencies": {
-		"@types/react": "^18.3.31",
+		"@types/react": "^19.3.0",
 		"@types/react-test-renderer": "^18.3.1",
 		"@workkit/chat": "workspace:*",
 		"@workkit/testing": "workspace:*",
-		"react": "^18.3.1",
+		"react": "^19.3.0",
 		"react-test-renderer": "^18.3.1"
 	},
 	"keywords": [
