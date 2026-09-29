@@ -10,7 +10,7 @@ Non-negotiable rules. Injected into every AI call. Mechanical checks live in `sc
 - Test: vitest (via `turbo test`)
 - Build: bunup (per-package), turbo (orchestrator)
 - Monorepo: yes (bun workspaces)
-- Package manager: bun@1.3.8
+- Package manager: bun@1.4.2
 
 ## Architecture
 
