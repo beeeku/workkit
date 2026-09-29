@@ -49,7 +49,7 @@ export default function Landing() {
 				</div>
 
 				<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
-					<span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent">
+					<span className="bg-linear-to-r from-sky-400 via-cyan-300 to-teal-400 bg-clip-text text-transparent">
 						Composable utilities
 					</span>
 					<br />

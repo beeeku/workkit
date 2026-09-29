@@ -44,9 +44,9 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^25.0.0",
+    "@types/node": "^25.9.8",
     "@workkit/testing": "workspace:*",
-    "hono": "^4.7.0"
+    "hono": "^4.13.11"
   },
   "keywords": [
     "cloudflare",

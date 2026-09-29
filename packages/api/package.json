@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@workkit/testing": "workspace:*",
-    "zod": "^4.3.6"
+    "zod": "^4.6.5"
   },
   "keywords": [
     "cloudflare",

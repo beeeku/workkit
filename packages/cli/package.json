@@ -37,8 +37,8 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@clack/prompts": "^1.1.0",
-    "@types/node": "^25.5.0",
+    "@clack/prompts": "^1.8.1",
+    "@types/node": "^25.9.8",
     "@workkit/testing": "workspace:*",
     "picocolors": "^1.1.1"
   },
