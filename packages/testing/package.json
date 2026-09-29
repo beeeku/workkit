@@ -74,7 +74,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.20.4"
   },
   "//constitution-allow": "no-testing reason=self-package; @workkit/testing cannot depend on itself",
   "keywords": [

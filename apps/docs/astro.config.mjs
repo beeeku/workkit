@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   site: 'https://beeeku.github.io',
@@ -23,7 +23,7 @@ export default defineConfig({
         },
         {
           label: 'Guides',
-          autogenerate: { directory: 'guides' },
+          items: [{ autogenerate: { directory: 'guides' } }],
         },
         {
           label: 'Reference',
@@ -36,7 +36,9 @@ export default defineConfig({
       ],
       customCss: ['./src/styles/global.css'],
     }),
-    tailwind({ applyBaseStyles: false }),
     react(),
   ],
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });

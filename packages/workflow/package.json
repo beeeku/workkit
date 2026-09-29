@@ -38,7 +38,7 @@
     "@workkit/errors": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250214.0",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@workkit/do": "workspace:*",
     "@workkit/testing": "workspace:*",
     "@workkit/types": "workspace:*"
