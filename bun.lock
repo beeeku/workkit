@@ -36,11 +36,11 @@
         "@astrojs/react": "^7.0.0",
         "@astrojs/starlight": "^0.42.4",
         "@astrojs/starlight-tailwind": "^5.0.0",
-        "@tailwindcss/vite": "^4",
+        "@tailwindcss/vite": "^4.3.3",
         "astro": "^7.2.10",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
-        "tailwindcss": "^4",
+        "tailwindcss": "^4.3.3",
         "zod": "3.25.76",
       },
       "devDependencies": {
@@ -385,7 +385,7 @@
         "@workkit/errors": "^1.0.4",
         "@workkit/types": "^1.0.1",
         "mimetext": "^3.0.28",
-        "postal-mime": "^2.7.6",
+        "postal-mime": "^3.0.1",
       },
       "devDependencies": {
         "@workkit/testing": "workspace:*",
@@ -1841,7 +1841,7 @@
 
     "pify": ["pify@4.0.1", "", {}, "sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g=="],
 
-    "postal-mime": ["postal-mime@2.7.6", "", {}, "sha512-UUlyE2KlxmvwMGq060onF/VWU3zD6dVW31FwokQ5v26jWd35fbs2MoTFzh+jXnPwAyV2MULMKXcBInGOl5TO6Q=="],
+    "postal-mime": ["postal-mime@3.0.1", "", {}, "sha512-N86EnYOxZjW1uHQIgSXnnRdnJz+wxmtDsnk3C4R/9rQ1utj8A2znauXZ3Q3+stCHxG5ckY4/NrO09WiPU6rcdQ=="],
 
     "postcss": ["postcss@8.5.28", "", { "dependencies": { "nanoid": "^3.3.18", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A=="],
 
