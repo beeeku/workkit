@@ -1,5 +1,12 @@
 # @workkit/notify
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [87f1092]
+  - @workkit/mail@0.2.1
+
 ## 1.0.0
 
 ### Minor Changes
