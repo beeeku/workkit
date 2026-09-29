@@ -38,6 +38,7 @@
     "@workkit/errors": "^1.0.1"
   },
   "devDependencies": {
+    "@workkit/testing": "workspace:*",
     "@workkit/types": "workspace:*"
   },
   "keywords": [

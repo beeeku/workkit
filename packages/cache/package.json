@@ -42,5 +42,8 @@
     "swr",
     "tagged-cache",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

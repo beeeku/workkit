@@ -47,10 +47,11 @@
     "hono": "^4.7.10"
   },
   "devDependencies": {
-    "@workkit/do": "workspace:*",
+    "@cloudflare/workers-types": "^4.20250214.0",
     "@workkit/d1": "workspace:*",
+    "@workkit/do": "workspace:*",
     "@workkit/queue": "workspace:*",
-    "@cloudflare/workers-types": "^4.20250214.0"
+    "@workkit/testing": "workspace:*"
   },
   "keywords": [
     "cloudflare",

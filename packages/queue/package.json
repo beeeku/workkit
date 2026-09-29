@@ -46,5 +46,8 @@
     "consumer",
     "typed",
     "workkit"
-  ]
+  ],
+  "devDependencies": {
+    "@workkit/testing": "workspace:*"
+  }
 }

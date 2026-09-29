@@ -46,6 +46,7 @@
     }
   },
   "devDependencies": {
+    "@workkit/testing": "workspace:*",
     "hono": "^4.7.0"
   },
   "keywords": [
