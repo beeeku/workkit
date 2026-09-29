@@ -35,7 +35,7 @@
     "@workkit/ratelimit": "workspace:*",
     "@workkit/testing": "workspace:*",
     "@workkit/vitest-config": "workspace:*",
-    "bunup": "0.16.31",
+    "bunup": "0.16.32",
     "picocolors": "^1.1.1",
     "turbo": "^2.11.5",
     "typescript": "^5.9.3",
