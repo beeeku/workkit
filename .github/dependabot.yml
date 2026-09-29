@@ -37,13 +37,6 @@ updates:
         update-types:
           - patch
           - minor
-    ignore:
-      # Astro majors are blocked on the Starlight/Tailwind coordinated
-      # migration tracked in #115. Remove this entry once that migration
-      # lands so Dependabot can resume bumping astro majors.
-      - dependency-name: astro
-        update-types:
-          - version-update:semver-major
 
   # Bun workspace root — resolves the transitive graph for every
   # packages/*, integrations/*, tooling/*, and apps/* manifest via the
