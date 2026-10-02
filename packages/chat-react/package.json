@@ -46,11 +46,11 @@
 	},
 	"devDependencies": {
 		"@types/react": "^18.3.31",
-		"@types/react-test-renderer": "^18.3.1",
+		"@types/react-test-renderer": "^19.3.0",
 		"@workkit/chat": "workspace:*",
 		"@workkit/testing": "workspace:*",
 		"react": "^18.3.1",
-		"react-test-renderer": "^18.3.1"
+		"react-test-renderer": "^19.3.0"
 	},
 	"keywords": [
 		"workkit",
