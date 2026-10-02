@@ -38,7 +38,7 @@
     "@workkit/types": "^1.0.1",
     "@workkit/errors": "^1.0.4",
     "mimetext": "^3.0.28",
-    "postal-mime": "^2.7.6"
+    "postal-mime": "^4.0.0"
   },
   "devDependencies": {
     "@workkit/testing": "workspace:*"
